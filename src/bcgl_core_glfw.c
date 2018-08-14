@@ -1,6 +1,6 @@
-#include "bcgl_gl.h"
-#include <GLFW/glfw3.h>
 #include "bcgl.h"
+#include "bcgl_opengl.h"
+#include <GLFW/glfw3.h>
 
 static struct
 {
@@ -144,8 +144,11 @@ static struct
 {
     int x;
     int y;
-    int button[8];
+    bool button[8];
+    float wheel;
 } s_MouseState;
+
+static bool s_KeyState[BC_KEY_COUNT] = { false };
 
 static BCWindow *s_Window = NULL;
 
@@ -171,6 +174,7 @@ static void glfw_KeyCallback(GLFWwindow *nativeWindow, int keyCode, int scanCode
         return;
     }
     bcSendEvent((action == GLFW_PRESS) ? BC_EVENT_KEYPRESS : BC_EVENT_KEYRELEASE, appCode, 0);
+    s_KeyState[appCode] = (action == GLFW_PRESS);
 }
 
 static void glfw_CursorPosCallback(GLFWwindow *nativeWindow, double x, double y)
@@ -188,6 +192,7 @@ static void glfw_MouseButtonCallback(GLFWwindow *nativeWindow, int button, int a
 
 static void glfw_ScrollCallback(GLFWwindow *nativeWindow, double dx, double dy)
 {
+    s_MouseState.wheel = dy;
     bcSendEvent(BC_EVENT_MOUSEWHEEL, dx, dy);
 }
 
@@ -269,6 +274,34 @@ float bcGetTime()
     return (float) glfwGetTime();
 }
 
+//
+// Input state
+//
+
+bool bcIsKeyDown(int key)
+{
+    return s_KeyState[key];
+}
+
+int bcGetMouseX()
+{
+    return s_MouseState.x;
+}
+
+int bcGetMouseY()
+{
+    return s_MouseState.y;
+}
+
+bool bcIsMouseDown(int button)
+{
+    return s_MouseState.button[button];
+}
+
+float bcGetMouseWheel()
+{
+    return s_MouseState.wheel;
+}
 
 //
 // Window
@@ -368,6 +401,7 @@ BCWindow * bcCreateWindow(BCConfig *config)
 
 void bcDestroyWindow(BCWindow *window)
 {
+    bcTermGL();
     glfwDestroyWindow(window->nativeWindow);
     free(window);
 }
@@ -375,6 +409,9 @@ void bcDestroyWindow(BCWindow *window)
 void bcUpdateWindow(BCWindow *window)
 {
     glfwSwapBuffers(window->nativeWindow);
+    // reset states
+    // TODO: not related to window!
+    s_MouseState.wheel = 0;
 }
 
 void bcCloseWindow(BCWindow *window)

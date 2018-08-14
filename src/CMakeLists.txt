@@ -5,13 +5,9 @@ set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
 file(GLOB SRCS *.c)
 set(LIBS external/libs.c)
 
-# add_definitions("-D OPENGL_LEGACY")
-# add_definitions("-D SUPPORT_GLSL")
-# add_definitions("-D SUPPORT_GLEW")
+add_definitions("-D SUPPORT_GLSL")
 add_definitions("-D SUPPORT_GLAD")
-# add_definitions("-DGLEW_STATIC -DGLEW_NO_GLU")
-
-add_definitions("-DBC_MAIN_LOOP")
+add_definitions("-D BC_MAIN_LOOP")
 
 add_executable(bcgl ${SRCS} ${LIBS})
 

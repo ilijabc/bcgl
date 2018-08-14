@@ -13,6 +13,15 @@
 #define TEXTURE_PARAM_REPEAT    0x8
 #define TEXTURE_PARAM_CLAMP     0x10
 
+#define MESH_FLAGS_POS2         0x1
+#define MESH_FLAGS_POS3         0x2
+#define MESH_FLAGS_POS4         0x4
+#define MESH_FLAGS_NORM         0x8
+#define MESH_FLAGS_TEX2         0x10
+#define MESH_FLAGS_TEX3         0x20
+#define MESH_FLAGS_COL3         0x40
+#define MESH_FLAGS_COL4         0x80
+
 typedef struct
 {
     const char *title;
@@ -58,9 +67,52 @@ typedef struct
     int format;
 } BCTexture;
 
+enum BCShaderLocations
+{
+    SHADER_LOC_A_POSITION,
+    SHADER_LOC_A_NORMAL,
+    SHADER_LOC_A_TEXCOORD,
+    SHADER_LOC_A_COLOR,
+    SHADER_LOC_U_PROJECTION,
+    SHADER_LOC_U_MODELVIEW,
+    SHADER_LOC_U_TEXTURE,
+    SHADER_LOC_U_COLOR,
+    SHADER_LOC_U_USETEXTURE,
+    SHADER_LOC_U_ALPHATEST,
+    SHADER_LOC_MAX
+};
+
+typedef struct
+{
+    unsigned int programId;
+    unsigned int vertexShader;
+    unsigned int fragmentShader;
+    int loc[SHADER_LOC_MAX];
+} BCShader;
+
+enum BCMeshBufferIndex
+{
+    MESH_BUFFER_POSITIONS,
+    MESH_BUFFER_NORMALS,
+    MESH_BUFFER_TEXCOORDS,
+    MESH_BUFFER_COLORS,
+    MESH_BUFFER_MAX
+};
+
+typedef struct
+{
+    struct BCMeshBuffer
+    {
+        int comps;
+        float *vertices;
+        unsigned int vboId;
+    } buffers[MESH_BUFFER_MAX];
+    int count;
+    int total;
+    bool isStatic;
+} BCMesh;
+
 typedef int BCFont;
-typedef int BCShader;
-typedef int BCMesh;
 
 #define NEW_OBJECT(T) (T*)calloc(1, sizeof(T));
 #define DELETE_OBJECT(obj) free(obj);
@@ -103,6 +155,13 @@ int bcPullEvents();
 BCEvent * bcGetEvent(int index);
 float bcGetTime();
 
+// Input state
+bool bcIsKeyDown(int key);
+int bcGetMouseX();
+int bcGetMouseY();
+bool bcIsMouseDown(int button);
+float bcGetMouseWheel();
+
 //
 // GL module
 //
@@ -120,18 +179,15 @@ void bcDestroyTexture(BCTexture *texture);
 void bcBindTexture(BCTexture *texture);
 void bcDrawTexture(BCTexture *texture);
 
-// Font
-BCFont * bcCreateFontFromFile(const char *filename);
-BCFont * bcCreateFontFromMemory(void *buffer);
-void bcDestroyFont(BCFont *font);
-
 // Shader
 BCShader * bcCreateShaderFromFile(const char *filename);
-BCShader * bcCreateShaderFromCode(const char *code);
+BCShader * bcCreateShaderFromCode(const char *vsCode, const char *fsCode);
 void bcDestroyShader(BCShader *shader);
+void bcBindShader(BCShader *shader);
 
 // View State
 void bcInitGL();
+void bcTermGL();
 void bcClear();
 void bcSetColor(BCColor color);
 void bcSetBlend(bool enable);
@@ -147,28 +203,30 @@ void bcTranslatef(float x, float y, float z);
 void bcRotatef(float angle, float x, float y, float z);
 void bcScalef(float x, float y, float z);
 
-// Camera
-void bcPrepareScene3D();
-void bcEndScene3D();
-void bcPrepareScene2D();
-void bcEndScene2D();
-void bcPrepareSceneGUI();
-void bcEndSceneGUI();
-
 // Mesh
+BCMesh * bcCreateMesh(int size, int flags);
 BCMesh * bcCreateMeshFromFile(const char *filename);
 BCMesh * bcCreateMeshFromMemory(void *buffer);
-BCMesh * bcCreateMesh(int flags);
-void bcDestroyFont(BCMesh *mesh);
-void bcBeginMesh(BCMesh *mesh);
-void bcVertex3f(float c, float y, float z);
-void bcTextureCoord2f(float u, float v);
-void bcTextureCoord3f(float u, float v);
-void bcNormalf(float x, float y, float z);
-void bcColor(BCColor color);
-void bcColorHex(unsigned int argb);
-void bcEndMesh();
+void bcDestroyMesh(BCMesh *mesh);
+void bcUpdateMesh(BCMesh *mesh);
 void bcDrawMesh(BCMesh *mesh);
+
+// IM
+bool bcBegin(int type);
+void bcEnd();
+bool bcBeginMesh(BCMesh *mesh);
+void bcEndMesh();
+void bcVertex3f(float x, float y, float z);
+void bcVertex2f(float x, float y);
+void bcTexCoord2f(float u, float v);
+void bcNormalf(float x, float y, float z);
+void bcColor4f(float r, float g, float b, float a);
+void bcColorHex(unsigned int argb);
+
+// Camera
+void bcPrepareScene3D();
+void bcPrepareScene2D();
+void bcPrepareSceneGUI();
 
 // Draw 2D
 void bcDrawText2D(BCFont *font, float x, float y);
@@ -179,6 +237,10 @@ void bcDrawLines2D(int count, float vertices[]);
 // Draw 3D
 void bcDrawCube(float x, float y, float z, float size_x, float size_y, float size_z);
 
+// Font
+BCFont * bcCreateFontFromFile(const char *filename);
+BCFont * bcCreateFontFromMemory(void *buffer);
+void bcDestroyFont(BCFont *font);
 
 //
 // Enums
