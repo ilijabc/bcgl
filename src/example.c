@@ -35,18 +35,20 @@ void BC_onStop()
 
 static void DrawTexture(BCTexture *texture)
 {
-    float w = texture->width/2;
-    float h = texture->height/2;
+    // float w = texture->width/2;
+    // float h = texture->height/2;
+    float w = 200;
+    float h = 100;
     bcBindTexture(texture);
     bcBegin(0);
-    // bcColor4f(0.5f, 1, 1, 0.5f);
+    bcColor4f(0.5f, 1, 1, 0.5f);
     bcTexCoord2f(0, 0);
     bcVertex2f(0, 0);
     bcTexCoord2f(1, 0);
     bcVertex2f(w, 0);
     bcTexCoord2f(1, 1);
     bcVertex2f(w, h);
-    // bcColor4f(1, 0.5f, 1, 0.5f);
+    bcColor4f(1, 0.5f, 1, 0.5f);
     bcTexCoord2f(1, 1);
     bcVertex2f(w, h);
     bcTexCoord2f(0, 1);
@@ -73,12 +75,6 @@ void BC_onUpdate(float dt)
     // Game graphics
     bcClear();
     bcPrepareSceneGUI();
-    float points[] = {
-        0,0,0,
-        1,0,0,
-        1,1,0
-    };
-    
     bcTranslatef(x, y, 0);
     bcRotatef(r, 0, 0, 1);
     bcPushMatrix();
@@ -86,8 +82,8 @@ void BC_onUpdate(float dt)
     bcScalef(s, s, 1);
     DrawTexture(gameTexture);
     bcPopMatrix();
-    DrawTexture(gameTexture);
-
+    DrawTexture(NULL);
+    bcBindTexture(gameTexture);
 }
 
 static const char *s_EventNames[] = {

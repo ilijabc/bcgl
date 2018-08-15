@@ -377,7 +377,7 @@ BCWindow * bcCreateWindow(BCConfig *config)
     bcLog("OpenGL: %s", glGetString(GL_VERSION));
     bcLog("Device: %s", glGetString(GL_RENDERER));
 #endif
-    bcInitGL();
+    bcLoadGL();
 
     // Enable v-sync
     glfwSwapInterval(config->vsync ? 1 : 0);
@@ -401,7 +401,7 @@ BCWindow * bcCreateWindow(BCConfig *config)
 
 void bcDestroyWindow(BCWindow *window)
 {
-    bcTermGL();
+    bcFreeGL();
     glfwDestroyWindow(window->nativeWindow);
     free(window);
 }

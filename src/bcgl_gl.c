@@ -31,41 +31,41 @@ STRINGIFY(
 attribute vec3 a_position;
 attribute vec3 a_normal;
 attribute vec2 a_texCoord;
-attribute vec3 a_color;
+attribute vec4 a_color;
 uniform mat4 u_projection;
 uniform mat4 u_modelView;
 uniform vec4 u_color;
 uniform bool a_color_enabled;
 varying vec2 v_texCoord;
-varying vec3 v_color;
+varying vec4 v_color;
 void main()
 {
     gl_Position = u_projection * u_modelView * vec4(a_position, 1);
     v_texCoord = a_texCoord;
-    if (a_color_enabled) {
+    // if (a_color_enabled) {
         v_color = a_color;
-    } else {
-        v_color = vec3(1,1,1);
-    }
+    // } else {
+        // v_color = vec3(1,1,1);
+    // }
 }
 );
 
 static const char s_FragmentShaderCode[] =
 STRINGIFY(
 varying vec2 v_texCoord;
-varying vec3 v_color;
+varying vec4 v_color;
 uniform sampler2D u_texture;
 uniform bool u_useTexture;
 uniform bool u_alphaTest;
 void main()
 {
-    vec4 tex = vec4(v_color, 1);
+    vec4 tex = vec4(1, 1, 1, 1);
     if (u_useTexture) {
         tex = texture2D(u_texture, v_texCoord);
         if (u_alphaTest && tex.a < 0.1)
             discard;
     }
-    gl_FragColor = tex;
+    gl_FragColor = tex * v_color;
 }
 );
 
@@ -154,11 +154,21 @@ BCTexture * bcCreateTextureFromImage(BCImage *image, int flags)
     BCTexture *texture = NEW_OBJECT(BCTexture);
     texture->width = image->width;
     texture->height = image->height;
+    int internalFormat;
     switch (image->comps)
     {
-    case 1: texture->format = GL_ALPHA;
-    case 3: texture->format = GL_RGB;
-    case 4: texture->format = GL_RGBA;
+    case 1:
+        texture->format = GL_ALPHA;
+        internalFormat = GL_ALPHA;
+        break;
+    case 3:
+        texture->format = GL_RGB;
+        internalFormat = GL_RGB;
+        break;
+    case 4:
+        texture->format = GL_RGBA;
+        internalFormat = GL_BGRA;
+        break;
     }
     // glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glGenTextures(1, &(texture->id));
@@ -200,7 +210,7 @@ BCTexture * bcCreateTextureFromImage(BCImage *image, int flags)
     glTexImage2D(
         GL_TEXTURE_2D,
         0,
-        texture->format,
+        internalFormat,
         texture->width,
         texture->height,
         0,
@@ -228,9 +238,9 @@ void bcBindTexture(BCTexture *texture)
     }
 #ifdef SUPPORT_GLSL
     glUniform1i(s_Shader->loc[SHADER_LOC_U_USETEXTURE], texture ? 1 : 0);
-    glActiveTexture(GL_TEXTURE0);
     glUniform1i(s_Shader->loc[SHADER_LOC_U_TEXTURE], 0);
 #else
+    glActiveTexture(GL_TEXTURE0);
     if (texture)
         glEnable(GL_TEXTURE_2D);
     else
@@ -262,6 +272,27 @@ void bcDrawTexture(BCTexture *texture)
 }
 
 // Shader
+
+static void applyProjectionMatrix()
+{
+#ifdef SUPPORT_GLSL
+    glUniformMatrix4fv(s_Shader->loc[SHADER_LOC_U_PROJECTION], 1, GL_FALSE, s_ProjectionMatrix);
+#else
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glLoadMatrixf(s_ProjectionMatrix);
+    glMatrixMode(GL_MODELVIEW);
+#endif
+}
+
+static void applyCurrentMatrix()
+{
+#ifdef SUPPORT_GLSL
+    glUniformMatrix4fv(s_Shader->loc[SHADER_LOC_U_MODELVIEW], 1, GL_FALSE, s_MatrixStack[s_CurrentMatrix]);
+#else
+    glLoadMatrixf(s_MatrixStack[s_CurrentMatrix]);
+#endif
+}
 
 static void bindShaderVariables(BCShader *shader)
 {
@@ -394,9 +425,6 @@ BCShader * bcCreateShaderFromCode(const char *vsCode, const char *fsCode)
     }
     // variables
     bindShaderVariables(shader);
-    // Bind current shader
-    // TODO: set current shader on init
-    bcBindShader(shader);
     return shader;
 
 shader_create_error:
@@ -415,15 +443,21 @@ void bcDestroyShader(BCShader *shader)
 void bcBindShader(BCShader *shader)
 {
     glUseProgram(shader->programId);
+    applyProjectionMatrix();
+    applyCurrentMatrix();
+    s_Shader = shader;
 }
 
 // View State
 
-void bcInitGL()
+void bcLoadGL()
 {
+    // matrix stack
+    mat4_identity(s_ProjectionMatrix);
+    mat4_identity(s_MatrixStack[0]);
 #ifdef SUPPORT_GLSL
-    // setShader(mCurrentShader);
     s_Shader = bcCreateShaderFromCode(s_VertexShaderCode, s_FragmentShaderCode);
+    bcBindShader(s_Shader);
 #else
     glAlphaFunc(GL_GREATER, 0.1f);
     glDisable(GL_LIGHTING);
@@ -436,12 +470,9 @@ void bcInitGL()
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    // matrix stack
-    mat2_identity(s_ProjectionMatrix);
-    mat2_identity(s_MatrixStack[0]);
 }
 
-void bcTermGL()
+void bcFreeGL()
 {
 #ifdef SUPPORT_GLSL
     bcDestroyShader(s_Shader);
@@ -484,36 +515,13 @@ void bcSetDepthTest(bool enable)
 void bcSetPerspective(float fovy, float aspect, float znear, float zfar)
 {
     mat4_perspective(s_ProjectionMatrix, fovy, aspect, znear, zfar);
-#ifdef SUPPORT_GLSL
-    glUniformMatrix4fv(s_Shader->loc[SHADER_LOC_U_PROJECTION], 1, GL_FALSE, s_ProjectionMatrix);
-#else
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glLoadMatrixf(s_ProjectionMatrix);
-    glMatrixMode(GL_MODELVIEW);
-#endif
+    applyProjectionMatrix();
 }
 
 void bcSetOrtho(float left, float right, float bottom, float top, float znear, float zfar)
 {
     mat4_ortho(s_ProjectionMatrix, left, right, bottom, top, znear, zfar);
-#ifdef SUPPORT_GLSL
-    glUniformMatrix4fv(s_Shader->loc[SHADER_LOC_U_PROJECTION], 1, GL_FALSE, s_ProjectionMatrix);
-#else
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glLoadMatrixf(s_ProjectionMatrix);
-    glMatrixMode(GL_MODELVIEW);
-#endif
-}
-
-static void applyCurrentMatrix()
-{
-#ifdef SUPPORT_GLSL
-    glUniformMatrix4fv(s_Shader->loc[SHADER_LOC_U_MODELVIEW], 1, GL_FALSE, s_MatrixStack[s_CurrentMatrix]);
-#else
-    glLoadMatrixf(s_MatrixStack[s_CurrentMatrix]);
-#endif
+    applyProjectionMatrix();
 }
 
 void bcPushMatrix()
@@ -788,6 +796,11 @@ void bcNormalf(float x, float y, float z)
 void bcColor4f(float r, float g, float b, float a)
 {
     vec4(s_TempVertexData[MESH_BUFFER_COLORS], r, g, b, a);
+}
+
+void bcColor3f(float r, float g, float b)
+{
+    bcColor4f(r, g, b, 1.0f);
 }
 
 void bcColorHex(unsigned int argb)

@@ -13,6 +13,7 @@
 #define TEXTURE_PARAM_REPEAT    0x8
 #define TEXTURE_PARAM_CLAMP     0x10
 
+// Mesh flags
 #define MESH_FLAGS_POS2         0x1
 #define MESH_FLAGS_POS3         0x2
 #define MESH_FLAGS_POS4         0x4
@@ -21,6 +22,9 @@
 #define MESH_FLAGS_TEX3         0x20
 #define MESH_FLAGS_COL3         0x40
 #define MESH_FLAGS_COL4         0x80
+
+// Draw params
+#define BC_TRIANGLES            0
 
 typedef struct
 {
@@ -186,8 +190,8 @@ void bcDestroyShader(BCShader *shader);
 void bcBindShader(BCShader *shader);
 
 // View State
-void bcInitGL();
-void bcTermGL();
+void bcLoadGL();
+void bcFreeGL();
 void bcClear();
 void bcSetColor(BCColor color);
 void bcSetBlend(bool enable);
@@ -221,6 +225,7 @@ void bcVertex2f(float x, float y);
 void bcTexCoord2f(float u, float v);
 void bcNormalf(float x, float y, float z);
 void bcColor4f(float r, float g, float b, float a);
+void bcColor3f(float r, float g, float b);
 void bcColorHex(unsigned int argb);
 
 // Camera
