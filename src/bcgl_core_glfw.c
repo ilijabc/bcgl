@@ -1,5 +1,4 @@
-#include "bcgl.h"
-#include "bcgl_opengl.h"
+#include "bcgl_internal.h"
 #include <GLFW/glfw3.h>
 
 static struct
@@ -146,7 +145,9 @@ static struct
     int y;
     bool button[8];
     float wheel;
-} s_MouseState;
+    float deltaX;
+    float deltaY;
+} s_MouseState = { 0 };
 
 static bool s_KeyState[BC_KEY_COUNT] = { false };
 
@@ -179,6 +180,8 @@ static void glfw_KeyCallback(GLFWwindow *nativeWindow, int keyCode, int scanCode
 
 static void glfw_CursorPosCallback(GLFWwindow *nativeWindow, double x, double y)
 {
+    s_MouseState.deltaX = x - s_MouseState.x;
+    s_MouseState.deltaY = y - s_MouseState.y;
     s_MouseState.x = x;
     s_MouseState.y = y;
     bcSendEvent(BC_EVENT_MOUSEMOVE, x, y);
@@ -198,6 +201,11 @@ static void glfw_ScrollCallback(GLFWwindow *nativeWindow, double dx, double dy)
 
 static void glfw_WindowSizeCallback(GLFWwindow *nativeWindow, int width, int height)
 {
+    if (s_Window != NULL)
+    {
+        s_Window->width = width;
+        s_Window->height = height;
+    }
     glViewport(0, 0, width, height);
     bcSendEvent(BC_EVENT_WINDOWSIZE, width, height);
 }
@@ -303,6 +311,16 @@ float bcGetMouseWheel()
     return s_MouseState.wheel;
 }
 
+float bcGetMouseDeltaX()
+{
+    return s_MouseState.deltaX;
+}
+
+float bcGetMouseDeltaY()
+{
+    return s_MouseState.deltaY;
+}
+
 //
 // Window
 //
@@ -377,7 +395,7 @@ BCWindow * bcCreateWindow(BCConfig *config)
     bcLog("OpenGL: %s", glGetString(GL_VERSION));
     bcLog("Device: %s", glGetString(GL_RENDERER));
 #endif
-    bcLoadGL();
+    bcInitGfx();
 
     // Enable v-sync
     glfwSwapInterval(config->vsync ? 1 : 0);
@@ -401,7 +419,7 @@ BCWindow * bcCreateWindow(BCConfig *config)
 
 void bcDestroyWindow(BCWindow *window)
 {
-    bcFreeGL();
+    bcTermGfx();
     glfwDestroyWindow(window->nativeWindow);
     free(window);
 }
@@ -412,6 +430,8 @@ void bcUpdateWindow(BCWindow *window)
     // reset states
     // TODO: not related to window!
     s_MouseState.wheel = 0;
+    s_MouseState.deltaX = 0;
+    s_MouseState.deltaY = 0;
 }
 
 void bcCloseWindow(BCWindow *window)

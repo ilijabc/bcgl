@@ -1,8 +1,6 @@
-#include "bcgl.h"
-#include "bcgl_opengl.h"
+#include "bcgl_internal.h"
 
 #include <stb/stb_image.h>
-#include <mathc/mathc.h>
 
 #define MATRIX_STACK_SIZE 32
 
@@ -10,7 +8,7 @@ static float s_BackgroundColor[4] = { 0.3f, 0.3f, 0.3f, 1.0f };
 static float s_ProjectionMatrix[16];
 static float s_MatrixStack[MATRIX_STACK_SIZE][16];
 static int s_CurrentMatrix = 0;
-static BCMesh *s_Mesh = NULL;
+
 #ifdef SUPPORT_GLSL
 static BCShader *s_Shader = NULL;
 #endif
@@ -68,6 +66,38 @@ void main()
     gl_FragColor = tex * v_color;
 }
 );
+
+// private
+
+void bcInitGfx()
+{
+    // matrix stack
+    mat4_identity(s_ProjectionMatrix);
+    mat4_identity(s_MatrixStack[0]);
+#ifdef SUPPORT_GLSL
+    s_Shader = bcCreateShaderFromCode(s_VertexShaderCode, s_FragmentShaderCode);
+    bcBindShader(s_Shader);
+#else
+    glAlphaFunc(GL_GREATER, 0.1f);
+    glDisable(GL_LIGHTING);
+#endif
+    // default state
+    glClearColor(s_BackgroundColor[0], s_BackgroundColor[1], s_BackgroundColor[2], s_BackgroundColor[3]);
+    // gl default
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    bcInitGfxDraw();
+}
+
+void bcTermGfx()
+{
+    bcTermGfxDraw();
+#ifdef SUPPORT_GLSL
+    bcDestroyShader(s_Shader);
+#endif
+}
 
 //
 // Image
@@ -136,17 +166,6 @@ BCTexture * bcCreateTextureFromFile(const char *filename, int flags)
     BCTexture *texture = bcCreateTextureFromImage(image, flags);
     bcDestroyImage(image);
     return texture;
-}
-
-static int get_glFormat(int comps)
-{
-    switch (comps)
-    {
-    case 1: return GL_ALPHA;
-    case 3: return GL_RGB;
-    case 4: return GL_RGBA;
-    }
-    return -1;
 }
 
 BCTexture * bcCreateTextureFromImage(BCImage *image, int flags)
@@ -377,10 +396,6 @@ static GLuint loadShader(const char *code, GLenum shaderType)
     return shaderId;
 }
 
-BCShader * bcCreateShaderFromFile(const char *filename)
-{
-}
-
 BCShader * bcCreateShaderFromCode(const char *vsCode, const char *fsCode)
 {
     BCShader *shader = NEW_OBJECT(BCShader);
@@ -442,43 +457,24 @@ void bcDestroyShader(BCShader *shader)
 
 void bcBindShader(BCShader *shader)
 {
+#ifdef SUPPORT_GLSL
     glUseProgram(shader->programId);
     applyProjectionMatrix();
     applyCurrentMatrix();
     s_Shader = shader;
+#endif
+}
+
+BCShader * bcGetShader()
+{
+#ifdef SUPPORT_GLSL
+    return s_Shader;
+#else
+    return NULL;
+#endif
 }
 
 // View State
-
-void bcLoadGL()
-{
-    // matrix stack
-    mat4_identity(s_ProjectionMatrix);
-    mat4_identity(s_MatrixStack[0]);
-#ifdef SUPPORT_GLSL
-    s_Shader = bcCreateShaderFromCode(s_VertexShaderCode, s_FragmentShaderCode);
-    bcBindShader(s_Shader);
-#else
-    glAlphaFunc(GL_GREATER, 0.1f);
-    glDisable(GL_LIGHTING);
-#endif
-    s_Mesh = bcCreateMesh(512, 0);
-    // default state
-    glClearColor(s_BackgroundColor[0], s_BackgroundColor[1], s_BackgroundColor[2], s_BackgroundColor[3]);
-    // gl default
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_DEPTH_TEST);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-}
-
-void bcFreeGL()
-{
-#ifdef SUPPORT_GLSL
-    bcDestroyShader(s_Shader);
-#endif
-    bcDestroyMesh(s_Mesh);
-}
 
 void bcClear()
 {
@@ -524,6 +520,12 @@ void bcSetOrtho(float left, float right, float bottom, float top, float znear, f
     applyProjectionMatrix();
 }
 
+void bcSetProjection(float *matrix)
+{
+    mat4_assign(s_ProjectionMatrix, matrix);
+    applyProjectionMatrix();
+}
+
 void bcPushMatrix()
 {
     if (s_CurrentMatrix == MATRIX_STACK_SIZE - 1)
@@ -564,13 +566,13 @@ void bcTranslatef(float x, float y, float z)
     applyCurrentMatrix();
 }
 
-void bcRotatef(float angle, float x, float y, float z)
+void bcRotatef(float deg, float x, float y, float z)
 {
     float axis[3] = { x, y, z };
     float m0[16], m1[16];
     mat4_assign(m0, s_MatrixStack[s_CurrentMatrix]);
     mat4_identity(m1);
-    mat4_rotation_axis(m1, axis, to_radians(angle));
+    mat4_rotation_axis(m1, axis, to_radians(deg));
     mat4_multiply(s_MatrixStack[s_CurrentMatrix], m0, m1);
     applyCurrentMatrix();
 }
@@ -712,137 +714,6 @@ void bcDrawMesh(BCMesh *mesh)
     glDisableClientState(GL_COLOR_ARRAY);
 #endif
 }
-
-// IM
-
-static BCMesh * s_TempMesh = NULL;
-static float s_TempVertexData[MESH_BUFFER_MAX][4];
-
-bool bcBegin(int type)
-{
-    return bcBeginMesh(s_Mesh);
-}
-
-void bcEnd()
-{
-    bcEndMesh(s_TempMesh);
-}
-
-bool bcBeginMesh(BCMesh *mesh)
-{
-    if (s_TempMesh != NULL)
-    {
-        bcLog("Mesh already locked!");
-        return false;
-    }
-    if (mesh == NULL)
-    {
-        bcLog("Mesh not provided!");
-        return false;
-    }
-    s_TempMesh = mesh;
-    s_TempMesh->count = 0;
-    vec4(s_TempVertexData[MESH_BUFFER_POSITIONS], 0, 0, 0, 0);
-    vec4(s_TempVertexData[MESH_BUFFER_NORMALS], 0, 0, 1, 0);
-    vec4(s_TempVertexData[MESH_BUFFER_TEXCOORDS], 0, 0, 0, 0);
-    vec4(s_TempVertexData[MESH_BUFFER_COLORS], 1, 1, 1, 1);
-    return true;
-}
-
-void bcEndMesh()
-{
-    bcUpdateMesh(s_TempMesh);
-    bcDrawMesh(s_TempMesh);
-    s_TempMesh = NULL;
-}
-
-void bcVertex3f(float x, float y, float z)
-{
-    if (s_TempMesh == NULL)
-    {
-        bcLog("Mesh not locked!");
-        return;
-    }
-    if (s_TempMesh->count >= s_TempMesh->total)
-    {
-        bcLog("Mesh limit reached!");
-        return;
-    }
-    vec4(s_TempVertexData[MESH_BUFFER_POSITIONS], x, y, z, 0);
-    for (int i = 0; i < MESH_BUFFER_MAX; i++)
-    {
-        struct BCMeshBuffer *buff = &(s_TempMesh->buffers[i]);
-        float * ptr = &(buff->vertices[buff->comps * s_TempMesh->count]);
-        memcpy(ptr, s_TempVertexData[i], buff->comps * sizeof(float));
-    }
-    s_TempMesh->count++;
-}
-
-void bcVertex2f(float x, float y)
-{
-    bcVertex3f(x, y, 0);
-}
-
-void bcTexCoord2f(float u, float v)
-{
-    vec2(s_TempVertexData[MESH_BUFFER_TEXCOORDS], u, v);
-}
-
-void bcNormalf(float x, float y, float z)
-{
-    vec3(s_TempVertexData[MESH_BUFFER_NORMALS], x, y, z);
-}
-
-void bcColor4f(float r, float g, float b, float a)
-{
-    vec4(s_TempVertexData[MESH_BUFFER_COLORS], r, g, b, a);
-}
-
-void bcColor3f(float r, float g, float b)
-{
-    bcColor4f(r, g, b, 1.0f);
-}
-
-void bcColorHex(unsigned int argb)
-{
-}
-
-// Camera
-
-void bcPrepareScene3D()
-{
-    BCWindow *win = bcGetWindow();
-    float fovy = 60.0f;
-    float aspect = (float) win->width / (float) win->height;
-    float znear = 0.1f;
-    float zfar = 10000.0f;
-    bcSetPerspective(fovy, aspect, znear, zfar);
-    bcSetBlend(false);
-    bcSetDepthTest(true);
-    bcIdentity();
-}
-
-void bcPrepareScene2D()
-{
-}
-
-void bcPrepareSceneGUI()
-{
-    BCWindow *win = bcGetWindow();
-    bcSetOrtho(0, win->width, win->height, 0, -1, 1);
-    bcSetBlend(true);
-    bcSetDepthTest(false);
-    bcIdentity();
-}
-
-// Draw 2D
-void bcDrawText2D(BCFont *font, float x, float y);
-void bcDrawTexture2D(BCTexture *texture, float x, float y, float w, float h, float sx, float sy, float sw, float sh);
-void bcDrawRect2D(float x, float y, float w, float h);
-void bcDrawLines2D(int count, float vertices[]);
-
-// Draw 3D
-void bcDrawCube(float x, float y, float z, float size_x, float size_y, float size_z);
 
 // Font
 BCFont * bcCreateFontFromFile(const char *filename);

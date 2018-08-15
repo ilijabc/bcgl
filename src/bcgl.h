@@ -22,9 +22,12 @@
 #define MESH_FLAGS_TEX3         0x20
 #define MESH_FLAGS_COL3         0x40
 #define MESH_FLAGS_COL4         0x80
+#define MESH_FLAGS_IND          0x100
 
 // Draw params
 #define BC_TRIANGLES            0
+#define BC_LINES                1
+#define BC_QUADS                2
 
 typedef struct
 {
@@ -73,6 +76,7 @@ typedef struct
 
 enum BCShaderLocations
 {
+    // First 4 locations must allign with @BCMeshBufferIndex
     SHADER_LOC_A_POSITION,
     SHADER_LOC_A_NORMAL,
     SHADER_LOC_A_TEXCOORD,
@@ -165,9 +169,11 @@ int bcGetMouseX();
 int bcGetMouseY();
 bool bcIsMouseDown(int button);
 float bcGetMouseWheel();
+float bcGetMouseDeltaX();
+float bcGetMouseDeltaY();
 
 //
-// GL module
+// Gfx module
 //
 
 // Image
@@ -184,14 +190,12 @@ void bcBindTexture(BCTexture *texture);
 void bcDrawTexture(BCTexture *texture);
 
 // Shader
-BCShader * bcCreateShaderFromFile(const char *filename);
 BCShader * bcCreateShaderFromCode(const char *vsCode, const char *fsCode);
 void bcDestroyShader(BCShader *shader);
 void bcBindShader(BCShader *shader);
+BCShader * bcGetShader();
 
 // View State
-void bcLoadGL();
-void bcFreeGL();
 void bcClear();
 void bcSetColor(BCColor color);
 void bcSetBlend(bool enable);
@@ -200,11 +204,12 @@ void bcSetDepthTest(bool enable);
 // Matrix Stack
 void bcSetPerspective(float fovy, float aspect, float znear, float zfar);
 void bcSetOrtho(float left, float right, float bottom, float top, float znear, float zfar);
+void bcSetProjection(float *matrix);
 void bcPushMatrix();
 void bcPopMatrix();
 void bcIdentity();
 void bcTranslatef(float x, float y, float z);
-void bcRotatef(float angle, float x, float y, float z);
+void bcRotatef(float deg, float x, float y, float z);
 void bcScalef(float x, float y, float z);
 
 // Mesh
@@ -214,6 +219,15 @@ BCMesh * bcCreateMeshFromMemory(void *buffer);
 void bcDestroyMesh(BCMesh *mesh);
 void bcUpdateMesh(BCMesh *mesh);
 void bcDrawMesh(BCMesh *mesh);
+
+// Font
+BCFont * bcCreateFontFromFile(const char *filename);
+BCFont * bcCreateFontFromMemory(void *buffer);
+void bcDestroyFont(BCFont *font);
+
+//
+// Gfx Draw module
+//
 
 // IM
 bool bcBegin(int type);
@@ -229,7 +243,7 @@ void bcColor3f(float r, float g, float b);
 void bcColorHex(unsigned int argb);
 
 // Camera
-void bcPrepareScene3D();
+void bcPrepareScene3D(float fov);
 void bcPrepareScene2D();
 void bcPrepareSceneGUI();
 
@@ -241,11 +255,6 @@ void bcDrawLines2D(int count, float vertices[]);
 
 // Draw 3D
 void bcDrawCube(float x, float y, float z, float size_x, float size_y, float size_z);
-
-// Font
-BCFont * bcCreateFontFromFile(const char *filename);
-BCFont * bcCreateFontFromMemory(void *buffer);
-void bcDestroyFont(BCFont *font);
 
 //
 // Enums

@@ -3265,12 +3265,12 @@ mfloat_t *mat4_ortho(mfloat_t *result, mfloat_t l, mfloat_t r, mfloat_t b, mfloa
 mfloat_t *mat4_perspective(mfloat_t *result, mfloat_t fov_y, mfloat_t aspect, mfloat_t n, mfloat_t f)
 {
 	mfloat_t tan_half_fov_y = MFLOAT_C(1.0) / MTAN(fov_y * MFLOAT_C(0.5));
-	result[0] = MFLOAT_C(1.0) / aspect * tan_half_fov_y;
+	result[0] = aspect * tan_half_fov_y;
 	result[1] = MFLOAT_C(0.0);
 	result[2] = MFLOAT_C(0.0);
 	result[3] = MFLOAT_C(0.0);
 	result[4] = MFLOAT_C(0.0);
-	result[5] = MFLOAT_C(1.0) / tan_half_fov_y;
+	result[5] = tan_half_fov_y;
 	result[6] = MFLOAT_C(0.0);
 	result[7] = MFLOAT_C(0.0);
 	result[8] = MFLOAT_C(0.0);

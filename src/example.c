@@ -12,7 +12,13 @@ typedef struct mat2 mat2_t;
 typedef struct mat3 mat3_t;
 typedef struct mat4 mat4_t;
 
-static BCTexture *gameTexture = NULL;
+static BCTexture *texAlert = NULL;
+static BCTexture *texGrass = NULL;
+static struct
+{
+    float x, y, z;
+    float rx, ry, rz;
+} camera = { 0 };
 
 
 void BC_onConfig(BCConfig *config)
@@ -23,32 +29,28 @@ void BC_onConfig(BCConfig *config)
 
 void BC_onStart()
 {
-    bcLog("~~~");
-    gameTexture = bcCreateTextureFromFile("data/vpn-error.png", 0);
+    texAlert = bcCreateTextureFromFile("data/vpn-error.png", 0);
+    texGrass = bcCreateTextureFromFile("data/grass.png", 0);
+    camera.z = -2;
 }
 
 void BC_onStop()
 {
-    bcLog("~~~");
-    bcDestroyTexture(gameTexture);
+    bcDestroyTexture(texAlert);
 }
 
-static void DrawTexture(BCTexture *texture)
+static void DrawTexture(BCTexture *texture, float w, float h)
 {
-    // float w = texture->width/2;
-    // float h = texture->height/2;
-    float w = 200;
-    float h = 100;
     bcBindTexture(texture);
     bcBegin(0);
-    bcColor4f(0.5f, 1, 1, 0.5f);
+    // bcColor4f(0.5f, 1, 1, 0.5f);
     bcTexCoord2f(0, 0);
     bcVertex2f(0, 0);
     bcTexCoord2f(1, 0);
     bcVertex2f(w, 0);
     bcTexCoord2f(1, 1);
     bcVertex2f(w, h);
-    bcColor4f(1, 0.5f, 1, 0.5f);
+    // bcColor4f(1, 0.5f, 1, 0.5f);
     bcTexCoord2f(1, 1);
     bcVertex2f(w, h);
     bcTexCoord2f(0, 1);
@@ -61,29 +63,29 @@ static void DrawTexture(BCTexture *texture)
 void BC_onUpdate(float dt)
 {
     // Game logic
-    static float r = 0;
-    static float s = 1;
-    float x = bcGetMouseX();
-    float y = bcGetMouseY();
-    if (bcIsMouseDown(1))
-        r += dt*100;
-    else if (bcIsMouseDown(0))
-        r -= dt*100;
-    s += bcGetMouseWheel() * 0.01f;
-    if (bcIsKeyDown(BC_KEY_SPACE))
-        r += dt*1000;
+    if (bcIsMouseDown(0))
+    {
+        camera.rz += bcGetMouseDeltaX();
+        camera.rx += bcGetMouseDeltaY();
+    }
+    camera.z += bcGetMouseWheel() * 0.1f;
+
     // Game graphics
     bcClear();
-    bcPrepareSceneGUI();
-    bcTranslatef(x, y, 0);
-    bcRotatef(r, 0, 0, 1);
+    // game
+    bcPrepareScene3D(60);
+    bcTranslatef(camera.x, camera.y, camera.z);
+    bcRotatef(camera.rx, 1, 0, 0);
+    bcRotatef(camera.ry, 0, 1, 0);
+    bcRotatef(camera.rz, 0, 0, 1);
     bcPushMatrix();
-    bcTranslatef(-gameTexture->width/2*s, -gameTexture->height/2*s, 0);
-    bcScalef(s, s, 1);
-    DrawTexture(gameTexture);
+    bcTranslatef(-1, -1, 0);
+    DrawTexture(texGrass, 2, 2);
     bcPopMatrix();
-    DrawTexture(NULL);
-    bcBindTexture(gameTexture);
+    // gui
+    BCWindow *win = bcGetWindow();
+    bcPrepareSceneGUI();
+    DrawTexture(texAlert, texAlert->width, texAlert->height);
 }
 
 static const char *s_EventNames[] = {
