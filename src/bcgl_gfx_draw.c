@@ -7,7 +7,7 @@ static float s_TempVertexData[MESH_BUFFER_MAX][4];
 
 void bcInitGfxDraw()
 {
-    s_Mesh = bcCreateMesh(512, 0);
+    s_Mesh = bcCreateMesh(512, 512, MESH_FLAGS_POS3 | MESH_FLAGS_TEX2 | MESH_FLAGS_NORM | MESH_FLAGS_COL4, true);
 }
 
 void bcTermGfxDraw()
@@ -40,7 +40,7 @@ bool bcBeginMesh(BCMesh *mesh)
         return false;
     }
     s_TempMesh = mesh;
-    s_TempMesh->count = 0;
+    s_TempMesh->draw_count = 0;
     vec4(s_TempVertexData[MESH_BUFFER_POSITIONS], 0, 0, 0, 0);
     vec4(s_TempVertexData[MESH_BUFFER_NORMALS], 0, 0, 1, 0);
     vec4(s_TempVertexData[MESH_BUFFER_TEXCOORDS], 0, 0, 0, 0);
@@ -50,7 +50,6 @@ bool bcBeginMesh(BCMesh *mesh)
 
 void bcEndMesh()
 {
-    bcUpdateMesh(s_TempMesh);
     bcDrawMesh(s_TempMesh);
     s_TempMesh = NULL;
 }
@@ -62,7 +61,7 @@ void bcVertex3f(float x, float y, float z)
         bcLog("Mesh not locked!");
         return;
     }
-    if (s_TempMesh->count >= s_TempMesh->total)
+    if (s_TempMesh->draw_count >= s_TempMesh->num_vertices)
     {
         bcLog("Mesh limit reached!");
         return;
@@ -71,10 +70,11 @@ void bcVertex3f(float x, float y, float z)
     for (int i = 0; i < MESH_BUFFER_MAX; i++)
     {
         struct BCMeshBuffer *buff = &(s_TempMesh->buffers[i]);
-        float * ptr = &(buff->vertices[buff->comps * s_TempMesh->count]);
+        float * ptr = &(buff->vertices[buff->comps * s_TempMesh->draw_count]);
         memcpy(ptr, s_TempVertexData[i], buff->comps * sizeof(float));
     }
-    s_TempMesh->count++;
+    s_TempMesh->indices[s_TempMesh->draw_count] = s_TempMesh->draw_count;
+    s_TempMesh->draw_count++;
 }
 
 void bcVertex2f(float x, float y)
@@ -111,13 +111,14 @@ void bcColorHex(unsigned int argb)
 void bcPrepareScene3D(float fov)
 {
     BCWindow *win = bcGetWindow();
-    float aspect = (float) win->width / (float) win->height;
+    float aspect = (float) win->height / (float) win->width;
     float znear = 0.1f;
     float zfar = 10000.0f;
     bcSetPerspective(to_radians(fov), aspect, znear, zfar);
+    bcIdentity();
     bcSetBlend(false);
     bcSetDepthTest(true);
-    bcIdentity();
+    bcSetLighting(true);
 }
 
 void bcPrepareScene2D()
@@ -128,9 +129,10 @@ void bcPrepareSceneGUI()
 {
     BCWindow *win = bcGetWindow();
     bcSetOrtho(0, win->width, win->height, 0, -1, 1);
+    bcIdentity();
     bcSetBlend(true);
     bcSetDepthTest(false);
-    bcIdentity();
+    bcSetLighting(false);
 }
 
 // Draw 2D

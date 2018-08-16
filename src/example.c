@@ -3,6 +3,7 @@
 #include "bcgl.h"
 
 #include <mathc/mathc.h>
+#include <par/par_shapes.h>
 
 typedef struct vec2 vec2_t;
 typedef struct vec3 vec3_t;
@@ -19,25 +20,8 @@ static struct
     float x, y, z;
     float rx, ry, rz;
 } camera = { 0 };
+static BCMesh *meshCylinder = NULL;
 
-
-void BC_onConfig(BCConfig *config)
-{
-    config->width = 640;
-    config->height = 480;
-}
-
-void BC_onStart()
-{
-    texAlert = bcCreateTextureFromFile("data/vpn-error.png", 0);
-    texGrass = bcCreateTextureFromFile("data/grass.png", 0);
-    camera.z = -2;
-}
-
-void BC_onStop()
-{
-    bcDestroyTexture(texAlert);
-}
 
 static void DrawTexture(BCTexture *texture, float w, float h)
 {
@@ -58,6 +42,27 @@ static void DrawTexture(BCTexture *texture, float w, float h)
     bcTexCoord2f(0, 0);
     bcVertex2f(0, 0);
     bcEnd();
+    bcBindTexture(NULL);
+}
+
+void BC_onConfig(BCConfig *config)
+{
+    config->width = 640;
+    config->height = 480;
+}
+
+void BC_onStart()
+{
+    texAlert = bcCreateTextureFromFile("data/vpn-error.png", 0);
+    texGrass = bcCreateTextureFromFile("data/grass.png", 0);
+    camera.z = -2;
+    par_shapes_mesh *shape = par_shapes_create_rock(100, 2);
+    meshCylinder = bcCreateMeshFromShape(shape);
+}
+
+void BC_onStop()
+{
+    bcDestroyTexture(texAlert);
 }
 
 void BC_onUpdate(float dt)
@@ -82,10 +87,13 @@ void BC_onUpdate(float dt)
     bcTranslatef(-1, -1, 0);
     DrawTexture(texGrass, 2, 2);
     bcPopMatrix();
+    // bcSetWireframe(true);
+    bcDrawMesh(meshCylinder);
+    // bcSetWireframe(false);
     // gui
     BCWindow *win = bcGetWindow();
     bcPrepareSceneGUI();
-    DrawTexture(texAlert, texAlert->width, texAlert->height);
+    DrawTexture(texAlert, texAlert->width / 2, texAlert->height / 2);
 }
 
 static const char *s_EventNames[] = {
@@ -102,10 +110,19 @@ static const char *s_EventNames[] = {
 
 void BC_onEvent(int event, int x, int y)
 {
+    static bool wire = false;
     // bcLog("%s: [ %d, %d ]", s_EventNames[event], x, y);
     if (event == BC_EVENT_KEYPRESS)
     {
-        if (x == BC_KEY_ESCAPE)
+        switch (x)
+        {
+        case BC_KEY_ESCAPE:
             bcQuit(0);
+            break;
+        case BC_KEY_W:
+            wire = !wire;
+            bcSetWireframe(wire);
+            break;
+        }
     }
 }

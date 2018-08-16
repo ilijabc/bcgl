@@ -6,6 +6,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifdef SUPPORT_PAR_SHAPES
+#include <par/par_shapes.h>
+#endif
+
 // Texture params
 #define TEXTURE_PARAM_LINEAR    0x1
 #define TEXTURE_PARAM_NEAREST   0x2
@@ -22,7 +26,6 @@
 #define MESH_FLAGS_TEX3         0x20
 #define MESH_FLAGS_COL3         0x40
 #define MESH_FLAGS_COL4         0x80
-#define MESH_FLAGS_IND          0x100
 
 // Draw params
 #define BC_TRIANGLES            0
@@ -109,15 +112,18 @@ enum BCMeshBufferIndex
 
 typedef struct
 {
+    int num_vertices;
+    int num_indices;
     struct BCMeshBuffer
     {
         int comps;
         float *vertices;
-        unsigned int vboId;
+        unsigned int vert_vbo;
     } buffers[MESH_BUFFER_MAX];
-    int count;
-    int total;
-    bool isStatic;
+    uint16_t *indices;
+    unsigned int indx_vbo;
+    int draw_mode;
+    int draw_count;
 } BCMesh;
 
 typedef int BCFont;
@@ -200,6 +206,8 @@ void bcClear();
 void bcSetColor(BCColor color);
 void bcSetBlend(bool enable);
 void bcSetDepthTest(bool enable);
+void bcSetWireframe(bool enable);
+void bcSetLighting(bool enable);
 
 // Matrix Stack
 void bcSetPerspective(float fovy, float aspect, float znear, float zfar);
@@ -213,12 +221,15 @@ void bcRotatef(float deg, float x, float y, float z);
 void bcScalef(float x, float y, float z);
 
 // Mesh
-BCMesh * bcCreateMesh(int size, int flags);
-BCMesh * bcCreateMeshFromFile(const char *filename);
-BCMesh * bcCreateMeshFromMemory(void *buffer);
+BCMesh * bcCreateMesh(int num_vertices, int num_indices, int flags, bool allocateBuffers);
+BCMesh * bcCompileMesh(BCMesh *mesh);
 void bcDestroyMesh(BCMesh *mesh);
-void bcUpdateMesh(BCMesh *mesh);
 void bcDrawMesh(BCMesh *mesh);
+void bcDumpMesh(BCMesh *mesh);
+
+#ifdef SUPPORT_PAR_SHAPES
+BCMesh * bcCreateMeshFromShape(par_shapes_mesh *shape);
+#endif
 
 // Font
 BCFont * bcCreateFontFromFile(const char *filename);
