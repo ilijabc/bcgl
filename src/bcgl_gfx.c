@@ -619,7 +619,7 @@ void bcScalef(float x, float y, float z)
 
 // Mesh
 
-BCMesh * bcCreateMesh(int num_vertices, int num_indices, int flags, bool allocateBuffers)
+BCMesh * bcCreateMesh(int num_vertices, int num_indices, int flags)
 {
     if (num_vertices == 0)
     {
@@ -630,47 +630,36 @@ BCMesh * bcCreateMesh(int num_vertices, int num_indices, int flags, bool allocat
     mesh->num_vertices = num_vertices;
     mesh->num_indices = num_indices;
     // vertices
-    mesh->buffers[MESH_BUFFER_POSITIONS].comps =
+    mesh->comps[MESH_COMP_POSITIONS] =
         (flags & MESH_FLAGS_POS2) ? 2 :
         (flags & MESH_FLAGS_POS3) ? 3 :
         (flags & MESH_FLAGS_POS4) ? 4 :
         0;
-    mesh->buffers[MESH_BUFFER_TEXCOORDS].comps =
+    mesh->comps[MESH_COMP_TEXCOORDS] =
         (flags & MESH_FLAGS_TEX2) ? 2 :
         (flags & MESH_FLAGS_TEX3) ? 3 :
         0;
-    mesh->buffers[MESH_BUFFER_NORMALS].comps =
+    mesh->comps[MESH_COMP_NORMALS] =
         (flags & MESH_FLAGS_NORM) ? 3 :
         0;
-    mesh->buffers[MESH_BUFFER_COLORS].comps =
+    mesh->comps[MESH_COMP_COLORS] =
         (flags & MESH_FLAGS_COL3) ? 3 :
         (flags & MESH_FLAGS_COL4) ? 4 :
         0;
-    if (allocateBuffers)
+    for (int i = 0; i < MESH_COMP_MAX; i++)
     {
-        // vertices
-        for (int i = 0; i < MESH_BUFFER_MAX; i++)
-        {
-            struct BCMeshBuffer *buff = &(mesh->buffers[i]);
-            if (buff->comps > 0)
-            {
-                int buffSize = num_vertices * sizeof(float) * buff->comps;
-                buff->vertices = (float *) malloc(buffSize);
-            }
-        }
-        // indices
-        if (num_indices)
-        {
-            mesh->indices = (uint16_t *) malloc(num_indices * sizeof(uint16_t));
-        }
-        else
-        {
-            mesh->indices = NULL;
-        }
+        mesh->total_comps += mesh->comps[i];
+    }
+    // vertices
+    mesh->vertices = (float *) calloc(mesh->num_vertices * mesh->total_comps, sizeof(float));
+    // indices
+    if (num_indices)
+    {
+        mesh->indices = (uint16_t *) calloc(num_indices, sizeof(uint16_t));
     }
     // draw
     mesh->draw_mode = GL_TRIANGLES;
-    mesh->draw_count = 0;
+    mesh->draw_count = (num_indices > 0) ? num_indices : num_vertices;
     return mesh;
 }
 
@@ -681,28 +670,20 @@ BCMesh * bcCompileMesh(BCMesh *mesh)
         bcLog("Invalid mesh!");
         return NULL;
     }
-    // TODO:
-    bool isDynamic = true;
-    for (int i = 0; i < MESH_BUFFER_MAX; i++)
+    // bind vertex data
+    if (mesh->vert_vbo == 0)
     {
-        struct BCMeshBuffer *buff = &(mesh->buffers[i]);
-        if (buff->comps > 0)
-        {
-            int buffSize = mesh->draw_count * sizeof(float) * buff->comps;
-            if (buff->vert_vbo == 0)
-            {
-                glGenBuffers(1, &(buff->vert_vbo));
-                glBindBuffer(GL_ARRAY_BUFFER, buff->vert_vbo);
-                glBufferData(GL_ARRAY_BUFFER, buffSize, buff->vertices, isDynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
-                glBindBuffer(GL_ARRAY_BUFFER, 0);
-            }
-            else
-            {
-                glBindBuffer(GL_ARRAY_BUFFER, buff->vert_vbo);
-                glBufferSubData(GL_ARRAY_BUFFER, 0, buffSize, buff->vertices);
-                glBindBuffer(GL_ARRAY_BUFFER, 0);
-            }
-        }
+        glGenBuffers(1, &(mesh->vert_vbo));
+        glBindBuffer(GL_ARRAY_BUFFER, mesh->vert_vbo);
+        glBufferData(GL_ARRAY_BUFFER, mesh->num_vertices * mesh->total_comps, mesh->vertices, GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+    else
+    {
+        // TODO: GL_DYNAMIC_DRAW
+        glBindBuffer(GL_ARRAY_BUFFER, mesh->vert_vbo);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, mesh->num_vertices * mesh->total_comps, mesh->vertices);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
     // bind index data
     if (mesh->num_indices > 0) {
@@ -711,30 +692,31 @@ BCMesh * bcCompileMesh(BCMesh *mesh)
         {
             glGenBuffers(1, &(mesh->indx_vbo));
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indx_vbo);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, indxSize, mesh->indices, isDynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, indxSize, mesh->indices, GL_STATIC_DRAW);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         }
         else
         {
+            // TODO: GL_DYNAMIC_DRAW
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indx_vbo);
             glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indxSize, mesh->indices);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         }
     }
-    // mIsDynamicVbo = isDynamic;
     return mesh;
 }
 
 void bcDestroyMesh(BCMesh *mesh)
 {
-    for (int i = 0; i < MESH_BUFFER_MAX; i++)
+    if (mesh == NULL)
     {
-        struct BCMeshBuffer *buff = &(mesh->buffers[i]);
-        free(buff->vertices);
-        if (buff->vert_vbo)
-            glDeleteBuffers(1, &(buff->vert_vbo));
+        bcLog("Invalid mesh!");
+        return;
     }
+    free(mesh->vertices);
     free(mesh->indices);
+    if (mesh->vert_vbo)
+        glDeleteBuffers(1, &(mesh->vert_vbo));
     if (mesh->indx_vbo)
         glDeleteBuffers(1, &(mesh->indx_vbo));
     free(mesh);
@@ -742,14 +724,20 @@ void bcDestroyMesh(BCMesh *mesh)
 
 void bcDrawMesh(BCMesh *mesh)
 {
-#ifdef SUPPORT_GLSL
-    for (int i = 0; i < MESH_BUFFER_MAX; i++)
+    if (mesh == NULL)
     {
-        struct BCMeshBuffer *buff = &(mesh->buffers[i]);
-        if (buff->comps > 0)
+        bcLog("Invalid mesh!");
+        return;
+    }
+#ifdef SUPPORT_GLSL
+    float *vert_ptr = mesh->vertices;
+    for (int i = 0; i < MESH_COMP_MAX; i++)
+    {
+        if (mesh->comps[i] > 0)
         {
             glEnableVertexAttribArray(s_Shader->loc[i]);
-            glVertexAttribPointer(s_Shader->loc[i], buff->comps, GL_FLOAT, GL_FALSE, 0, buff->vertices);
+            glVertexAttribPointer(s_Shader->loc[i], mesh->comps[i], GL_FLOAT, GL_FALSE, mesh->total_comps * sizeof(float), vert_ptr);
+            vert_ptr += mesh->comps[i];
         }
     }
     if (mesh->indices) {
@@ -757,39 +745,39 @@ void bcDrawMesh(BCMesh *mesh)
     } else {
         glDrawArrays(mesh->draw_mode, 0, mesh->draw_count);
     }
-    for (int i = 0; i < MESH_BUFFER_MAX; i++)
+    for (int i = 0; i < MESH_COMP_MAX; i++)
     {
-        struct BCMeshBuffer *buff = &(mesh->buffers[i]);
-        if (buff->comps > 0)
+        if (mesh->comps[i] > 0)
         {
             glDisableVertexAttribArray(s_Shader->loc[i]);
         }
     }
 #else
-    for (int i = 0; i < MESH_BUFFER_MAX; i++)
+    float *vert_ptr = mesh->vertices;
+    for (int i = 0; i < MESH_COMP_MAX; i++)
     {
-        struct BCMeshBuffer *buff = &(mesh->buffers[i]);
-        if (buff->comps > 0)
+        if (mesh->comps[i] > 0)
         {
             switch (i)
             {
-            case MESH_BUFFER_POSITIONS:
+            case MESH_COMP_POSITIONS:
                 glEnableClientState(GL_VERTEX_ARRAY);
-                glVertexPointer(buff->comps, GL_FLOAT, 0, buff->vertices);
+                glVertexPointer(mesh->comps[i], GL_FLOAT, mesh->total_comps * sizeof(float), vert_ptr);
                 break;
-            case MESH_BUFFER_NORMALS:
+            case MESH_COMP_NORMALS:
                 glEnableClientState(GL_NORMAL_ARRAY);
-                glNormalPointer(GL_FLOAT, 0, buff->vertices);
+                glNormalPointer(GL_FLOAT, mesh->total_comps * sizeof(float), vert_ptr);
                 break;
-            case MESH_BUFFER_TEXCOORDS:
+            case MESH_COMP_TEXCOORDS:
                 glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-                glTexCoordPointer(buff->comps, GL_FLOAT, 0, buff->vertices);
+                glTexCoordPointer(mesh->comps[i], GL_FLOAT, mesh->total_comps * sizeof(float), vert_ptr);
                 break;
-            case MESH_BUFFER_COLORS:
+            case MESH_COMP_COLORS:
                 glEnableClientState(GL_COLOR_ARRAY);
-                glColorPointer(buff->comps, GL_FLOAT, 0, buff->vertices);
+                glColorPointer(mesh->comps[i], GL_FLOAT, mesh->total_comps * sizeof(float), vert_ptr);
                 break;
             }
+            vert_ptr += mesh->comps[i];
         }
     }
     if (mesh->indices) {
@@ -806,26 +794,46 @@ void bcDrawMesh(BCMesh *mesh)
 
 void bcDumpMesh(BCMesh *mesh)
 {
+    if (mesh == NULL)
+    {
+        bcLog("Invalid mesh!");
+        return;
+    }
     const char *bufferName[] =
     {
-        "MESH_BUFFER_POSITIONS",
-        "MESH_BUFFER_NORMALS",
-        "MESH_BUFFER_TEXCOORDS",
-        "MESH_BUFFER_COLORS",
+        "MESH_COMP_POSITIONS",
+        "MESH_COMP_NORMALS",
+        "MESH_COMP_TEXCOORDS",
+        "MESH_COMP_COLORS",
     };
     bcLog("mesh(%p):", mesh);
     bcLog("    num_vertices=%d", mesh->num_vertices);
     bcLog("    num_indices=%d", mesh->num_indices);
-    for (int i = 0; i < MESH_BUFFER_MAX; i++)
+    for (int i = 0; i < MESH_COMP_MAX; i++)
     {
-        struct BCMeshBuffer *buff = &(mesh->buffers[i]);
-        bcLog("    buffer[%s]:", bufferName[i]);
-        bcLog("        comps=%d", buff->comps);
-        bcLog("        vertices=%p", buff->vertices);
-        bcLog("        vboId=%d", buff->vert_vbo);
+        bcLog("    comps[%s]=%d", bufferName[i], mesh->comps[i]);
     }
+    bcLog("    total_comps=%d", mesh->total_comps);
+#if 0
+    bcLog("    vertices=%p", mesh->vertices);
     bcLog("    indices=%p", mesh->indices);
-    bcLog("    indx_vbo=%p", mesh->indx_vbo);
+#else
+    char str[10000] = "";
+    for (int i = 0; i < mesh->num_vertices * mesh->total_comps; i++)
+    {
+        sprintf(str, "%s %.2f", str, mesh->vertices[i]);
+    }
+    bcLog("    vertices={%s }", str);
+    strcpy(str, "");
+    for (int i = 0; i < mesh->num_indices; i++)
+    {
+        sprintf(str, "%s %d", str, mesh->indices[i]);
+    }
+    bcLog("    indices={%s }", str);
+    // bcLog("    indices=%p", mesh->indices);
+#endif
+    bcLog("    indx_vbo=%d", mesh->vert_vbo);
+    bcLog("    indx_vbo=%d", mesh->indx_vbo);
     bcLog("    draw_mode=%d", mesh->draw_mode);
     bcLog("    draw_count=%d", mesh->draw_count);
 }
@@ -833,22 +841,34 @@ void bcDumpMesh(BCMesh *mesh)
 #ifdef SUPPORT_PAR_SHAPES
 BCMesh * bcCreateMeshFromShape(par_shapes_mesh *shape)
 {
-    BCMesh *mesh = NEW_OBJECT(BCMesh);
-    mesh->num_vertices = shape->npoints;
-    mesh->num_indices = shape->ntriangles * 3;
-    mesh->buffers[MESH_BUFFER_POSITIONS].comps = 3;
-    mesh->buffers[MESH_BUFFER_TEXCOORDS].comps = 2;
-    mesh->buffers[MESH_BUFFER_NORMALS].comps = 3;
-    mesh->buffers[MESH_BUFFER_COLORS].comps = 0;
-    mesh->buffers[MESH_BUFFER_POSITIONS].vertices = shape->points;
-    mesh->buffers[MESH_BUFFER_TEXCOORDS].vertices = shape->tcoords;
-    mesh->buffers[MESH_BUFFER_NORMALS].vertices = shape->normals;
-    mesh->buffers[MESH_BUFFER_COLORS].vertices = NULL;
-    mesh->indices = shape->triangles;
-    mesh->draw_mode = GL_TRIANGLES;
-    mesh->draw_count = mesh->num_indices;
-    bcDumpMesh(mesh);
-    free(shape);
+    int format = MESH_FLAGS_POS3;
+    if (shape->normals)
+        format |= MESH_FLAGS_NORM;
+    if (shape->tcoords)
+        format |= MESH_FLAGS_TEX2;
+    BCMesh *mesh = bcCreateMesh(shape->npoints, shape->ntriangles * 3, format);
+    float *vert_ptr = mesh->vertices;
+    bcLog("sz_points=%d", sizeof(shape->points));
+    for (int i = 0; i < shape->npoints; i++)
+    {
+        int vp = 0;
+        vert_ptr[vp++] = shape->points[i * 3 + 0];
+        vert_ptr[vp++] = shape->points[i * 3 + 1];
+        vert_ptr[vp++] = shape->points[i * 3 + 2];
+        if (shape->normals)
+        {
+            vert_ptr[vp++] = shape->normals[i * 3 + 0];
+            vert_ptr[vp++] = shape->normals[i * 3 + 1];
+            vert_ptr[vp++] = shape->normals[i * 3 + 2];
+        }
+        if (shape->tcoords)
+        {
+            vert_ptr[vp++] = shape->tcoords[i * 2 + 0];
+            vert_ptr[vp++] = shape->tcoords[i * 2 + 1];
+        }
+        vert_ptr += vp;
+    }
+    memcpy(mesh->indices, shape->triangles, mesh->num_indices * sizeof(uint16_t));
     return mesh;
 }
 #endif

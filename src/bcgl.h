@@ -101,26 +101,24 @@ typedef struct
     int loc[SHADER_LOC_MAX];
 } BCShader;
 
-enum BCMeshBufferIndex
+enum BCMeshComponents
 {
-    MESH_BUFFER_POSITIONS,
-    MESH_BUFFER_NORMALS,
-    MESH_BUFFER_TEXCOORDS,
-    MESH_BUFFER_COLORS,
-    MESH_BUFFER_MAX
+    MESH_COMP_POSITIONS,
+    MESH_COMP_NORMALS,
+    MESH_COMP_TEXCOORDS,
+    MESH_COMP_COLORS,
+    MESH_COMP_MAX
 };
 
 typedef struct
 {
     int num_vertices;
     int num_indices;
-    struct BCMeshBuffer
-    {
-        int comps;
-        float *vertices;
-        unsigned int vert_vbo;
-    } buffers[MESH_BUFFER_MAX];
+    int comps[MESH_COMP_MAX];
+    int total_comps;
+    float *vertices;
     uint16_t *indices;
+    unsigned int vert_vbo;
     unsigned int indx_vbo;
     int draw_mode;
     int draw_count;
@@ -221,7 +219,7 @@ void bcRotatef(float deg, float x, float y, float z);
 void bcScalef(float x, float y, float z);
 
 // Mesh
-BCMesh * bcCreateMesh(int num_vertices, int num_indices, int flags, bool allocateBuffers);
+BCMesh * bcCreateMesh(int num_vertices, int num_indices, int flags);
 BCMesh * bcCompileMesh(BCMesh *mesh);
 void bcDestroyMesh(BCMesh *mesh);
 void bcDrawMesh(BCMesh *mesh);

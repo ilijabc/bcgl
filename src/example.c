@@ -56,8 +56,13 @@ void BC_onStart()
     texAlert = bcCreateTextureFromFile("data/vpn-error.png", 0);
     texGrass = bcCreateTextureFromFile("data/grass.png", 0);
     camera.z = -2;
-    par_shapes_mesh *shape = par_shapes_create_rock(100, 2);
-    meshCylinder = bcCreateMeshFromShape(shape);
+    // par_shapes_mesh *shape = par_shapes_create_cube();
+    par_shapes_mesh *shape1 = par_shapes_create_cylinder(100, 2);
+    par_shapes_mesh *shape2 = par_shapes_create_rock(100, 2);
+    par_shapes_merge(shape1, shape2);
+    meshCylinder = bcCreateMeshFromShape(shape1);
+    par_shapes_free_mesh(shape1);
+    par_shapes_free_mesh(shape2);
 }
 
 void BC_onStop()

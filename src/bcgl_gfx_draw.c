@@ -3,11 +3,11 @@
 static BCMesh *s_Mesh = NULL;
 
 static BCMesh * s_TempMesh = NULL;
-static float s_TempVertexData[MESH_BUFFER_MAX][4];
+static float s_TempVertexData[MESH_COMP_MAX][4];
 
 void bcInitGfxDraw()
 {
-    s_Mesh = bcCreateMesh(512, 512, MESH_FLAGS_POS3 | MESH_FLAGS_TEX2 | MESH_FLAGS_NORM | MESH_FLAGS_COL4, true);
+    s_Mesh = bcCreateMesh(512, 512, MESH_FLAGS_POS3 | MESH_FLAGS_NORM | MESH_FLAGS_TEX2 | MESH_FLAGS_COL4);
 }
 
 void bcTermGfxDraw()
@@ -41,10 +41,10 @@ bool bcBeginMesh(BCMesh *mesh)
     }
     s_TempMesh = mesh;
     s_TempMesh->draw_count = 0;
-    vec4(s_TempVertexData[MESH_BUFFER_POSITIONS], 0, 0, 0, 0);
-    vec4(s_TempVertexData[MESH_BUFFER_NORMALS], 0, 0, 1, 0);
-    vec4(s_TempVertexData[MESH_BUFFER_TEXCOORDS], 0, 0, 0, 0);
-    vec4(s_TempVertexData[MESH_BUFFER_COLORS], 1, 1, 1, 1);
+    vec4(s_TempVertexData[MESH_COMP_POSITIONS], 0, 0, 0, 0);
+    vec4(s_TempVertexData[MESH_COMP_NORMALS], 0, 0, 1, 0);
+    vec4(s_TempVertexData[MESH_COMP_TEXCOORDS], 0, 0, 0, 0);
+    vec4(s_TempVertexData[MESH_COMP_COLORS], 1, 1, 1, 1);
     return true;
 }
 
@@ -66,12 +66,12 @@ void bcVertex3f(float x, float y, float z)
         bcLog("Mesh limit reached!");
         return;
     }
-    vec4(s_TempVertexData[MESH_BUFFER_POSITIONS], x, y, z, 0);
-    for (int i = 0; i < MESH_BUFFER_MAX; i++)
+    vec4(s_TempVertexData[MESH_COMP_POSITIONS], x, y, z, 0);
+    float *vert_ptr = &(s_TempMesh->vertices[s_TempMesh->draw_count * s_TempMesh->total_comps]);
+    for (int i = 0; i < MESH_COMP_MAX; i++)
     {
-        struct BCMeshBuffer *buff = &(s_TempMesh->buffers[i]);
-        float * ptr = &(buff->vertices[buff->comps * s_TempMesh->draw_count]);
-        memcpy(ptr, s_TempVertexData[i], buff->comps * sizeof(float));
+        memcpy(vert_ptr, s_TempVertexData[i], s_TempMesh->total_comps * sizeof(float));
+        vert_ptr += s_TempMesh->comps[i];
     }
     s_TempMesh->indices[s_TempMesh->draw_count] = s_TempMesh->draw_count;
     s_TempMesh->draw_count++;
@@ -84,17 +84,17 @@ void bcVertex2f(float x, float y)
 
 void bcTexCoord2f(float u, float v)
 {
-    vec2(s_TempVertexData[MESH_BUFFER_TEXCOORDS], u, v);
+    vec2(s_TempVertexData[MESH_COMP_TEXCOORDS], u, v);
 }
 
 void bcNormalf(float x, float y, float z)
 {
-    vec3(s_TempVertexData[MESH_BUFFER_NORMALS], x, y, z);
+    vec3(s_TempVertexData[MESH_COMP_NORMALS], x, y, z);
 }
 
 void bcColor4f(float r, float g, float b, float a)
 {
-    vec4(s_TempVertexData[MESH_BUFFER_COLORS], r, g, b, a);
+    vec4(s_TempVertexData[MESH_COMP_COLORS], r, g, b, a);
 }
 
 void bcColor3f(float r, float g, float b)
