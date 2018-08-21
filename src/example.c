@@ -13,6 +13,7 @@ typedef struct mat2 mat2_t;
 typedef struct mat3 mat3_t;
 typedef struct mat4 mat4_t;
 
+static BCShader *lightingShader = NULL;
 static BCTexture *texAlert = NULL;
 static BCTexture *texGrass = NULL;
 static struct
@@ -53,9 +54,10 @@ void BC_onConfig(BCConfig *config)
 
 void BC_onStart()
 {
+    lightingShader = bcCreateShaderFromFile("data/default.glsl");
     texAlert = bcCreateTextureFromFile("data/vpn-error.png", 0);
     texGrass = bcCreateTextureFromFile("data/grass.png", 0);
-    camera.z = -2;
+    camera.z = -6;
     // par_shapes_mesh *shape = par_shapes_create_cube();
     par_shapes_mesh *shape1 = par_shapes_create_cylinder(100, 2);
     par_shapes_mesh *shape2 = par_shapes_create_rock(100, 2);
@@ -68,6 +70,7 @@ void BC_onStart()
 void BC_onStop()
 {
     bcDestroyTexture(texAlert);
+    bcDestroyShader(lightingShader);
 }
 
 void BC_onUpdate(float dt)
@@ -83,6 +86,7 @@ void BC_onUpdate(float dt)
     // Game graphics
     bcClear();
     // game
+    bcBindShader(lightingShader);
     bcPrepareScene3D(60);
     bcTranslatef(camera.x, camera.y, camera.z);
     bcRotatef(camera.rx, 1, 0, 0);
@@ -93,9 +97,11 @@ void BC_onUpdate(float dt)
     DrawTexture(texGrass, 2, 2);
     bcPopMatrix();
     // bcSetWireframe(true);
+    // bcSetColor(0.5,0,0,1);
     bcDrawMesh(meshCylinder);
     // bcSetWireframe(false);
     // gui
+    bcBindShader(NULL);
     BCWindow *win = bcGetWindow();
     bcPrepareSceneGUI();
     DrawTexture(texAlert, texAlert->width / 2, texAlert->height / 2);

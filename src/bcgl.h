@@ -32,6 +32,34 @@
 #define BC_LINES                1
 #define BC_QUADS                2
 
+// enums
+
+enum BCMeshComponents
+{
+    VERTEX_ATTR_POSITIONS,
+    VERTEX_ATTR_NORMALS,
+    VERTEX_ATTR_TEXCOORDS,
+    VERTEX_ATTR_COLORS,
+    VERTEX_ATTR_MAX
+};
+
+enum BCShaderUniforms
+{
+    SHADER_UNIFORM_PROJECTION,
+    SHADER_UNIFORM_MODELVIEW,
+    SHADER_UNIFORM_TEXTURE,
+    SHADER_UNIFORM_COLOR,
+    SHADER_UNIFORM_COLOR_ENABLED,
+    SHADER_UNIFORM_USETEXTURE,
+    SHADER_UNIFORM_ALPHATEST,
+    SHADER_UNIFORM_LIGHT_ENABLED,
+    SHADER_UNIFORM_LIGHT_POSITION,
+    SHADER_UNIFORM_LIGHT_COLOR,
+    SHADER_UNIFORM_MAX
+};
+
+// structs
+
 typedef struct
 {
     const char *title;
@@ -58,11 +86,6 @@ typedef struct
 
 typedef struct
 {
-    float r, g, b, a;
-} BCColor;
-
-typedef struct
-{
     int width;
     int height;
     int comps;
@@ -77,44 +100,20 @@ typedef struct
     int format;
 } BCTexture;
 
-enum BCShaderLocations
-{
-    // First 4 locations must allign with @BCMeshBufferIndex
-    SHADER_LOC_A_POSITION,
-    SHADER_LOC_A_NORMAL,
-    SHADER_LOC_A_TEXCOORD,
-    SHADER_LOC_A_COLOR,
-    SHADER_LOC_U_PROJECTION,
-    SHADER_LOC_U_MODELVIEW,
-    SHADER_LOC_U_TEXTURE,
-    SHADER_LOC_U_COLOR,
-    SHADER_LOC_U_USETEXTURE,
-    SHADER_LOC_U_ALPHATEST,
-    SHADER_LOC_MAX
-};
-
 typedef struct
 {
     unsigned int programId;
     unsigned int vertexShader;
     unsigned int fragmentShader;
-    int loc[SHADER_LOC_MAX];
+    int loc_attributes[VERTEX_ATTR_MAX];
+    int loc_uniforms[SHADER_UNIFORM_MAX];
 } BCShader;
-
-enum BCMeshComponents
-{
-    MESH_COMP_POSITIONS,
-    MESH_COMP_NORMALS,
-    MESH_COMP_TEXCOORDS,
-    MESH_COMP_COLORS,
-    MESH_COMP_MAX
-};
 
 typedef struct
 {
     int num_vertices;
     int num_indices;
-    int comps[MESH_COMP_MAX];
+    int comps[VERTEX_ATTR_MAX];
     int total_comps;
     float *vertices;
     uint16_t *indices;
@@ -177,6 +176,12 @@ float bcGetMouseDeltaX();
 float bcGetMouseDeltaY();
 
 //
+// Common module
+//
+
+char * bcLoadText(const char *filename);
+
+//
 // Gfx module
 //
 
@@ -194,6 +199,7 @@ void bcBindTexture(BCTexture *texture);
 void bcDrawTexture(BCTexture *texture);
 
 // Shader
+BCShader * bcCreateShaderFromFile(const char *filename);
 BCShader * bcCreateShaderFromCode(const char *vsCode, const char *fsCode);
 void bcDestroyShader(BCShader *shader);
 void bcBindShader(BCShader *shader);
@@ -201,11 +207,11 @@ BCShader * bcGetShader();
 
 // View State
 void bcClear();
-void bcSetColor(BCColor color);
-void bcSetBlend(bool enable);
-void bcSetDepthTest(bool enable);
-void bcSetWireframe(bool enable);
-void bcSetLighting(bool enable);
+void bcSetColor(float r, float g, float b, float a);
+void bcSetBlend(bool enabled);
+void bcSetDepthTest(bool enabled);
+void bcSetWireframe(bool enabled);
+void bcSetLighting(bool enabled);
 
 // Matrix Stack
 void bcSetPerspective(float fovy, float aspect, float znear, float zfar);

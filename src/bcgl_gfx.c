@@ -10,8 +10,41 @@ static float s_MatrixStack[MATRIX_STACK_SIZE][16];
 static int s_CurrentMatrix = 0;
 
 #ifdef SUPPORT_GLSL
-static BCShader *s_Shader = NULL;
+static BCShader *s_DefaultShader = NULL;
+static BCShader *s_CurrentShader = NULL;
 #endif
+
+static struct
+{
+    int index;
+    const char * name;
+} s_ShaderAttributes[] =
+{
+    { VERTEX_ATTR_POSITIONS, "a_position" },
+    { VERTEX_ATTR_NORMALS, "a_normal" },
+    { VERTEX_ATTR_TEXCOORDS, "a_texCoord" },
+    { VERTEX_ATTR_COLORS, "a_color" },
+    { -1, NULL }
+};
+
+static struct
+{
+    int index;
+    const char * name;
+} s_ShaderUniforms[] =
+{
+    { SHADER_UNIFORM_PROJECTION, "u_projection" },
+    { SHADER_UNIFORM_MODELVIEW, "u_modelView" },
+    { SHADER_UNIFORM_TEXTURE, "u_texture" },
+    { SHADER_UNIFORM_COLOR, "u_color" },
+    { SHADER_UNIFORM_COLOR_ENABLED, "u_color_enabled" },
+    { SHADER_UNIFORM_USETEXTURE, "u_useTexture" },
+    { SHADER_UNIFORM_ALPHATEST, "u_alphaTest" },
+    { SHADER_UNIFORM_LIGHT_ENABLED, "u_lightEnabled" },
+    { SHADER_UNIFORM_LIGHT_POSITION, "u_lightPosition" },
+    { SHADER_UNIFORM_LIGHT_COLOR, "u_lightColor" },
+    { -1, NULL }
+};
 
 #ifdef PLATFORM_ANDROID
 #define GLSL_CODE_HEADER \
@@ -33,18 +66,22 @@ attribute vec4 a_color;
 uniform mat4 u_projection;
 uniform mat4 u_modelView;
 uniform vec4 u_color;
-uniform bool a_color_enabled;
+uniform bool u_color_enabled;
 varying vec2 v_texCoord;
 varying vec4 v_color;
+varying vec3 v_normal;
+varying vec3 v_FragPos;
 void main()
 {
-    gl_Position = u_projection * u_modelView * vec4(a_position, 1);
     v_texCoord = a_texCoord;
-    // if (a_color_enabled) {
-        v_color = a_color;
-    // } else {
-        // v_color = vec3(1,1,1);
-    // }
+    v_color = u_color;
+    if (u_color_enabled)
+    {
+        v_color = max(v_color, a_color);
+    }
+    v_normal = a_normal;
+    v_FragPos = vec3(u_modelView * vec4(a_position, 1));
+    gl_Position = u_projection * u_modelView * vec4(a_position, 1);
 }
 );
 
@@ -52,13 +89,20 @@ static const char s_FragmentShaderCode[] =
 STRINGIFY(
 varying vec2 v_texCoord;
 varying vec4 v_color;
+varying vec3 v_normal;
+varying vec3 v_FragPos;
 uniform sampler2D u_texture;
 uniform bool u_useTexture;
 uniform bool u_alphaTest;
+uniform bool u_lightEnabled;
+uniform vec3 u_lightPosition;
+uniform vec3 u_lightColor;
 void main()
 {
+    // texture
     vec4 tex = vec4(1, 1, 1, 1);
-    if (u_useTexture) {
+    if (u_useTexture)
+    {
         tex = texture2D(u_texture, v_texCoord);
         if (u_alphaTest && tex.a < 0.1)
             discard;
@@ -75,8 +119,8 @@ void bcInitGfx()
     mat4_identity(s_ProjectionMatrix);
     mat4_identity(s_MatrixStack[0]);
 #ifdef SUPPORT_GLSL
-    s_Shader = bcCreateShaderFromCode(s_VertexShaderCode, s_FragmentShaderCode);
-    bcBindShader(s_Shader);
+    s_DefaultShader = bcCreateShaderFromCode(s_VertexShaderCode, s_FragmentShaderCode);
+    bcBindShader(NULL);
 #else
     glAlphaFunc(GL_GREATER, 0.1f);
     glDisable(GL_LIGHTING);
@@ -98,7 +142,7 @@ void bcTermGfx()
 {
     bcTermGfxDraw();
 #ifdef SUPPORT_GLSL
-    bcDestroyShader(s_Shader);
+    bcDestroyShader(s_DefaultShader);
 #endif
 }
 
@@ -259,8 +303,8 @@ void bcBindTexture(BCTexture *texture)
         glBindTexture(GL_TEXTURE_2D, texture->id);
     }
 #ifdef SUPPORT_GLSL
-    glUniform1i(s_Shader->loc[SHADER_LOC_U_USETEXTURE], texture ? 1 : 0);
-    glUniform1i(s_Shader->loc[SHADER_LOC_U_TEXTURE], 0);
+    glUniform1i(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_USETEXTURE], texture ? 1 : 0);
+    glUniform1i(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_TEXTURE], 0);
 #else
     glActiveTexture(GL_TEXTURE0);
     if (texture)
@@ -298,7 +342,7 @@ void bcDrawTexture(BCTexture *texture)
 static void applyProjectionMatrix()
 {
 #ifdef SUPPORT_GLSL
-    glUniformMatrix4fv(s_Shader->loc[SHADER_LOC_U_PROJECTION], 1, GL_FALSE, s_ProjectionMatrix);
+    glUniformMatrix4fv(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_PROJECTION], 1, GL_FALSE, s_ProjectionMatrix);
 #else
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -310,7 +354,7 @@ static void applyProjectionMatrix()
 static void applyCurrentMatrix()
 {
 #ifdef SUPPORT_GLSL
-    glUniformMatrix4fv(s_Shader->loc[SHADER_LOC_U_MODELVIEW], 1, GL_FALSE, s_MatrixStack[s_CurrentMatrix]);
+    glUniformMatrix4fv(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_MODELVIEW], 1, GL_FALSE, s_MatrixStack[s_CurrentMatrix]);
 #else
     glLoadMatrixf(s_MatrixStack[s_CurrentMatrix]);
 #endif
@@ -318,52 +362,27 @@ static void applyCurrentMatrix()
 
 static void bindShaderVariables(BCShader *shader)
 {
-    // attributes
-    // glBindAttribLocation(shader->programId, 0, "a_position");
-    // glBindAttribLocation(shader->programId, 1, "a_normal");
-    // glBindAttribLocation(shader->programId, 2, "a_texCoord");
-    // glBindAttribLocation(shader->programId, 3, "a_color");
-    shader->loc[SHADER_LOC_A_POSITION] = glGetAttribLocation(shader->programId, "a_position");
-    shader->loc[SHADER_LOC_A_NORMAL] = glGetAttribLocation(shader->programId, "a_normal");
-    shader->loc[SHADER_LOC_A_TEXCOORD] = glGetAttribLocation(shader->programId, "a_texCoord");
-    shader->loc[SHADER_LOC_A_COLOR] = glGetAttribLocation(shader->programId, "a_color");
-    // uniforms
-    shader->loc[SHADER_LOC_U_PROJECTION] = glGetUniformLocation(shader->programId, "u_projection");
-    shader->loc[SHADER_LOC_U_MODELVIEW] = glGetUniformLocation(shader->programId, "u_modelView");
-    shader->loc[SHADER_LOC_U_TEXTURE] = glGetUniformLocation(shader->programId, "u_texture");
-    shader->loc[SHADER_LOC_U_COLOR] = glGetUniformLocation(shader->programId, "u_color");
-    shader->loc[SHADER_LOC_U_USETEXTURE] = glGetUniformLocation(shader->programId, "u_useTexture");
-    shader->loc[SHADER_LOC_U_ALPHATEST] = glGetUniformLocation(shader->programId, "u_alphaTest");
-    // get attribs
-    // char tmp[64];
-    // for (int i = 0; i < MAX_SHADER_VERTEX_ATTRIB; i++) {
-    //     mVertexAttrib[i].location = glGetAttribLocation(programId, ATT_NAME_TAGS[i]);
-    //     sprintf(tmp, "%s_enabled", ATT_NAME_TAGS[i]);
-    //     mVertexAttrib[i].enabledUniform = glGetUniformLocation(programId, tmp);
-    // }
-    static const char * names[] = {
-        "SHADER_LOC_A_POSITION",
-        "SHADER_LOC_A_NORMAL",
-        "SHADER_LOC_A_TEXCOORD",
-        "SHADER_LOC_A_COLOR",
-        "SHADER_LOC_U_PROJECTION",
-        "SHADER_LOC_U_MODELVIEW",
-        "SHADER_LOC_U_TEXTURE",
-        "SHADER_LOC_U_COLOR",
-        "SHADER_LOC_U_USETEXTURE",
-        "SHADER_LOC_U_ALPHATEST",
-    };
-    for (int i = 0; i < SHADER_LOC_MAX; i++)
+    for (int i = 0; i < VERTEX_ATTR_MAX; i++)
     {
-        bcLog("loc[%s]=%d ... %s", names[i], shader->loc[i], shader->loc[i] == -1 ? "FAIL" : "OK");
+        shader->loc_attributes[i] = glGetAttribLocation(shader->programId, s_ShaderAttributes[i].name);
+    }
+    for (int i = 0; i < SHADER_UNIFORM_MAX; i++)
+    {
+        shader->loc_uniforms[i] = glGetUniformLocation(shader->programId, s_ShaderUniforms[i].name);
     }
 }
 
 static GLuint loadShader(const char *code, GLenum shaderType)
 {
+    static const char *defs[] =
+    {
+        "#define VERTEX\n",
+        "#define FRAGMENT\n"
+    };
+    const char *def = (shaderType == GL_VERTEX_SHADER) ? defs[0] : defs[1];
     // init shader source
-    const char *strings[2] = { GLSL_CODE_HEADER, code };
-    int lengths[2] = { (int) strlen(GLSL_CODE_HEADER), (int) strlen(code) };
+    const char *strings[3] = { GLSL_CODE_HEADER, def, code };
+    int lengths[3] = { (int) strlen(GLSL_CODE_HEADER), (int) strlen(def), (int) strlen(code) };
     // create and compile
     GLuint shaderId = glCreateShader(shaderType);
     if (shaderId == 0)
@@ -371,7 +390,7 @@ static GLuint loadShader(const char *code, GLenum shaderType)
         bcLog("glCreateShader failed!");
         return 0;
     }
-    glShaderSource(shaderId, 2, strings, lengths);
+    glShaderSource(shaderId, 3, strings, lengths);
     glCompileShader(shaderId);
     GLint compileError = 0;
     glGetShaderiv(shaderId, GL_COMPILE_STATUS, &compileError);
@@ -397,6 +416,14 @@ static GLuint loadShader(const char *code, GLenum shaderType)
         return 0;
     }
     return shaderId;
+}
+
+BCShader * bcCreateShaderFromFile(const char *filename)
+{
+    char *code = bcLoadText(filename);
+    if (code == NULL)
+        return NULL;
+    return bcCreateShaderFromCode(code, code);
 }
 
 BCShader * bcCreateShaderFromCode(const char *vsCode, const char *fsCode)
@@ -461,17 +488,19 @@ void bcDestroyShader(BCShader *shader)
 void bcBindShader(BCShader *shader)
 {
 #ifdef SUPPORT_GLSL
+    if (shader == NULL)
+        shader = s_DefaultShader;
+    s_CurrentShader = shader;
     glUseProgram(shader->programId);
-    applyProjectionMatrix();
-    applyCurrentMatrix();
-    s_Shader = shader;
+    // applyProjectionMatrix();
+    // applyCurrentMatrix();
 #endif
 }
 
 BCShader * bcGetShader()
 {
 #ifdef SUPPORT_GLSL
-    return s_Shader;
+    return s_CurrentShader;
 #else
     return NULL;
 #endif
@@ -484,44 +513,50 @@ void bcClear()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void bcSetColor(BCColor color)
+void bcSetColor(float r, float g, float b, float a)
 {
 #ifdef SUPPORT_GLSL
-    glUniform4fv(s_Shader->loc[SHADER_LOC_U_COLOR], 1, &(color.r));
+    glUniform4f(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_COLOR], r, g, b, a);
 #else
-    glColor4f(color.r, color.g, color.b, color.a);
+    glColor4f(r, g, b, a);
 #endif
 }
 
-void bcSetBlend(bool enable)
+void bcSetBlend(bool enabled)
 {
-    if (enable)
+    if (enabled)
         glEnable(GL_BLEND);
     else
         glDisable(GL_BLEND);
 }
 
-void bcSetDepthTest(bool enable)
+void bcSetDepthTest(bool enabled)
 {
-    if (enable)
+    if (enabled)
         glEnable(GL_DEPTH_TEST);
     else
         glDisable(GL_DEPTH_TEST);
 }
 
-void bcSetWireframe(bool enable)
+void bcSetWireframe(bool enabled)
 {
-    if (enable)
+    if (enabled)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     else
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-void bcSetLighting(bool enable)
+void bcSetLighting(bool enabled)
 {
 #ifdef SUPPORT_GLSL
+    glUniform1i(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_LIGHT_ENABLED], enabled);
+    if (enabled)
+    {
+        glUniform3f(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_LIGHT_POSITION], 0, 0, 1);
+        glUniform3f(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_LIGHT_COLOR], 1, 1, 1);
+    }
 #else
-    if (enable)
+    if (enabled)
     {
         glEnable(GL_LIGHTING);
         glEnable(GL_LIGHT0);
@@ -630,23 +665,23 @@ BCMesh * bcCreateMesh(int num_vertices, int num_indices, int flags)
     mesh->num_vertices = num_vertices;
     mesh->num_indices = num_indices;
     // vertices
-    mesh->comps[MESH_COMP_POSITIONS] =
+    mesh->comps[VERTEX_ATTR_POSITIONS] =
         (flags & MESH_FLAGS_POS2) ? 2 :
         (flags & MESH_FLAGS_POS3) ? 3 :
         (flags & MESH_FLAGS_POS4) ? 4 :
         0;
-    mesh->comps[MESH_COMP_TEXCOORDS] =
+    mesh->comps[VERTEX_ATTR_TEXCOORDS] =
         (flags & MESH_FLAGS_TEX2) ? 2 :
         (flags & MESH_FLAGS_TEX3) ? 3 :
         0;
-    mesh->comps[MESH_COMP_NORMALS] =
+    mesh->comps[VERTEX_ATTR_NORMALS] =
         (flags & MESH_FLAGS_NORM) ? 3 :
         0;
-    mesh->comps[MESH_COMP_COLORS] =
+    mesh->comps[VERTEX_ATTR_COLORS] =
         (flags & MESH_FLAGS_COL3) ? 3 :
         (flags & MESH_FLAGS_COL4) ? 4 :
         0;
-    for (int i = 0; i < MESH_COMP_MAX; i++)
+    for (int i = 0; i < VERTEX_ATTR_MAX; i++)
     {
         mesh->total_comps += mesh->comps[i];
     }
@@ -731,48 +766,49 @@ void bcDrawMesh(BCMesh *mesh)
     }
 #ifdef SUPPORT_GLSL
     float *vert_ptr = mesh->vertices;
-    for (int i = 0; i < MESH_COMP_MAX; i++)
+    for (int i = 0; i < VERTEX_ATTR_MAX; i++)
     {
         if (mesh->comps[i] > 0)
         {
-            glEnableVertexAttribArray(s_Shader->loc[i]);
-            glVertexAttribPointer(s_Shader->loc[i], mesh->comps[i], GL_FLOAT, GL_FALSE, mesh->total_comps * sizeof(float), vert_ptr);
+            glEnableVertexAttribArray(s_CurrentShader->loc_attributes[i]);
+            glVertexAttribPointer(s_CurrentShader->loc_attributes[i], mesh->comps[i], GL_FLOAT, GL_FALSE, mesh->total_comps * sizeof(float), vert_ptr);
             vert_ptr += mesh->comps[i];
         }
     }
+    glUniform1i(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_COLOR_ENABLED], mesh->comps[VERTEX_ATTR_COLORS]);
     if (mesh->indices) {
         glDrawElements(mesh->draw_mode, mesh->draw_count, GL_UNSIGNED_SHORT, mesh->indices);
     } else {
         glDrawArrays(mesh->draw_mode, 0, mesh->draw_count);
     }
-    for (int i = 0; i < MESH_COMP_MAX; i++)
+    for (int i = 0; i < VERTEX_ATTR_MAX; i++)
     {
         if (mesh->comps[i] > 0)
         {
-            glDisableVertexAttribArray(s_Shader->loc[i]);
+            glDisableVertexAttribArray(s_CurrentShader->loc_attributes[i]);
         }
     }
 #else
     float *vert_ptr = mesh->vertices;
-    for (int i = 0; i < MESH_COMP_MAX; i++)
+    for (int i = 0; i < VERTEX_ATTR_MAX; i++)
     {
         if (mesh->comps[i] > 0)
         {
             switch (i)
             {
-            case MESH_COMP_POSITIONS:
+            case VERTEX_ATTR_POSITIONS:
                 glEnableClientState(GL_VERTEX_ARRAY);
                 glVertexPointer(mesh->comps[i], GL_FLOAT, mesh->total_comps * sizeof(float), vert_ptr);
                 break;
-            case MESH_COMP_NORMALS:
+            case VERTEX_ATTR_NORMALS:
                 glEnableClientState(GL_NORMAL_ARRAY);
                 glNormalPointer(GL_FLOAT, mesh->total_comps * sizeof(float), vert_ptr);
                 break;
-            case MESH_COMP_TEXCOORDS:
+            case VERTEX_ATTR_TEXCOORDS:
                 glEnableClientState(GL_TEXTURE_COORD_ARRAY);
                 glTexCoordPointer(mesh->comps[i], GL_FLOAT, mesh->total_comps * sizeof(float), vert_ptr);
                 break;
-            case MESH_COMP_COLORS:
+            case VERTEX_ATTR_COLORS:
                 glEnableClientState(GL_COLOR_ARRAY);
                 glColorPointer(mesh->comps[i], GL_FLOAT, mesh->total_comps * sizeof(float), vert_ptr);
                 break;
@@ -801,15 +837,15 @@ void bcDumpMesh(BCMesh *mesh)
     }
     const char *bufferName[] =
     {
-        "MESH_COMP_POSITIONS",
-        "MESH_COMP_NORMALS",
-        "MESH_COMP_TEXCOORDS",
-        "MESH_COMP_COLORS",
+        "VERTEX_ATTR_POSITIONS",
+        "VERTEX_ATTR_NORMALS",
+        "VERTEX_ATTR_TEXCOORDS",
+        "VERTEX_ATTR_COLORS",
     };
     bcLog("mesh(%p):", mesh);
     bcLog("    num_vertices=%d", mesh->num_vertices);
     bcLog("    num_indices=%d", mesh->num_indices);
-    for (int i = 0; i < MESH_COMP_MAX; i++)
+    for (int i = 0; i < VERTEX_ATTR_MAX; i++)
     {
         bcLog("    comps[%s]=%d", bufferName[i], mesh->comps[i]);
     }
@@ -848,7 +884,6 @@ BCMesh * bcCreateMeshFromShape(par_shapes_mesh *shape)
         format |= MESH_FLAGS_TEX2;
     BCMesh *mesh = bcCreateMesh(shape->npoints, shape->ntriangles * 3, format);
     float *vert_ptr = mesh->vertices;
-    bcLog("sz_points=%d", sizeof(shape->points));
     for (int i = 0; i < shape->npoints; i++)
     {
         int vp = 0;
