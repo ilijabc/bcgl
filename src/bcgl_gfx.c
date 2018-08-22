@@ -14,102 +14,92 @@ static BCShader *s_DefaultShader = NULL;
 static BCShader *s_CurrentShader = NULL;
 #endif
 
+#ifdef PLATFORM_ANDROID
+#define GLSL_CODE_HEADER \
+"#version 100\n" \
+"precision mediump float;\n"
+#else
+#define GLSL_CODE_HEADER \
+"#version 120\n"
+#endif
+
 static struct
 {
-    int index;
+    enum BCVertexAttributes index;
+    const char * type;
     const char * name;
 } s_ShaderAttributes[] =
 {
-    { VERTEX_ATTR_POSITIONS, "a_position" },
-    { VERTEX_ATTR_NORMALS, "a_normal" },
-    { VERTEX_ATTR_TEXCOORDS, "a_texCoord" },
-    { VERTEX_ATTR_COLORS, "a_color" },
-    { -1, NULL }
+    { VERTEX_ATTR_POSITIONS, "vec3", "a_Position" },
+    { VERTEX_ATTR_NORMALS, "vec3", "a_Normal" },
+    { VERTEX_ATTR_TEXCOORDS, "vec2", "a_TexCoord" },
+    { VERTEX_ATTR_COLORS, "vec4", "a_Color" },
+    { VERTEX_ATTR_MAX, NULL }
 };
 
 static struct
 {
-    int index;
+    enum BCShaderUniforms index;
+    const char * type;
     const char * name;
 } s_ShaderUniforms[] =
 {
-    { SHADER_UNIFORM_PROJECTION, "u_projection" },
-    { SHADER_UNIFORM_MODELVIEW, "u_modelView" },
-    { SHADER_UNIFORM_TEXTURE, "u_texture" },
-    { SHADER_UNIFORM_COLOR, "u_color" },
-    { SHADER_UNIFORM_COLOR_ENABLED, "u_color_enabled" },
-    { SHADER_UNIFORM_USETEXTURE, "u_useTexture" },
-    { SHADER_UNIFORM_ALPHATEST, "u_alphaTest" },
-    { SHADER_UNIFORM_LIGHT_ENABLED, "u_lightEnabled" },
-    { SHADER_UNIFORM_LIGHT_POSITION, "u_lightPosition" },
-    { SHADER_UNIFORM_LIGHT_COLOR, "u_lightColor" },
-    { -1, NULL }
+    { SHADER_UNIFORM_PROJECTION, "mat4", "u_ProjectionMatrix" },
+    { SHADER_UNIFORM_MODELVIEW, "mat4", "u_ModelViewMatrix" },
+    { SHADER_UNIFORM_TEXTURE, "sampler2D", "u_Texture" },
+    { SHADER_UNIFORM_USETEXTURE, "bool", "u_UseTexture" },
+    { SHADER_UNIFORM_ALPHATEST, "bool", "u_AlphaTest" },
+    { SHADER_UNIFORM_VERTEX_COLOR_ENABLED, "bool", "u_VertexColorEnabled" },
+    { SHADER_UNIFORM_OBJECT_COLOR, "vec4", "u_ObjectColor" },
+    { SHADER_UNIFORM_DIFFUSE_COLOR, "vec4", "u_DiffuseColor" },
+    { SHADER_UNIFORM_AMBIENT_COLOR, "vec4", "u_AmbientColor" },
+    { SHADER_UNIFORM_LIGHT_ENABLED, "bool", "u_LightEnabled" },
+    { SHADER_UNIFORM_LIGHT_POSITION, "vec3", "u_LightPosition" },
+    { SHADER_UNIFORM_LIGHT_COLOR, "vec4", "u_LightColor" },
+    { SHADER_UNIFORM_MAX, NULL }
 };
 
-#ifdef PLATFORM_ANDROID
-#define GLSL_CODE_HEADER \
-    "#version 100\n" \
-    "precision mediump float;\n"
-#else
-#define GLSL_CODE_HEADER \
-    "#version 120\n"
-#endif
-
-#define STRINGIFY(src) #src
-
-static const char s_VertexShaderCode[] =
-STRINGIFY(
-attribute vec3 a_position;
-attribute vec3 a_normal;
-attribute vec2 a_texCoord;
-attribute vec4 a_color;
-uniform mat4 u_projection;
-uniform mat4 u_modelView;
-uniform vec4 u_color;
-uniform bool u_color_enabled;
-varying vec2 v_texCoord;
-varying vec4 v_color;
-varying vec3 v_normal;
-varying vec3 v_FragPos;
-void main()
-{
-    v_texCoord = a_texCoord;
-    v_color = u_color;
-    if (u_color_enabled)
-    {
-        v_color = max(v_color, a_color);
-    }
-    v_normal = a_normal;
-    v_FragPos = vec3(u_modelView * vec4(a_position, 1));
-    gl_Position = u_projection * u_modelView * vec4(a_position, 1);
-}
-);
-
-static const char s_FragmentShaderCode[] =
-STRINGIFY(
-varying vec2 v_texCoord;
-varying vec4 v_color;
-varying vec3 v_normal;
-varying vec3 v_FragPos;
-uniform sampler2D u_texture;
-uniform bool u_useTexture;
-uniform bool u_alphaTest;
-uniform bool u_lightEnabled;
-uniform vec3 u_lightPosition;
-uniform vec3 u_lightColor;
-void main()
-{
-    // texture
-    vec4 tex = vec4(1, 1, 1, 1);
-    if (u_useTexture)
-    {
-        tex = texture2D(u_texture, v_texCoord);
-        if (u_alphaTest && tex.a < 0.1)
-            discard;
-    }
-    gl_FragColor = tex * v_color;
-}
-);
+static const char s_DefaultShaderCode[] =
+"varying vec3 v_position;\n" \
+"varying vec3 v_normal;\n" \
+"varying vec2 v_texCoord;\n" \
+"varying vec4 v_color;\n" \
+"#ifdef VERTEX\n" \
+"void main()\n" \
+"{\n" \
+"    v_position = a_Position;\n" \
+"    v_texCoord = a_TexCoord;\n" \
+"    v_color = a_Color;\n" \
+"    v_normal = a_Normal;\n" \
+"    gl_Position = u_ProjectionMatrix * u_ModelViewMatrix * vec4(a_Position, 1);\n" \
+"}\n" \
+"#endif\n" \
+"#ifdef FRAGMENT\n" \
+"void main()\n" \
+"{\n" \
+"    gl_FragColor = vec4(1, 1, 1, 1);\n" \
+"    if (u_LightEnabled)\n" \
+"    {\n" \
+"        vec3 norm = normalize(v_normal);\n" \
+"        vec3 lightDir = normalize(u_LightPosition - v_position);\n" \
+"        float diff = max(dot(norm, lightDir), 0.0);\n" \
+"        vec4 diffuse = diff * u_LightColor * u_DiffuseColor;\n" \
+"        gl_FragColor *= (u_AmbientColor + diffuse) * u_ObjectColor;\n" \
+"    }\n" \
+"    if (u_UseTexture)\n" \
+"    {\n" \
+"        vec4 tex = texture2D(u_Texture, v_texCoord);\n" \
+"        if (u_AlphaTest && tex.a < 0.1)\n" \
+"            discard;\n" \
+"        gl_FragColor *= tex;\n" \
+"    }\n" \
+"    if (u_VertexColorEnabled)\n" \
+"    {\n" \
+"        gl_FragColor *= v_color;\n" \
+"    }\n" \
+"}\n" \
+"#endif\n" \
+;
 
 // private
 
@@ -119,7 +109,7 @@ void bcInitGfx()
     mat4_identity(s_ProjectionMatrix);
     mat4_identity(s_MatrixStack[0]);
 #ifdef SUPPORT_GLSL
-    s_DefaultShader = bcCreateShaderFromCode(s_VertexShaderCode, s_FragmentShaderCode);
+    s_DefaultShader = bcCreateShaderFromCode(s_DefaultShaderCode, s_DefaultShaderCode);
     bcBindShader(NULL);
 #else
     glAlphaFunc(GL_GREATER, 0.1f);
@@ -365,24 +355,41 @@ static void bindShaderVariables(BCShader *shader)
     for (int i = 0; i < VERTEX_ATTR_MAX; i++)
     {
         shader->loc_attributes[i] = glGetAttribLocation(shader->programId, s_ShaderAttributes[i].name);
+        if (shader->loc_attributes[i] == -1)
+            bcLog("Shader attribute '%s' not found!", s_ShaderAttributes[i].name);
     }
     for (int i = 0; i < SHADER_UNIFORM_MAX; i++)
     {
         shader->loc_uniforms[i] = glGetUniformLocation(shader->programId, s_ShaderUniforms[i].name);
+        if (shader->loc_uniforms[i] == -1)
+            bcLog("Shader uniform '%s' not found!", s_ShaderUniforms[i].name);
     }
 }
 
 static GLuint loadShader(const char *code, GLenum shaderType)
 {
-    static const char *defs[] =
+    bcLog("loadShader...");
+    // generate common shader code
+    char common_code[1000] = "";
+    if (shaderType == GL_VERTEX_SHADER)
     {
-        "#define VERTEX\n",
-        "#define FRAGMENT\n"
-    };
-    const char *def = (shaderType == GL_VERTEX_SHADER) ? defs[0] : defs[1];
+        strcpy(common_code, "#define VERTEX\n");
+        for (int i = 0; i < VERTEX_ATTR_MAX; i++)
+        {
+            sprintf(common_code, "%sattribute %s %s;\n", common_code, s_ShaderAttributes[i].type, s_ShaderAttributes[i].name);
+        }
+    }
+    else
+    {
+        strcpy(common_code, "#define FRAGMENT\n");
+    }
+    for (int i = 0; i < SHADER_UNIFORM_MAX; i++)
+    {
+        sprintf(common_code, "%suniform %s %s;\n", common_code, s_ShaderUniforms[i].type, s_ShaderUniforms[i].name);
+    }
     // init shader source
-    const char *strings[3] = { GLSL_CODE_HEADER, def, code };
-    int lengths[3] = { (int) strlen(GLSL_CODE_HEADER), (int) strlen(def), (int) strlen(code) };
+    const char *strings[3] = { GLSL_CODE_HEADER, common_code, code };
+    int lengths[3] = { (int) strlen(GLSL_CODE_HEADER), (int) strlen(common_code), (int) strlen(code) };
     // create and compile
     GLuint shaderId = glCreateShader(shaderType);
     if (shaderId == 0)
@@ -479,6 +486,8 @@ shader_create_error:
 
 void bcDestroyShader(BCShader *shader)
 {
+    if (shader == NULL)
+        return;
     glDeleteShader(shader->vertexShader);
     glDeleteShader(shader->fragmentShader);
     glDeleteProgram(shader->programId);
@@ -494,6 +503,11 @@ void bcBindShader(BCShader *shader)
     glUseProgram(shader->programId);
     // applyProjectionMatrix();
     // applyCurrentMatrix();
+    // default values
+    bcSetMaterialColor(SHADER_UNIFORM_OBJECT_COLOR, 1, 1, 1, 1);
+    bcSetMaterialColor(SHADER_UNIFORM_DIFFUSE_COLOR, 1, 1, 1, 1);
+    bcSetMaterialColor(SHADER_UNIFORM_AMBIENT_COLOR, 0.2f, 0.2f, 0.2f, 1);
+    bcSetMaterialColor(SHADER_UNIFORM_LIGHT_COLOR, 1, 1, 1, 1);
 #endif
 }
 
@@ -511,15 +525,6 @@ BCShader * bcGetShader()
 void bcClear()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-}
-
-void bcSetColor(float r, float g, float b, float a)
-{
-#ifdef SUPPORT_GLSL
-    glUniform4f(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_COLOR], r, g, b, a);
-#else
-    glColor4f(r, g, b, a);
-#endif
 }
 
 void bcSetBlend(bool enabled)
@@ -552,7 +557,6 @@ void bcSetLighting(bool enabled)
     glUniform1i(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_LIGHT_ENABLED], enabled);
     if (enabled)
     {
-        glUniform3f(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_LIGHT_POSITION], 0, 0, 1);
         glUniform3f(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_LIGHT_COLOR], 1, 1, 1);
     }
 #else
@@ -560,13 +564,30 @@ void bcSetLighting(bool enabled)
     {
         glEnable(GL_LIGHTING);
         glEnable(GL_LIGHT0);
-        float lightPos[] = {0.0, 0.0, 1.0, 1.0};
-        glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
     }
     else
     {
         glDisable(GL_LIGHTING);
     }
+#endif
+}
+
+void bcLightPosition(float x, float y, float z)
+{
+#ifdef SUPPORT_GLSL
+    glUniform3f(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_LIGHT_POSITION], x, y, z);
+#else
+    float lightPos[] = { x, y, z, 1 };
+    glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
+#endif
+}
+
+void bcSetMaterialColor(int loc, float r, float g, float b, float a)
+{
+#ifdef SUPPORT_GLSL
+    glUniform4f(s_CurrentShader->loc_uniforms[loc], r, g, b, a);
+#else
+    glColor4f(r, g, b, a);
 #endif
 }
 
@@ -650,6 +671,11 @@ void bcScalef(float x, float y, float z)
     mat4_scale(m1, m1, offset);
     mat4_multiply(s_MatrixStack[s_CurrentMatrix], m0, m1);
     applyCurrentMatrix();
+}
+
+float * bcGetMatrix()
+{
+    return s_MatrixStack[s_CurrentMatrix];
 }
 
 // Mesh
@@ -775,7 +801,7 @@ void bcDrawMesh(BCMesh *mesh)
             vert_ptr += mesh->comps[i];
         }
     }
-    glUniform1i(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_COLOR_ENABLED], mesh->comps[VERTEX_ATTR_COLORS]);
+    glUniform1i(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_VERTEX_COLOR_ENABLED], mesh->comps[VERTEX_ATTR_COLORS]);
     if (mesh->indices) {
         glDrawElements(mesh->draw_mode, mesh->draw_count, GL_UNSIGNED_SHORT, mesh->indices);
     } else {

@@ -34,7 +34,7 @@
 
 // enums
 
-enum BCMeshComponents
+enum BCVertexAttributes
 {
     VERTEX_ATTR_POSITIONS,
     VERTEX_ATTR_NORMALS,
@@ -48,10 +48,12 @@ enum BCShaderUniforms
     SHADER_UNIFORM_PROJECTION,
     SHADER_UNIFORM_MODELVIEW,
     SHADER_UNIFORM_TEXTURE,
-    SHADER_UNIFORM_COLOR,
-    SHADER_UNIFORM_COLOR_ENABLED,
     SHADER_UNIFORM_USETEXTURE,
     SHADER_UNIFORM_ALPHATEST,
+    SHADER_UNIFORM_VERTEX_COLOR_ENABLED,
+    SHADER_UNIFORM_OBJECT_COLOR,
+    SHADER_UNIFORM_DIFFUSE_COLOR,
+    SHADER_UNIFORM_AMBIENT_COLOR,
     SHADER_UNIFORM_LIGHT_ENABLED,
     SHADER_UNIFORM_LIGHT_POSITION,
     SHADER_UNIFORM_LIGHT_COLOR,
@@ -207,11 +209,12 @@ BCShader * bcGetShader();
 
 // View State
 void bcClear();
-void bcSetColor(float r, float g, float b, float a);
 void bcSetBlend(bool enabled);
 void bcSetDepthTest(bool enabled);
 void bcSetWireframe(bool enabled);
 void bcSetLighting(bool enabled);
+void bcLightPosition(float x, float y, float z);
+void bcSetMaterialColor(int loc, float r, float g, float b, float a);
 
 // Matrix Stack
 void bcSetPerspective(float fovy, float aspect, float znear, float zfar);
@@ -223,6 +226,7 @@ void bcIdentity();
 void bcTranslatef(float x, float y, float z);
 void bcRotatef(float deg, float x, float y, float z);
 void bcScalef(float x, float y, float z);
+float * bcGetMatrix();
 
 // Mesh
 BCMesh * bcCreateMesh(int num_vertices, int num_indices, int flags);

@@ -175,7 +175,8 @@ static void glfw_KeyCallback(GLFWwindow *nativeWindow, int keyCode, int scanCode
         return;
     }
     bcSendEvent((action == GLFW_PRESS) ? BC_EVENT_KEYPRESS : BC_EVENT_KEYRELEASE, appCode, 0);
-    s_KeyState[appCode] = (action == GLFW_PRESS);
+    // bcLog("keyevent: code=%d action=%d", appCode, action);
+    s_KeyState[appCode] = (action != GLFW_RELEASE);
 }
 
 static void glfw_CursorPosCallback(GLFWwindow *nativeWindow, double x, double y)
