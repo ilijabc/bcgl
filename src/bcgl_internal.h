@@ -13,8 +13,6 @@
 #include <GLES2/gl2.h>
 #endif
 
-#include <mathc/mathc.h>
-
 void bcInitGfx();
 void bcTermGfx();
 

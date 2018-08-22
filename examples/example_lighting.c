@@ -1,9 +1,6 @@
 #include <stdio.h>
 
-#include "bcgl.h"
-
-#include <mathc/mathc.h>
-#include <par/par_shapes.h>
+#include <bcgl.h>
 
 typedef struct vec2 vec2_t;
 typedef struct vec3 vec3_t;

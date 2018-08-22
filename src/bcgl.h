@@ -2,13 +2,12 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-
 #include <stdbool.h>
 #include <stdint.h>
 
-#ifdef SUPPORT_PAR_SHAPES
+// external dependencies
 #include <par/par_shapes.h>
-#endif
+#include <mathc/mathc.h>
 
 // Texture params
 #define TEXTURE_PARAM_LINEAR    0x1
@@ -234,10 +233,7 @@ BCMesh * bcCompileMesh(BCMesh *mesh);
 void bcDestroyMesh(BCMesh *mesh);
 void bcDrawMesh(BCMesh *mesh);
 void bcDumpMesh(BCMesh *mesh);
-
-#ifdef SUPPORT_PAR_SHAPES
 BCMesh * bcCreateMeshFromShape(par_shapes_mesh *shape);
-#endif
 
 // Font
 BCFont * bcCreateFontFromFile(const char *filename);

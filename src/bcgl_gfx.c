@@ -900,7 +900,6 @@ void bcDumpMesh(BCMesh *mesh)
     bcLog("    draw_count=%d", mesh->draw_count);
 }
 
-#ifdef SUPPORT_PAR_SHAPES
 BCMesh * bcCreateMeshFromShape(par_shapes_mesh *shape)
 {
     int format = MESH_FLAGS_POS3;
@@ -932,7 +931,6 @@ BCMesh * bcCreateMeshFromShape(par_shapes_mesh *shape)
     memcpy(mesh->indices, shape->triangles, mesh->num_indices * sizeof(uint16_t));
     return mesh;
 }
-#endif
 
 // Font
 BCFont * bcCreateFontFromFile(const char *filename);
