@@ -102,10 +102,6 @@ void bcColor3f(float r, float g, float b)
     bcColor4f(r, g, b, 1.0f);
 }
 
-void bcColorHex(unsigned int argb)
-{
-}
-
 // Camera
 
 void bcPrepareScene3D(float fov)
@@ -118,7 +114,7 @@ void bcPrepareScene3D(float fov)
     bcIdentity();
     bcSetBlend(false);
     bcSetDepthTest(true);
-    bcSetLighting(true);
+    // bcSetLighting(true);
 }
 
 void bcPrepareScene2D()
@@ -137,7 +133,27 @@ void bcPrepareSceneGUI()
 
 // Draw 2D
 void bcDrawText2D(BCFont *font, float x, float y);
-void bcDrawTexture2D(BCTexture *texture, float x, float y, float w, float h, float sx, float sy, float sw, float sh);
+
+void bcDrawTexture2D(BCTexture *texture, float x, float y, float w, float h, float sx, float sy, float sw, float sh)
+{
+    bcBindTexture(texture);
+    // TODO: bcBegin(GL_TRIANGLES);
+    bcBegin(0);
+    bcTexCoord2f(sx, sy);
+    bcVertex2f(x, y);
+    bcTexCoord2f(sx + sw, sy);
+    bcVertex2f(x + w, y);
+    bcTexCoord2f(sx + sw, sy + sh);
+    bcVertex2f(x + w, y + h);
+    bcTexCoord2f(sx + sw, sy + sh);
+    bcVertex2f(x + w, y + h);
+    bcTexCoord2f(sx, sy + sh);
+    bcVertex2f(x, y + h);
+    bcTexCoord2f(sx, sy);
+    bcVertex2f(x, y);
+    bcEnd();
+}
+
 void bcDrawRect2D(float x, float y, float w, float h);
 void bcDrawLines2D(int count, float vertices[]);
 

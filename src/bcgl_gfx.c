@@ -1,6 +1,7 @@
 #include "bcgl_internal.h"
 
 #include <stb/stb_image.h>
+#include <stb/stb_truetype.h>
 
 #define MATRIX_STACK_SIZE 32
 
@@ -8,6 +9,13 @@ static float s_BackgroundColor[4] = { 0.3f, 0.3f, 0.3f, 1.0f };
 static float s_ProjectionMatrix[16];
 static float s_MatrixStack[MATRIX_STACK_SIZE][16];
 static int s_CurrentMatrix = 0;
+static BCMaterial s_DefaultMaterial =
+{
+    /*objectColor*/ { 1, 1, 1, 1 },
+    /*diffuseColor*/ { 1, 1, 1, 1 },
+    /*ambientColor*/ { 0.2f, 0.2f, 0.2f, 1 },
+    /*texture*/ NULL
+};
 
 #ifdef SUPPORT_GLSL
 static BCShader *s_DefaultShader = NULL;
@@ -214,16 +222,16 @@ BCTexture * bcCreateTextureFromImage(BCImage *image, int flags)
     switch (image->comps)
     {
     case 1:
+        internalFormat = GL_ALPHA8;
         texture->format = GL_ALPHA;
-        internalFormat = GL_ALPHA;
         break;
     case 3:
+        internalFormat = GL_RGB8;
         texture->format = GL_RGB;
-        internalFormat = GL_RGB;
         break;
     case 4:
+        internalFormat = GL_RGBA8;
         texture->format = GL_RGBA;
-        internalFormat = GL_BGRA;
         break;
     }
     // glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -302,29 +310,6 @@ void bcBindTexture(BCTexture *texture)
     else
         glDisable(GL_TEXTURE_2D);
 #endif
-}
-
-void bcDrawTexture(BCTexture *texture)
-{
-    float w = texture->width;
-    float h = texture->height;
-
-    bcBindTexture(texture);
-    // TODO: bcBegin(GL_TRIANGLES);
-    bcBegin(0);
-    bcTexCoord2f(0, 0);
-    bcVertex2f(0, 0);
-    bcTexCoord2f(1, 0);
-    bcVertex2f(w, 0);
-    bcTexCoord2f(1, 1);
-    bcVertex2f(w, h);
-    bcTexCoord2f(1, 1);
-    bcVertex2f(w, h);
-    bcTexCoord2f(0, 1);
-    bcVertex2f(0, h);
-    bcTexCoord2f(0, 0);
-    bcVertex2f(0, 0);
-    bcEnd();
 }
 
 // Shader
@@ -427,10 +412,12 @@ static GLuint loadShader(const char *code, GLenum shaderType)
 
 BCShader * bcCreateShaderFromFile(const char *filename)
 {
-    char *code = bcLoadText(filename);
+    char *code = bcLoadTextFile(filename);
     if (code == NULL)
         return NULL;
-    return bcCreateShaderFromCode(code, code);
+    BCShader *shader = bcCreateShaderFromCode(code, code);
+    free(code);
+    return shader;
 }
 
 BCShader * bcCreateShaderFromCode(const char *vsCode, const char *fsCode)
@@ -494,6 +481,11 @@ void bcDestroyShader(BCShader *shader)
     free(shader);
 }
 
+void dumpColor(const char *tag, BCColor color)
+{
+    bcLog("%s => [ %.2f %.2f %.2f %.2f ]", tag, color.r, color.g, color.b, color.a);
+}
+
 void bcBindShader(BCShader *shader)
 {
 #ifdef SUPPORT_GLSL
@@ -503,11 +495,7 @@ void bcBindShader(BCShader *shader)
     glUseProgram(shader->programId);
     // applyProjectionMatrix();
     // applyCurrentMatrix();
-    // default values
-    bcSetMaterialColor(SHADER_UNIFORM_OBJECT_COLOR, 1, 1, 1, 1);
-    bcSetMaterialColor(SHADER_UNIFORM_DIFFUSE_COLOR, 1, 1, 1, 1);
-    bcSetMaterialColor(SHADER_UNIFORM_AMBIENT_COLOR, 0.2f, 0.2f, 0.2f, 1);
-    bcSetMaterialColor(SHADER_UNIFORM_LIGHT_COLOR, 1, 1, 1, 1);
+    bcSetMaterial(s_DefaultMaterial);
 #endif
 }
 
@@ -557,7 +545,7 @@ void bcSetLighting(bool enabled)
     glUniform1i(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_LIGHT_ENABLED], enabled);
     if (enabled)
     {
-        glUniform3f(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_LIGHT_COLOR], 1, 1, 1);
+        glUniform4f(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_LIGHT_COLOR], 1, 1, 1, 1);
     }
 #else
     if (enabled)
@@ -582,12 +570,25 @@ void bcLightPosition(float x, float y, float z)
 #endif
 }
 
-void bcSetMaterialColor(int loc, float r, float g, float b, float a)
+void bcSetMaterial(BCMaterial material)
 {
 #ifdef SUPPORT_GLSL
-    glUniform4f(s_CurrentShader->loc_uniforms[loc], r, g, b, a);
+    glUniform4fv(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_OBJECT_COLOR], 1, (float *) &(material.objectColor));
+    glUniform4fv(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_DIFFUSE_COLOR], 1, (float *) &(material.diffuseColor));
+    glUniform4fv(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_AMBIENT_COLOR], 1, (float *) &(material.ambientColor));
+    if (material.texture)
+        bcBindTexture(material.texture);
 #else
-    glColor4f(r, g, b, a);
+    // glColor4f(r, g, b, a);
+#endif
+}
+
+void bcSetObjectColor(BCColor color)
+{
+#ifdef SUPPORT_GLSL
+    glUniform4fv(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_OBJECT_COLOR], 1, (float *) &(color));
+#else
+    glColor4f(color.r, color.g, color.b, color.a);
 #endif
 }
 
@@ -933,6 +934,62 @@ BCMesh * bcCreateMeshFromShape(par_shapes_mesh *shape)
 }
 
 // Font
-BCFont * bcCreateFontFromFile(const char *filename);
-BCFont * bcCreateFontFromMemory(void *buffer);
-void bcDestroyFont(BCFont *font);
+BCFont * bcCreateFontFromFile(const char *filename, float height)
+{
+    BCFont *font = NULL;
+    unsigned char *ttf_buffer = NULL;
+    int size = bcLoadDataFile(filename, &ttf_buffer);
+    if (size > 0)
+    {
+        font = bcCreateFontFromMemory(ttf_buffer, size, height);
+        free(ttf_buffer);
+    }
+    return font;
+}
+
+BCFont * bcCreateFontFromMemory(void *buffer, int size, float height)
+{
+    BCFont *font = NEW_OBJECT(BCFont);
+    font->cdata = calloc(96, sizeof(stbtt_bakedchar));
+    BCImage *image = bcCreateImage(512, 512, 1);
+    stbtt_BakeFontBitmap(buffer, 0, height, image->data, 512, 512, 32, 96, (stbtt_bakedchar *) font->cdata); // no guarantee this fits!
+    font->texture = bcCreateTextureFromImage(image, 0);
+    bcDestroyImage(image);
+    return font;
+}
+
+void bcDestroyFont(BCFont *font)
+{
+    bcDestroyTexture(font->texture);
+    free(font->cdata);
+    free(font);
+}
+
+void bcDrawText(BCFont *font, float x, float y, char *text)
+{
+    bcBindTexture(font->texture);
+    bcBegin(0);
+    while (*text)
+    {
+        if (*text >= 32 && *text < 128)
+        {
+            stbtt_aligned_quad q;
+            stbtt_GetBakedQuad(font->cdata, 512, 512, *text-32, &x, &y, &q, 1); // 1=opengl & d3d10+, 0=d3d9
+            bcTexCoord2f(q.s0,q.t0);
+            bcVertex2f(q.x0,q.y0);
+            bcTexCoord2f(q.s1,q.t0);
+            bcVertex2f(q.x1,q.y0);
+            bcTexCoord2f(q.s1,q.t1);
+            bcVertex2f(q.x1,q.y1);
+            bcTexCoord2f(q.s1,q.t1);
+            bcVertex2f(q.x1,q.y1);
+            bcTexCoord2f(q.s0,q.t1);
+            bcVertex2f(q.x0,q.y1);
+            bcTexCoord2f(q.s0,q.t0);
+            bcVertex2f(q.x0,q.y0);
+        }
+        ++text;
+    }
+    bcEnd();
+    bcBindTexture(NULL);
+}

@@ -124,7 +124,24 @@ typedef struct
     int draw_count;
 } BCMesh;
 
-typedef int BCFont;
+typedef struct
+{
+    BCTexture *texture;
+    void *cdata;
+} BCFont;
+
+typedef struct
+{
+    float r, g, b, a;
+} BCColor;
+
+typedef struct
+{
+    BCColor objectColor;
+    BCColor diffuseColor;
+    BCColor ambientColor;
+    BCTexture *texture;
+} BCMaterial;
 
 #define NEW_OBJECT(T) (T*)calloc(1, sizeof(T));
 #define DELETE_OBJECT(obj) free(obj);
@@ -138,13 +155,11 @@ typedef int BCFont;
 //
 // !!! OVERRIDE THIS IN APP !!!
 //
-#ifdef BC_MAIN_LOOP
 void BC_onConfig(BCConfig *config);
 void BC_onStart();
 void BC_onStop();
 void BC_onEvent(int event, int x, int y);
 void BC_onUpdate(float dt);
-#endif
 
 //
 // Core module
@@ -180,7 +195,10 @@ float bcGetMouseDeltaY();
 // Common module
 //
 
-char * bcLoadText(const char *filename);
+char * bcLoadTextFile(const char *filename);
+int bcLoadDataFile(const char *filename, unsigned char **out);
+BCColor bcHexToColor(uint32_t rgba);
+float bcGetRandom();
 
 //
 // Gfx module
@@ -197,7 +215,6 @@ BCTexture * bcCreateTextureFromFile(const char *filename, int flags);
 BCTexture * bcCreateTextureFromImage(BCImage *image, int flags);
 void bcDestroyTexture(BCTexture *texture);
 void bcBindTexture(BCTexture *texture);
-void bcDrawTexture(BCTexture *texture);
 
 // Shader
 BCShader * bcCreateShaderFromFile(const char *filename);
@@ -213,7 +230,8 @@ void bcSetDepthTest(bool enabled);
 void bcSetWireframe(bool enabled);
 void bcSetLighting(bool enabled);
 void bcLightPosition(float x, float y, float z);
-void bcSetMaterialColor(int loc, float r, float g, float b, float a);
+void bcSetMaterial(BCMaterial material);
+void bcSetObjectColor(BCColor color);
 
 // Matrix Stack
 void bcSetPerspective(float fovy, float aspect, float znear, float zfar);
@@ -236,9 +254,10 @@ void bcDumpMesh(BCMesh *mesh);
 BCMesh * bcCreateMeshFromShape(par_shapes_mesh *shape);
 
 // Font
-BCFont * bcCreateFontFromFile(const char *filename);
-BCFont * bcCreateFontFromMemory(void *buffer);
+BCFont * bcCreateFontFromFile(const char *filename, float height);
+BCFont * bcCreateFontFromMemory(void *buffer, int size, float height);
 void bcDestroyFont(BCFont *font);
+void bcDrawText(BCFont *font, float x, float y, char *text);
 
 //
 // Gfx Draw module
@@ -255,7 +274,6 @@ void bcTexCoord2f(float u, float v);
 void bcNormalf(float x, float y, float z);
 void bcColor4f(float r, float g, float b, float a);
 void bcColor3f(float r, float g, float b);
-void bcColorHex(unsigned int argb);
 
 // Camera
 void bcPrepareScene3D(float fov);

@@ -10,6 +10,8 @@ typedef struct mat2 mat2_t;
 typedef struct mat3 mat3_t;
 typedef struct mat4 mat4_t;
 
+static const BCColor ColorWhite = {1,1,1,1};
+
 static BCShader *exampleShader = NULL;
 static BCTexture *texAlert = NULL;
 static BCTexture *texGrass = NULL;
@@ -17,8 +19,12 @@ static struct
 {
     vec3_t pos;
     vec3_t rot;
-} camera = { 0 };
-static BCMesh *meshCylinder = NULL;
+} camera =
+{
+    { 0, 0, -6 },
+    { 0, 0, 0}
+};
+static BCMesh *rockMesh = NULL;
 // light
 static struct
 {
@@ -27,24 +33,30 @@ static struct
     bool followCamera;
 } light = { 0 };
 
-static void DrawTexture(BCTexture *texture, float w, float h)
+static BCFont *myFont = NULL;
+
+static BCColor s_Colors[30];
+
+static void DrawTiles(BCTexture *texture, float w, float h, float tx, float ty)
 {
+    float ww = w / 2;
+    float hh = h / 2;
     bcBindTexture(texture);
     bcBegin(0);
     // bcColor4f(0.5f, 1, 1, 0.5f);
     bcTexCoord2f(0, 0);
-    bcVertex2f(0, 0);
-    bcTexCoord2f(1, 0);
-    bcVertex2f(w, 0);
-    bcTexCoord2f(1, 1);
-    bcVertex2f(w, h);
+    bcVertex2f(-ww, -hh);
+    bcTexCoord2f(tx, 0);
+    bcVertex2f(ww, -hh);
+    bcTexCoord2f(tx, ty);
+    bcVertex2f(ww, hh);
     // bcColor4f(1, 0.5f, 1, 0.5f);
-    bcTexCoord2f(1, 1);
-    bcVertex2f(w, h);
-    bcTexCoord2f(0, 1);
-    bcVertex2f(0, h);
+    bcTexCoord2f(tx, ty);
+    bcVertex2f(ww, hh);
+    bcTexCoord2f(0, ty);
+    bcVertex2f(-ww, hh);
     bcTexCoord2f(0, 0);
-    bcVertex2f(0, 0);
+    bcVertex2f(-ww, -hh);
     bcEnd();
     bcBindTexture(NULL);
 }
@@ -98,25 +110,32 @@ void BC_onStart()
 {
     exampleShader = bcCreateShaderFromFile("data/default.glsl");
     bcBindShader(exampleShader);
-    texAlert = bcCreateTextureFromFile("data/vpn-error.png", 0);
+    // texAlert = bcCreateTextureFromFile("data/vpn-error.png", 0);
+    texAlert = bcCreateTextureFromFile("data/platforms.png", 0);
     texGrass = bcCreateTextureFromFile("data/grass.png", 0);
     camera.pos.z = -6;
-    // par_shapes_mesh *shape = par_shapes_create_cube();
-    par_shapes_mesh *shape1 = par_shapes_create_rock(100, 2);
-    // par_shapes_mesh *shape2 = par_shapes_create_cylinder(100, 2);
-    // par_shapes_merge(shape1, shape2);
-    meshCylinder = bcCreateMeshFromShape(shape1);
-    par_shapes_free_mesh(shape1);
-    // par_shapes_free_mesh(shape2);
+    par_shapes_mesh *rockShape = par_shapes_create_rock(100, 2);
+    rockMesh = bcCreateMeshFromShape(rockShape);
+    par_shapes_free_mesh(rockShape);
     // light
     par_shapes_mesh *sphere = par_shapes_create_parametric_sphere(10, 10);
     light.mesh = bcCreateMeshFromShape(sphere);
     par_shapes_free_mesh(sphere);
     light.pos = svec3(0, 0, 1);
+    // font
+    myFont = bcCreateFontFromFile("data/vera.ttf", 20);
+    for (int i = 0; i < 30; i++)
+    {
+        s_Colors[i].r = bcGetRandom();
+        s_Colors[i].g = bcGetRandom();
+        s_Colors[i].b = bcGetRandom();
+        s_Colors[i].a = 1;
+    }
 }
 
 void BC_onStop()
 {
+    bcDestroyFont(myFont);
     bcDestroyTexture(texAlert);
     bcDestroyShader(exampleShader);
 }
@@ -148,13 +167,14 @@ void BC_onUpdate(float dt)
     //
     bcClear();
     // game
-    bcLightPosition(light.pos.x, light.pos.y, light.pos.z);
     bcPrepareScene3D(60);
+    bcSetLighting(true);
+    bcLightPosition(light.pos.x, light.pos.y, light.pos.z);
     // camera
-    bcTranslatef(camera.pos.x, camera.pos.y, camera.pos.z);
     bcRotatef(camera.rot.x, 1, 0, 0);
     bcRotatef(camera.rot.y, 0, 1, 0);
     bcRotatef(camera.rot.z, 0, 0, 1);
+    bcTranslatef(camera.pos.x, camera.pos.y, camera.pos.z);
     if (light.followCamera)
     {
         light.pos = getMatrixPosition(bcGetMatrix(), 0, 0, 0);
@@ -164,15 +184,22 @@ void BC_onUpdate(float dt)
         DrawLight();
     }
     // scene
-    bcPushMatrix();
-    bcTranslatef(-1, -1, 0);
-    DrawTexture(texGrass, 2, 2);
-    bcPopMatrix();
-    bcDrawMesh(meshCylinder);
+    DrawTiles(texGrass, 20, 20, 20, 20);
+    for (int i = 0; i < 24; i++)
+    {
+        bcPushMatrix();
+        bcTranslatef((i/6)*2-4, (i%6)*2-4, 0);
+        bcSetObjectColor(s_Colors[i]);
+        bcDrawMesh(rockMesh);
+        bcPopMatrix();
+    }
     // gui
     BCWindow *win = bcGetWindow();
     bcPrepareSceneGUI();
-    DrawTexture(texAlert, texAlert->width / 2, texAlert->height / 2);
+    bcDrawTexture2D(texAlert, win->width - texAlert->width / 2, 0, texAlert->width / 2, texAlert->height / 2, 0, 0, 1, 1);
+    bcSetObjectColor(ColorWhite);
+    bcDrawTexture2D(texAlert, win->width - texAlert->width / 2, texAlert->height, texAlert->width / 2, texAlert->height / 2, 0, 0, 1, 1);
+    bcDrawText(myFont, 30, 30, "This is a test print!");
 }
 
 static const char *s_EventNames[] = {

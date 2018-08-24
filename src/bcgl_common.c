@@ -1,27 +1,62 @@
 #include "bcgl.h"
 
-char * bcLoadText(const char *filename)
+char * bcLoadTextFile(const char *filename)
 {
-    FILE *textFile;
-    char *text = NULL;
-    int count = 0;
-    if (filename != NULL)
+    if (filename == NULL)
+        return NULL;
+    FILE *fp = fopen(filename, "rt");
+    if (fp == NULL)
     {
-        textFile = fopen(filename, "rt");
-        if (textFile != NULL)
-        {
-            fseek(textFile, 0, SEEK_END);
-            count = ftell(textFile);
-            rewind(textFile);
-            if (count > 0)
-            {
-                text = (char *)malloc(sizeof(char)*(count + 1));
-                count = fread(text, sizeof(char), count, textFile);
-                text[count] = '\0';
-            }
-            fclose(textFile);
-        }
-        else bcLog("[%s] Text file could not be opened", filename);
+        bcLog("Text file '%s' not found!", filename);
+        return NULL;
     }
+    fseek(fp, 0, SEEK_END);
+    int len = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    char *text = (char *) malloc(sizeof(char) * (len + 1));
+    fread(text, sizeof(char), len, fp);
+    text[len] = '\0';
+    fclose(fp);
     return text;
+}
+
+int bcLoadDataFile(const char *filename, unsigned char **out)
+{
+    if (filename == NULL)
+        return 0;
+    FILE *fp = fopen(filename, "rb");
+    if (fp == NULL)
+    {
+        bcLog("Data file '%s' not found!", filename);
+        return 0;
+    }
+    fseek(fp, 0, SEEK_END);
+    int len = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    *out = (char *) malloc(sizeof(char) * len);
+    fread(*out, sizeof(char), len, fp);
+    fclose(fp);
+    return len;
+}
+
+BCColor bcHexToColor(uint32_t rgba)
+{
+    BCColor color;
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    color.a = (rgba & 0xff) / 255.0f;
+    color.b = (rgba >> 8 & 0xff) / 255.0f;
+    color.g = (rgba >> 16 & 0xff) / 255.0f;
+    color.r = (rgba >> 24 & 0xff) / 255.0f;
+#else
+    color.r = (rgba & 0xff) / 255.0f;
+    color.g = (rgba >> 8 & 0xff) / 255.0f;
+    color.b = (rgba >> 16 & 0xff) / 255.0f;
+    color.a = (rgba >> 24 & 0xff) / 255.0f;
+#endif
+    return color;
+}
+
+float bcGetRandom()
+{
+    return (float) rand() / (float) RAND_MAX;
 }
