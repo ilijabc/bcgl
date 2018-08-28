@@ -1,9 +1,18 @@
 @echo off
 
-mkdir debug
-cd debug
+set BCGL_ROOT="%cd%"
 
-cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug ..\
+if "%BCGL_OUTPUT%" == "" (
+    set BCGL_OUTPUT="debug"
+)
+
+echo BCGL_OUTPUT=%BCGL_OUTPUT%
+echo BCGL_ROOT=%BCGL_ROOT%
+
+mkdir %BCGL_OUTPUT%
+cd %BCGL_OUTPUT%
+
+cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug %BCGL_ROOT%
 if not %ERRORLEVEL% == 0 (
     exit /B 1
 )
@@ -13,9 +22,11 @@ if not %ERRORLEVEL% == 0 (
     exit /B 2
 )
 
-cd ..
+cd %BCGL_ROOT%
+
 if "%1" == "run" (
-    debug\src\bcgl.exe
+    echo Run %2 %cd%
+    %2
 )
 
 exit /B 0
