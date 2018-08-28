@@ -1,0 +1,57 @@
+#include "bcmath.h"
+
+#include <stdio.h>
+void testmath()
+{
+    printf("test math!\n");
+}
+
+//
+// vec2
+//
+
+vec2_t vec2(float x, float y)
+{
+    vec2_t result = { x, y };
+    return result;
+}
+
+//
+// vec3
+//
+
+vec3_t vec3(float x, float y, float z)
+{
+    vec3_t result = { x, y, z };
+    return result;
+}
+
+//
+// vec4
+//
+
+vec4_t vec4(float x, float y, float z, float w)
+{
+    vec4_t result = { 0 };
+    return result;
+}
+
+//
+// mat3
+//
+
+mat3_t mat3_identity()
+{
+    mat3_t result = { 0 };
+    return result;
+}
+
+//
+// mat4
+//
+
+mat4_t mat4_identity()
+{
+    mat4_t result = { 0 };
+    return result;
+}

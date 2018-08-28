@@ -46,6 +46,7 @@ enum BCShaderUniforms
 {
     SHADER_UNIFORM_PROJECTION,
     SHADER_UNIFORM_MODELVIEW,
+    SHADER_UNIFORM_CAMERA,
     SHADER_UNIFORM_TEXTURE,
     SHADER_UNIFORM_USETEXTURE,
     SHADER_UNIFORM_ALPHATEST,
@@ -67,7 +68,7 @@ typedef struct
     int width;
     int height;
     int mode;
-    int vsync;
+    bool vsync;
     int msaa;
 } BCConfig;
 
@@ -243,6 +244,8 @@ void bcIdentity();
 void bcTranslatef(float x, float y, float z);
 void bcRotatef(float deg, float x, float y, float z);
 void bcScalef(float x, float y, float z);
+void bcLoadMatrix(float *m);
+void bcUpdateCameraMatrix();
 float * bcGetMatrix();
 
 // Mesh

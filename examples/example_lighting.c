@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include <bcgl.h>
+#include <bcgl_opengl.h>
 
 typedef struct vec2 vec2_t;
 typedef struct vec3 vec3_t;
@@ -9,6 +10,49 @@ typedef struct quat quat_t;
 typedef struct mat2 mat2_t;
 typedef struct mat3 mat3_t;
 typedef struct mat4 mat4_t;
+
+typedef struct
+{
+    BCMesh *mesh;
+    BCColor color;
+    vec3_t pos;
+    float rot;
+    float scale;
+} GameObject;
+
+GameObject * createGameObject(float x, float y)
+{
+    GameObject *obj = NEW_OBJECT(GameObject);
+    par_shapes_mesh *rockShape = par_shapes_create_parametric_sphere(10, 10);
+    // par_shapes_mesh *rockShape = par_shapes_create_rock(bcGetRandom() * 100, 2);
+    obj->mesh = bcCreateMeshFromShape(rockShape);
+    obj->color.r = 1; //bcGetRandom();
+    obj->color.g = 1; //bcGetRandom();
+    obj->color.b = 1; //bcGetRandom();
+    obj->color.a = 1;
+    obj->pos = svec3(x, y, 0);
+    obj->rot = bcGetRandom() * 360;
+    obj->scale = 0.1 + bcGetRandom() * 2;
+    par_shapes_free_mesh(rockShape);
+    return obj;
+}
+
+void drawGameObject(GameObject *obj)
+{
+    bcPushMatrix();
+    bcTranslatef(obj->pos.x, obj->pos.y, obj->pos.z);
+    bcRotatef(obj->rot, 0, 0, 1);
+    bcScalef(obj->scale, obj->scale, obj->scale);
+    bcSetObjectColor(obj->color);
+    bcDrawMesh(obj->mesh);
+    bcPopMatrix();
+}
+
+void destroyGameObject(GameObject *obj)
+{
+    bcDestroyMesh(obj->mesh);
+    free(obj);
+}
 
 static const BCColor ColorWhite = {1,1,1,1};
 
@@ -24,18 +68,26 @@ static struct
     { 0, 0, -6 },
     { 0, 0, 0}
 };
-static BCMesh *rockMesh = NULL;
 // light
 static struct
 {
     BCMesh *mesh;
     vec3_t pos, stored_pos;
     bool followCamera;
+    bool shader;
 } light = { 0 };
+
+static struct
+{
+    int counter;
+    float stored_time;
+} fpsCounter = { 0 };
 
 static BCFont *myFont = NULL;
 
-static BCColor s_Colors[30];
+#define MAX_OBJECTS 36
+GameObject *objects[MAX_OBJECTS];
+
 
 static void DrawTiles(BCTexture *texture, float w, float h, float tx, float ty)
 {
@@ -104,37 +156,37 @@ void BC_onConfig(BCConfig *config)
 {
     config->width = 640;
     config->height = 480;
+    // config->vsync = true;
 }
 
 void BC_onStart()
 {
-    exampleShader = bcCreateShaderFromFile("data/default.glsl");
-    bcBindShader(exampleShader);
-    // texAlert = bcCreateTextureFromFile("data/vpn-error.png", 0);
+    // exampleShader = bcCreateShaderFromFile("data/default.glsl");
+    // bcBindShader(exampleShader);
     texAlert = bcCreateTextureFromFile("data/platforms.png", 0);
     texGrass = bcCreateTextureFromFile("data/grass.png", 0);
     camera.pos.z = -6;
-    par_shapes_mesh *rockShape = par_shapes_create_rock(100, 2);
-    rockMesh = bcCreateMeshFromShape(rockShape);
-    par_shapes_free_mesh(rockShape);
     // light
     par_shapes_mesh *sphere = par_shapes_create_parametric_sphere(10, 10);
     light.mesh = bcCreateMeshFromShape(sphere);
     par_shapes_free_mesh(sphere);
     light.pos = svec3(0, 0, 1);
+    light.followCamera = true;
     // font
     myFont = bcCreateFontFromFile("data/vera.ttf", 20);
-    for (int i = 0; i < 30; i++)
+    // init objects
+    for (int i = 0; i < MAX_OBJECTS; i++)
     {
-        s_Colors[i].r = bcGetRandom();
-        s_Colors[i].g = bcGetRandom();
-        s_Colors[i].b = bcGetRandom();
-        s_Colors[i].a = 1;
+        objects[i] = createGameObject((i/6)*2-4, (i%6)*2-4);
     }
 }
 
 void BC_onStop()
 {
+    for (int i = 0; i < MAX_OBJECTS; i++)
+    {
+        destroyGameObject(objects[i]);
+    }
     bcDestroyFont(myFont);
     bcDestroyTexture(texAlert);
     bcDestroyShader(exampleShader);
@@ -168,38 +220,47 @@ void BC_onUpdate(float dt)
     bcClear();
     // game
     bcPrepareScene3D(60);
+    // light
     bcSetLighting(true);
     bcLightPosition(light.pos.x, light.pos.y, light.pos.z);
+    if (light.followCamera)
+        bcUpdateCameraMatrix();
     // camera
+    bcTranslatef(0, 0, camera.pos.z);
     bcRotatef(camera.rot.x, 1, 0, 0);
     bcRotatef(camera.rot.y, 0, 1, 0);
     bcRotatef(camera.rot.z, 0, 0, 1);
-    bcTranslatef(camera.pos.x, camera.pos.y, camera.pos.z);
-    if (light.followCamera)
+    bcTranslatef(camera.pos.x, camera.pos.y, 0);
+    glEnable(GL_CULL_FACE);
+    if (!light.followCamera)
     {
-        light.pos = getMatrixPosition(bcGetMatrix(), 0, 0, 0);
-    }
-    else
-    {
+        bcUpdateCameraMatrix();
         DrawLight();
     }
     // scene
     DrawTiles(texGrass, 20, 20, 20, 20);
-    for (int i = 0; i < 24; i++)
+    bcBindTexture(texGrass);
+    for (int i = 0; i < MAX_OBJECTS; i++)
     {
-        bcPushMatrix();
-        bcTranslatef((i/6)*2-4, (i%6)*2-4, 0);
-        bcSetObjectColor(s_Colors[i]);
-        bcDrawMesh(rockMesh);
-        bcPopMatrix();
+        drawGameObject(objects[i]);
     }
+    bcBindTexture(NULL);
     // gui
     BCWindow *win = bcGetWindow();
     bcPrepareSceneGUI();
-    bcDrawTexture2D(texAlert, win->width - texAlert->width / 2, 0, texAlert->width / 2, texAlert->height / 2, 0, 0, 1, 1);
     bcSetObjectColor(ColorWhite);
+    bcDrawTexture2D(texAlert, win->width - texAlert->width / 2, 0, texAlert->width / 2, texAlert->height / 2, 0, 0, 1, 1);
     bcDrawTexture2D(texAlert, win->width - texAlert->width / 2, texAlert->height, texAlert->width / 2, texAlert->height / 2, 0, 0, 1, 1);
-    bcDrawText(myFont, 30, 30, "This is a test print!");
+    // fps
+    static char s_fps[50] = "BCGL";
+    if (bcGetTime() > fpsCounter.stored_time + 1)
+    {
+        sprintf(s_fps, "FPS:%d", fpsCounter.counter);
+        fpsCounter.counter = 0;
+        fpsCounter.stored_time = bcGetTime();
+    }
+    fpsCounter.counter++;
+    bcDrawText(myFont, 30, 30, s_fps);
 }
 
 static const char *s_EventNames[] = {
@@ -235,6 +296,10 @@ void BC_onEvent(int event, int x, int y)
                 light.stored_pos = light.pos;
             else
                 light.pos = light.stored_pos;
+            break;
+        case BC_KEY_F3:
+            light.shader = !light.shader;
+            bcBindShader(light.shader ? exampleShader : NULL);
             break;
         }
     }

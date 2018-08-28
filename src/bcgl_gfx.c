@@ -54,6 +54,7 @@ static struct
 {
     { SHADER_UNIFORM_PROJECTION, "mat4", "u_ProjectionMatrix" },
     { SHADER_UNIFORM_MODELVIEW, "mat4", "u_ModelViewMatrix" },
+    { SHADER_UNIFORM_CAMERA, "mat4", "u_CameraMatrix" },
     { SHADER_UNIFORM_TEXTURE, "sampler2D", "u_Texture" },
     { SHADER_UNIFORM_USETEXTURE, "bool", "u_UseTexture" },
     { SHADER_UNIFORM_ALPHATEST, "bool", "u_AlphaTest" },
@@ -75,31 +76,32 @@ static const char s_DefaultShaderCode[] =
 "#ifdef VERTEX\n" \
 "void main()\n" \
 "{\n" \
-"    v_position = a_Position;\n" \
+"    v_position = (u_ModelViewMatrix * vec4(a_Position, 1)).xyz;\n" \
+"    v_normal = (u_ModelViewMatrix * vec4(a_Normal, 0)).xyz;\n" \
 "    v_texCoord = a_TexCoord;\n" \
 "    v_color = a_Color;\n" \
-"    v_normal = a_Normal;\n" \
 "    gl_Position = u_ProjectionMatrix * u_ModelViewMatrix * vec4(a_Position, 1);\n" \
 "}\n" \
 "#endif\n" \
 "#ifdef FRAGMENT\n" \
 "void main()\n" \
 "{\n" \
-"    gl_FragColor = vec4(1, 1, 1, 1);\n" \
-"    if (u_LightEnabled)\n" \
-"    {\n" \
-"        vec3 norm = normalize(v_normal);\n" \
-"        vec3 lightDir = normalize(u_LightPosition - v_position);\n" \
-"        float diff = max(dot(norm, lightDir), 0.0);\n" \
-"        vec4 diffuse = diff * u_LightColor * u_DiffuseColor;\n" \
-"        gl_FragColor *= (u_AmbientColor + diffuse) * u_ObjectColor;\n" \
-"    }\n" \
+"    gl_FragColor = u_ObjectColor;\n" \
 "    if (u_UseTexture)\n" \
 "    {\n" \
 "        vec4 tex = texture2D(u_Texture, v_texCoord);\n" \
 "        if (u_AlphaTest && tex.a < 0.1)\n" \
 "            discard;\n" \
 "        gl_FragColor *= tex;\n" \
+"    }\n" \
+"    if (u_LightEnabled)\n" \
+"    {\n" \
+"        vec3 norm = normalize(v_normal);\n" \
+"        vec3 lightPos = (u_CameraMatrix * vec4(u_LightPosition, 1)).xyz;\n" \
+"        vec3 lightDir = normalize(lightPos - v_position);\n" \
+"        float diff = max(dot(norm, lightDir), 0.0);\n" \
+"        vec4 diffuse = diff * u_LightColor * u_DiffuseColor;\n" \
+"        gl_FragColor *= (u_AmbientColor + diffuse);\n" \
 "    }\n" \
 "    if (u_VertexColorEnabled)\n" \
 "    {\n" \
@@ -672,6 +674,19 @@ void bcScalef(float x, float y, float z)
     mat4_scale(m1, m1, offset);
     mat4_multiply(s_MatrixStack[s_CurrentMatrix], m0, m1);
     applyCurrentMatrix();
+}
+
+void bcLoadMatrix(float *m)
+{
+    mat4_assign(s_MatrixStack[s_CurrentMatrix], m);
+    applyCurrentMatrix();
+}
+
+void bcUpdateCameraMatrix()
+{
+#ifdef SUPPORT_GLSL
+    glUniformMatrix4fv(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_CAMERA], 1, GL_FALSE, s_MatrixStack[s_CurrentMatrix]);
+#endif
 }
 
 float * bcGetMatrix()
