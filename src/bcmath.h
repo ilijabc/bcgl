@@ -1,5 +1,7 @@
 #pragma once
 
+#include <math.h>
+
 typedef struct vec2 {
     union {
         struct {
@@ -36,15 +38,9 @@ typedef struct vec4 {
 typedef struct mat3 {
     union {
         struct {
-            float m11;
-            float m21;
-            float m31;
-            float m12;
-            float m22;
-            float m32;
-            float m13;
-            float m23;
-            float m33;
+            float m11, m21, m31;
+            float m12, m22, m32;
+            float m13, m23, m33;
         };
         float v[9];
     };
@@ -53,38 +49,85 @@ typedef struct mat3 {
 typedef struct mat4 {
     union {
         struct {
-            float m11;
-            float m21;
-            float m31;
-            float m41;
-            float m12;
-            float m22;
-            float m32;
-            float m42;
-            float m13;
-            float m23;
-            float m33;
-            float m43;
-            float m14;
-            float m24;
-            float m34;
-            float m44;
+            float m11, m21, m31, m41;
+            float m12, m22, m32, m42;
+            float m13, m23, m33, m43;
+            float m14, m24, m34, m44;
         };
         float v[16];
     };
 } mat4_t;
+
+#define to_radians(degrees) (degrees * M_PI / 180.0f)
+#define to_degrees(radians) (radians * 180.0f / M_PI)
+#define signf(f) ((f < 0) ? -1 : ((f > 0) ? 1 : 0))
+#define randomf() ((float) rand() / (float) RAND_MAX)
 
 // vec2
 vec2_t vec2(float x, float y);
 
 // vec3
 vec3_t vec3(float x, float y, float z);
+vec3_t vec3_from_array(float *v);
+// bool vec3_is_zero(vec3_t v0);
+// bool vec3_is_equal(vec3_t v0, vec3_t v1);
+vec3_t vec3_zero();
+vec3_t vec3_one();
+vec3_t vec3_sign(vec3_t v0);
+vec3_t vec3_add(vec3_t v0, vec3_t v1);
+vec3_t vec3_add_f(vec3_t v0, float f);
+vec3_t vec3_subtract(vec3_t v0, vec3_t v1);
+vec3_t vec3_subtract_f(vec3_t v0, float f);
+vec3_t vec3_multiply(vec3_t v0, vec3_t v1);
+vec3_t vec3_multiply_f(vec3_t v0, float f);
+vec3_t vec3_multiply_mat3(vec3_t v0, mat3_t m0);
+vec3_t vec3_divide(vec3_t v0, vec3_t v1);
+vec3_t vec3_divide_f(vec3_t v0, float f);
+vec3_t vec3_snap(vec3_t v0, vec3_t v1);
+vec3_t vec3_snap_f(vec3_t v0, float f);
+vec3_t vec3_negative(vec3_t v0);
+vec3_t vec3_abs(vec3_t v0);
+vec3_t vec3_floor(vec3_t v0);
+vec3_t vec3_ceil(vec3_t v0);
+vec3_t vec3_round(vec3_t v0);
+vec3_t vec3_max(vec3_t v0, vec3_t v1);
+vec3_t vec3_min(vec3_t v0, vec3_t v1);
+vec3_t vec3_clamp(vec3_t v0, vec3_t v1, vec3_t v2);
+vec3_t vec3_cross(vec3_t v0, vec3_t v1);
+vec3_t vec3_normalize(vec3_t v0);
+float vec3_dot(vec3_t v0, vec3_t v1);
+vec3_t vec3_project(vec3_t v0, vec3_t v1);
+vec3_t vec3_slide(vec3_t v0, vec3_t normal);
+vec3_t vec3_reflect(vec3_t v0, vec3_t normal);
+vec3_t vec3_lerp(vec3_t v0, vec3_t v1, float f);
+vec3_t vec3_bezier3(vec3_t v0, vec3_t v1, vec3_t v2, float f);
+vec3_t vec3_bezier4(vec3_t v0, vec3_t v1, vec3_t v2, vec3_t v3, float f);
+float vec3_length(vec3_t v0);
+float vec3_length_squared(vec3_t v0);
+float vec3_distance(vec3_t v0, vec3_t v1);
+float vec3_distance_squared(vec3_t v0, vec3_t v1);
 
 // vec4
 vec4_t vec4(float x, float y, float z, float w);
-
-// mat3
-mat3_t mat3_identity();
+vec4_t vec4_from_vec3(vec3_t v, float w);
+vec4_t vec4_multiply_mat4(mat4_t m, vec4_t v);
 
 // mat4
+mat4_t mat4_from_array(float *v);
 mat4_t mat4_identity();
+mat4_t mat4_perspective(float fov_y, float aspect, float near, float far);
+mat4_t mat4_ortho(float left, float right, float bottom, float top, float near, float far);
+mat4_t mat4_translation(float x, float y, float z);
+mat4_t mat4_rotation_x(float rad);
+mat4_t mat4_rotation_y(float rad);
+mat4_t mat4_rotation_z(float rad);
+mat4_t mat4_rotation_axis(float rad, float x, float y, float z);
+mat4_t mat4_scaling(float x, float y, float z);
+mat4_t mat4_multiply(mat4_t m1, mat4_t m2);
+mat4_t mat4_translate(mat4_t m1, float x, float y, float z);
+mat4_t mat4_rotate_x(mat4_t m1, float rad);
+mat4_t mat4_rotate_y(mat4_t m1, float rad);
+mat4_t mat4_rotate_z(mat4_t m1, float rad);
+mat4_t mat4_rotate_axis(mat4_t m1, float rad, float x, float y, float z);
+mat4_t mat4_scale(mat4_t m1, float x, float y, float z);
+mat4_t mat4_transpose(mat4_t m);
