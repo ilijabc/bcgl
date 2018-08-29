@@ -2,14 +2,7 @@
 
 #include <bcgl.h>
 #include <bcgl_opengl.h>
-
-typedef struct vec2 vec2_t;
-typedef struct vec3 vec3_t;
-typedef struct vec4 vec4_t;
-typedef struct quat quat_t;
-typedef struct mat2 mat2_t;
-typedef struct mat3 mat3_t;
-typedef struct mat4 mat4_t;
+#include <bcmath.h>
 
 typedef struct
 {
@@ -20,39 +13,8 @@ typedef struct
     float scale;
 } GameObject;
 
-GameObject * createGameObject(float x, float y)
-{
-    GameObject *obj = NEW_OBJECT(GameObject);
-    par_shapes_mesh *rockShape = par_shapes_create_parametric_sphere(10, 10);
-    // par_shapes_mesh *rockShape = par_shapes_create_rock(bcGetRandom() * 100, 2);
-    obj->mesh = bcCreateMeshFromShape(rockShape);
-    obj->color.r = 1; //bcGetRandom();
-    obj->color.g = 1; //bcGetRandom();
-    obj->color.b = 1; //bcGetRandom();
-    obj->color.a = 1;
-    obj->pos = svec3(x, y, 0);
-    obj->rot = bcGetRandom() * 360;
-    obj->scale = 0.1 + bcGetRandom() * 2;
-    par_shapes_free_mesh(rockShape);
-    return obj;
-}
-
-void drawGameObject(GameObject *obj)
-{
-    bcPushMatrix();
-    bcTranslatef(obj->pos.x, obj->pos.y, obj->pos.z);
-    bcRotatef(obj->rot, 0, 0, 1);
-    bcScalef(obj->scale, obj->scale, obj->scale);
-    bcSetObjectColor(obj->color);
-    bcDrawMesh(obj->mesh);
-    bcPopMatrix();
-}
-
-void destroyGameObject(GameObject *obj)
-{
-    bcDestroyMesh(obj->mesh);
-    free(obj);
-}
+#define MAX_OBJECTS 36
+static GameObject *objects[MAX_OBJECTS];
 
 static const BCColor ColorWhite = {1,1,1,1};
 
@@ -85,9 +47,43 @@ static struct
 
 static BCFont *myFont = NULL;
 
-#define MAX_OBJECTS 36
-GameObject *objects[MAX_OBJECTS];
+GameObject * createGameObject(float x, float y)
+{
+    GameObject *obj = NEW_OBJECT(GameObject);
+    par_shapes_mesh *rockShape = par_shapes_create_parametric_sphere(10, 10);
+    // par_shapes_mesh *rockShape = par_shapes_create_rock(bcGetRandom() * 100, 2);
+    obj->mesh = bcCreateMeshFromShape(rockShape);
+    obj->color.r = 1; //bcGetRandom();
+    obj->color.g = 1; //bcGetRandom();
+    obj->color.b = 1; //bcGetRandom();
+    obj->color.a = 1;
+    obj->pos = vec3(x, y, 0);
+    obj->rot = bcGetRandom() * 360;
+    obj->scale = 0.1 + bcGetRandom() * 2;
+    par_shapes_free_mesh(rockShape);
+    return obj;
+}
 
+void drawGameObject(mat4_t cm, GameObject *obj)
+{
+    // bcPushMatrix();
+    // bcTranslatef(obj->pos.x, obj->pos.y, obj->pos.z);
+    // bcRotatef(obj->rot, 0, 0, 1);
+    // bcScalef(obj->scale, obj->scale, obj->scale);
+    cm = mat4_translate(cm, obj->pos.x, obj->pos.y, obj->pos.z);
+    cm = mat4_rotate_z(cm, obj->rot);
+    cm = mat4_scale(cm, obj->scale, obj->scale, obj->scale);
+    bcSetModelViewMatrix(cm.v);
+    bcSetObjectColor(obj->color);
+    bcDrawMesh(obj->mesh);
+    // bcPopMatrix();
+}
+
+void destroyGameObject(GameObject *obj)
+{
+    bcDestroyMesh(obj->mesh);
+    free(obj);
+}
 
 static void DrawTiles(BCTexture *texture, float w, float h, float tx, float ty)
 {
@@ -113,14 +109,17 @@ static void DrawTiles(BCTexture *texture, float w, float h, float tx, float ty)
     bcBindTexture(NULL);
 }
 
-static void DrawLight()
+static void DrawLight(mat4_t cm)
 {
     bcSetLighting(false);
-    bcPushMatrix();
-    bcTranslatef(light.pos.x, light.pos.y, light.pos.z);
-    bcScalef(0.1f, 0.1f, 0.1f);
+    // bcPushMatrix();
+    // bcTranslatef(light.pos.x, light.pos.y, light.pos.z);
+    // bcScalef(0.1f, 0.1f, 0.1f);
+    cm = mat4_translate(cm, light.pos.x, light.pos.y, light.pos.z);
+    cm = mat4_scale(cm, 0.1f, 0.1f, 0.1f);
+    bcSetModelViewMatrix(cm.v);
     bcDrawMesh(light.mesh);
-    bcPopMatrix();
+    // bcPopMatrix();
     bcSetLighting(true);
 }
 
@@ -136,22 +135,6 @@ static void dumpMatrix(float *m)
     bcLog("[%s ]", s);
 }
 
-static vec3_t getMatrixPosition(float *mvm, float x, float y, float z)
-{
-    float offset[4] =
-    {
-        -mvm[12] + x,
-        -mvm[13] + y,
-        -mvm[14] + z,
-        1
-    };
-    float temp_m[16];
-    mat4_assign(temp_m, mvm);
-    mat4_transpose(temp_m, temp_m);
-    vec4_multiply_mat4(offset, offset, temp_m);
-    return svec3(offset[0], offset[1], offset[2]);
-}
-
 void BC_onConfig(BCConfig *config)
 {
     config->width = 640;
@@ -161,8 +144,8 @@ void BC_onConfig(BCConfig *config)
 
 void BC_onStart()
 {
-    // exampleShader = bcCreateShaderFromFile("data/default.glsl");
-    // bcBindShader(exampleShader);
+    exampleShader = bcCreateShaderFromFile("data/default.glsl");
+    bcBindShader(exampleShader);
     texAlert = bcCreateTextureFromFile("data/platforms.png", 0);
     texGrass = bcCreateTextureFromFile("data/grass.png", 0);
     camera.pos.z = -6;
@@ -170,7 +153,7 @@ void BC_onStart()
     par_shapes_mesh *sphere = par_shapes_create_parametric_sphere(10, 10);
     light.mesh = bcCreateMeshFromShape(sphere);
     par_shapes_free_mesh(sphere);
-    light.pos = svec3(0, 0, 1);
+    light.pos = vec3(0, 0, 1);
     light.followCamera = true;
     // font
     myFont = bcCreateFontFromFile("data/vera.ttf", 20);
@@ -222,27 +205,43 @@ void BC_onUpdate(float dt)
     bcPrepareScene3D(60);
     // light
     bcSetLighting(true);
-    bcLightPosition(light.pos.x, light.pos.y, light.pos.z);
-    if (light.followCamera)
-        bcUpdateCameraMatrix();
+    // bcLightPosition(light.pos.x, light.pos.y, light.pos.z);
+    // if (light.followCamera)
+    //     bcUpdateCameraMatrix();
     // camera
+#if 0
     bcTranslatef(0, 0, camera.pos.z);
     bcRotatef(camera.rot.x, 1, 0, 0);
     bcRotatef(camera.rot.y, 0, 1, 0);
     bcRotatef(camera.rot.z, 0, 0, 1);
     bcTranslatef(camera.pos.x, camera.pos.y, 0);
-    glEnable(GL_CULL_FACE);
+#else
+    static mat4_t cm;
+    cm = mat4_translation(0, 0, camera.pos.z);
+    cm = mat4_rotate_x(cm, to_radians(camera.rot.x));
+    cm = mat4_rotate_y(cm, to_radians(camera.rot.y));
+    cm = mat4_rotate_z(cm, to_radians(camera.rot.z));
+    cm = mat4_translate(cm, camera.pos.x, camera.pos.y, 0);
+    bcSetModelViewMatrix(cm.v);
+#endif
     if (!light.followCamera)
     {
-        bcUpdateCameraMatrix();
-        DrawLight();
+        vec4_t pos = vec4_multiply_mat4(cm, vec4_from_vec3(light.pos, 1));
+        bcLightPosition(pos.x, pos.y, pos.z);
+        // bcUpdateCameraMatrix();
+        DrawLight(cm);
+    }
+    else
+    {
+        bcLightPosition(light.pos.x, light.pos.y, light.pos.z);
     }
     // scene
+    bcSetModelViewMatrix(cm.v);
     DrawTiles(texGrass, 20, 20, 20, 20);
     bcBindTexture(texGrass);
     for (int i = 0; i < MAX_OBJECTS; i++)
     {
-        drawGameObject(objects[i]);
+        drawGameObject(cm, objects[i]);
     }
     bcBindTexture(NULL);
     // gui

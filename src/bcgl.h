@@ -7,7 +7,6 @@
 
 // external dependencies
 #include <par/par_shapes.h>
-#include <mathc/mathc.h>
 
 // Texture params
 #define TEXTURE_PARAM_LINEAR    0x1
@@ -46,7 +45,6 @@ enum BCShaderUniforms
 {
     SHADER_UNIFORM_PROJECTION,
     SHADER_UNIFORM_MODELVIEW,
-    SHADER_UNIFORM_CAMERA,
     SHADER_UNIFORM_TEXTURE,
     SHADER_UNIFORM_USETEXTURE,
     SHADER_UNIFORM_ALPHATEST,
@@ -233,20 +231,8 @@ void bcSetLighting(bool enabled);
 void bcLightPosition(float x, float y, float z);
 void bcSetMaterial(BCMaterial material);
 void bcSetObjectColor(BCColor color);
-
-// Matrix Stack
-void bcSetPerspective(float fovy, float aspect, float znear, float zfar);
-void bcSetOrtho(float left, float right, float bottom, float top, float znear, float zfar);
-void bcSetProjection(float *matrix);
-void bcPushMatrix();
-void bcPopMatrix();
-void bcIdentity();
-void bcTranslatef(float x, float y, float z);
-void bcRotatef(float deg, float x, float y, float z);
-void bcScalef(float x, float y, float z);
-void bcLoadMatrix(float *m);
-void bcUpdateCameraMatrix();
-float * bcGetMatrix();
+void bcSetProjectionMatrix(float *m);
+void bcSetModelViewMatrix(float *m);
 
 // Mesh
 BCMesh * bcCreateMesh(int num_vertices, int num_indices, int flags);
@@ -277,6 +263,18 @@ void bcTexCoord2f(float u, float v);
 void bcNormalf(float x, float y, float z);
 void bcColor4f(float r, float g, float b, float a);
 void bcColor3f(float r, float g, float b);
+
+// Matrix Stack
+void bcSetPerspective(float fovy, float aspect, float znear, float zfar);
+void bcSetOrtho(float left, float right, float bottom, float top, float znear, float zfar);
+void bcPushMatrix();
+void bcPopMatrix();
+void bcIdentity();
+void bcTranslatef(float x, float y, float z);
+void bcRotatef(float deg, float x, float y, float z);
+void bcScalef(float x, float y, float z);
+void bcLoadMatrix(float *m);
+float * bcGetMatrix();
 
 // Camera
 void bcPrepareScene3D(float fov);

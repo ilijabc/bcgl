@@ -3,12 +3,7 @@
 #include <stb/stb_image.h>
 #include <stb/stb_truetype.h>
 
-#define MATRIX_STACK_SIZE 32
-
 static float s_BackgroundColor[4] = { 0.3f, 0.3f, 0.3f, 1.0f };
-static float s_ProjectionMatrix[16];
-static float s_MatrixStack[MATRIX_STACK_SIZE][16];
-static int s_CurrentMatrix = 0;
 static BCMaterial s_DefaultMaterial =
 {
     /*objectColor*/ { 1, 1, 1, 1 },
@@ -54,7 +49,6 @@ static struct
 {
     { SHADER_UNIFORM_PROJECTION, "mat4", "u_ProjectionMatrix" },
     { SHADER_UNIFORM_MODELVIEW, "mat4", "u_ModelViewMatrix" },
-    { SHADER_UNIFORM_CAMERA, "mat4", "u_CameraMatrix" },
     { SHADER_UNIFORM_TEXTURE, "sampler2D", "u_Texture" },
     { SHADER_UNIFORM_USETEXTURE, "bool", "u_UseTexture" },
     { SHADER_UNIFORM_ALPHATEST, "bool", "u_AlphaTest" },
@@ -97,8 +91,7 @@ static const char s_DefaultShaderCode[] =
 "    if (u_LightEnabled)\n" \
 "    {\n" \
 "        vec3 norm = normalize(v_normal);\n" \
-"        vec3 lightPos = (u_CameraMatrix * vec4(u_LightPosition, 1)).xyz;\n" \
-"        vec3 lightDir = normalize(lightPos - v_position);\n" \
+"        vec3 lightDir = normalize(u_LightPosition - v_position);\n" \
 "        float diff = max(dot(norm, lightDir), 0.0);\n" \
 "        vec4 diffuse = diff * u_LightColor * u_DiffuseColor;\n" \
 "        gl_FragColor *= (u_AmbientColor + diffuse);\n" \
@@ -116,8 +109,6 @@ static const char s_DefaultShaderCode[] =
 void bcInitGfx()
 {
     // matrix stack
-    mat4_identity(s_ProjectionMatrix);
-    mat4_identity(s_MatrixStack[0]);
 #ifdef SUPPORT_GLSL
     s_DefaultShader = bcCreateShaderFromCode(s_DefaultShaderCode, s_DefaultShaderCode);
     bcBindShader(NULL);
@@ -315,27 +306,6 @@ void bcBindTexture(BCTexture *texture)
 }
 
 // Shader
-
-static void applyProjectionMatrix()
-{
-#ifdef SUPPORT_GLSL
-    glUniformMatrix4fv(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_PROJECTION], 1, GL_FALSE, s_ProjectionMatrix);
-#else
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glLoadMatrixf(s_ProjectionMatrix);
-    glMatrixMode(GL_MODELVIEW);
-#endif
-}
-
-static void applyCurrentMatrix()
-{
-#ifdef SUPPORT_GLSL
-    glUniformMatrix4fv(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_MODELVIEW], 1, GL_FALSE, s_MatrixStack[s_CurrentMatrix]);
-#else
-    glLoadMatrixf(s_MatrixStack[s_CurrentMatrix]);
-#endif
-}
 
 static void bindShaderVariables(BCShader *shader)
 {
@@ -594,104 +564,24 @@ void bcSetObjectColor(BCColor color)
 #endif
 }
 
-// Matrix Stack
-
-void bcSetPerspective(float fovy, float aspect, float znear, float zfar)
-{
-    mat4_perspective(s_ProjectionMatrix, fovy, aspect, znear, zfar);
-    applyProjectionMatrix();
-}
-
-void bcSetOrtho(float left, float right, float bottom, float top, float znear, float zfar)
-{
-    mat4_ortho(s_ProjectionMatrix, left, right, bottom, top, znear, zfar);
-    applyProjectionMatrix();
-}
-
-void bcSetProjection(float *matrix)
-{
-    mat4_assign(s_ProjectionMatrix, matrix);
-    applyProjectionMatrix();
-}
-
-void bcPushMatrix()
-{
-    if (s_CurrentMatrix == MATRIX_STACK_SIZE - 1)
-    {
-        bcLog("Max matrix stack reached!");
-        return;
-    }
-    s_CurrentMatrix++;
-    mat4_assign(s_MatrixStack[s_CurrentMatrix], s_MatrixStack[s_CurrentMatrix - 1]);
-    applyCurrentMatrix();
-}
-
-void bcPopMatrix()
-{
-    if (s_CurrentMatrix == 0)
-    {
-        bcLog("Min matrix stack reached!");
-        return;
-    }
-    s_CurrentMatrix--;
-    applyCurrentMatrix();
-}
-
-void bcIdentity()
-{
-    mat4_identity(s_MatrixStack[s_CurrentMatrix]);
-    applyCurrentMatrix();
-}
-
-void bcTranslatef(float x, float y, float z)
-{
-    float offset[3] = { x, y, z };
-    float m0[16], m1[16];
-    mat4_assign(m0, s_MatrixStack[s_CurrentMatrix]);
-    mat4_identity(m1);
-    mat4_translation(m1, m1, offset);
-    mat4_multiply(s_MatrixStack[s_CurrentMatrix], m0, m1);
-    applyCurrentMatrix();
-}
-
-void bcRotatef(float deg, float x, float y, float z)
-{
-    float axis[3] = { x, y, z };
-    float m0[16], m1[16];
-    mat4_assign(m0, s_MatrixStack[s_CurrentMatrix]);
-    mat4_identity(m1);
-    mat4_rotation_axis(m1, axis, to_radians(deg));
-    mat4_multiply(s_MatrixStack[s_CurrentMatrix], m0, m1);
-    applyCurrentMatrix();
-}
-
-void bcScalef(float x, float y, float z)
-{
-    float offset[3] = { x, y, z };
-    float m0[16], m1[16];
-    mat4_assign(m0, s_MatrixStack[s_CurrentMatrix]);
-    mat4_identity(m1);
-    mat4_scale(m1, m1, offset);
-    mat4_multiply(s_MatrixStack[s_CurrentMatrix], m0, m1);
-    applyCurrentMatrix();
-}
-
-void bcLoadMatrix(float *m)
-{
-    mat4_assign(s_MatrixStack[s_CurrentMatrix], m);
-    applyCurrentMatrix();
-}
-
-void bcUpdateCameraMatrix()
+void bcSetProjectionMatrix(float *m)
 {
 #ifdef SUPPORT_GLSL
-    glUniformMatrix4fv(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_CAMERA], 1, GL_FALSE, s_MatrixStack[s_CurrentMatrix]);
+    glUniformMatrix4fv(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_PROJECTION], 1, GL_FALSE, m);
+#else
+    glMatrixMode(GL_PROJECTION);
+    glLoadMatrixf(m);
+    glMatrixMode(GL_MODELVIEW);
 #endif
 }
 
-float * bcGetMatrix()
+void bcSetModelViewMatrix(float *m)
 {
-    return s_MatrixStack[s_CurrentMatrix];
+#ifdef SUPPORT_GLSL
+    glUniformMatrix4fv(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_MODELVIEW], 1, GL_FALSE, m);
+#else
+    glLoadMatrixf(m);
+#endif
 }
 
 // Mesh
@@ -983,7 +873,7 @@ void bcDestroyFont(BCFont *font)
 void bcDrawText(BCFont *font, float x, float y, char *text)
 {
     bcBindTexture(font->texture);
-    bcBegin(0);
+    bcBegin(BC_TRIANGLES);
     while (*text)
     {
         if (*text >= 32 && *text < 128)

@@ -11,8 +11,6 @@
 #include "glad/src/glad.c"
 #endif
 
-#include "mathc/mathc.c"
-
 #ifdef SUPPORT_PAR_SHAPES
 #ifdef ARRAYSIZE
 #undef ARRAYSIZE

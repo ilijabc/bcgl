@@ -1,13 +1,21 @@
 #include "bcgl_internal.h"
 
+#define MATRIX_STACK_SIZE 32
+
 static BCMesh *s_Mesh = NULL;
 
 static BCMesh * s_TempMesh = NULL;
-static float s_TempVertexData[VERTEX_ATTR_MAX][4];
+static vec4_t s_TempVertexData[VERTEX_ATTR_MAX];
+
+static mat4_t s_ProjectionMatrix;
+static mat4_t s_MatrixStack[MATRIX_STACK_SIZE];
+static int s_CurrentMatrix = 0;
 
 void bcInitGfxDraw()
 {
     s_Mesh = bcCreateMesh(512, 512, MESH_FLAGS_POS3 | MESH_FLAGS_NORM | MESH_FLAGS_TEX2 | MESH_FLAGS_COL4);
+    s_ProjectionMatrix = mat4_identity();
+    s_MatrixStack[0] = mat4_identity();
 }
 
 void bcTermGfxDraw()
@@ -41,10 +49,10 @@ bool bcBeginMesh(BCMesh *mesh)
     }
     s_TempMesh = mesh;
     s_TempMesh->draw_count = 0;
-    vec4(s_TempVertexData[VERTEX_ATTR_POSITIONS], 0, 0, 0, 0);
-    vec4(s_TempVertexData[VERTEX_ATTR_NORMALS], 0, 0, 1, 0);
-    vec4(s_TempVertexData[VERTEX_ATTR_TEXCOORDS], 0, 0, 0, 0);
-    vec4(s_TempVertexData[VERTEX_ATTR_COLORS], 1, 1, 1, 1);
+    s_TempVertexData[VERTEX_ATTR_POSITIONS] = vec4(0, 0, 0, 0);
+    s_TempVertexData[VERTEX_ATTR_NORMALS] = vec4(0, 0, 1, 0);
+    s_TempVertexData[VERTEX_ATTR_TEXCOORDS] = vec4(0, 0, 0, 0);
+    s_TempVertexData[VERTEX_ATTR_COLORS] = vec4(1, 1, 1, 1);
     return true;
 }
 
@@ -66,11 +74,11 @@ void bcVertex3f(float x, float y, float z)
         bcLog("Mesh limit reached!");
         return;
     }
-    vec4(s_TempVertexData[VERTEX_ATTR_POSITIONS], x, y, z, 0);
+    s_TempVertexData[VERTEX_ATTR_POSITIONS] = vec4(x, y, z, 0);
     float *vert_ptr = &(s_TempMesh->vertices[s_TempMesh->draw_count * s_TempMesh->total_comps]);
     for (int i = 0; i < VERTEX_ATTR_MAX; i++)
     {
-        memcpy(vert_ptr, s_TempVertexData[i], s_TempMesh->total_comps * sizeof(float));
+        memcpy(vert_ptr, s_TempVertexData[i].v, s_TempMesh->total_comps * sizeof(float));
         vert_ptr += s_TempMesh->comps[i];
     }
     s_TempMesh->indices[s_TempMesh->draw_count] = s_TempMesh->draw_count;
@@ -84,22 +92,94 @@ void bcVertex2f(float x, float y)
 
 void bcTexCoord2f(float u, float v)
 {
-    vec2(s_TempVertexData[VERTEX_ATTR_TEXCOORDS], u, v);
+    s_TempVertexData[VERTEX_ATTR_TEXCOORDS] = vec4(u, v, 0, 0);
 }
 
 void bcNormalf(float x, float y, float z)
 {
-    vec3(s_TempVertexData[VERTEX_ATTR_NORMALS], x, y, z);
+    s_TempVertexData[VERTEX_ATTR_NORMALS] = vec4(x, y, z, 0);
 }
 
 void bcColor4f(float r, float g, float b, float a)
 {
-    vec4(s_TempVertexData[VERTEX_ATTR_COLORS], r, g, b, a);
+    s_TempVertexData[VERTEX_ATTR_COLORS] = vec4(r, g, b, a);
 }
 
 void bcColor3f(float r, float g, float b)
 {
     bcColor4f(r, g, b, 1.0f);
+}
+
+// Matrix Stack
+
+void bcSetPerspective(float fovy, float aspect, float znear, float zfar)
+{
+    s_ProjectionMatrix = mat4_perspective(fovy, aspect, znear, zfar);
+    bcSetProjectionMatrix(s_ProjectionMatrix.v);
+}
+
+void bcSetOrtho(float left, float right, float bottom, float top, float znear, float zfar)
+{
+    s_ProjectionMatrix = mat4_ortho(left, right, bottom, top, znear, zfar);
+    bcSetProjectionMatrix(s_ProjectionMatrix.v);
+}
+
+void bcPushMatrix()
+{
+    if (s_CurrentMatrix == MATRIX_STACK_SIZE - 1)
+    {
+        bcLog("Max matrix stack reached!");
+        return;
+    }
+    s_CurrentMatrix++;
+    s_MatrixStack[s_CurrentMatrix] = s_MatrixStack[s_CurrentMatrix - 1];
+    bcSetModelViewMatrix(s_MatrixStack[s_CurrentMatrix].v);
+}
+
+void bcPopMatrix()
+{
+    if (s_CurrentMatrix == 0)
+    {
+        bcLog("Min matrix stack reached!");
+        return;
+    }
+    s_CurrentMatrix--;
+    bcSetModelViewMatrix(s_MatrixStack[s_CurrentMatrix].v);
+}
+
+void bcIdentity()
+{
+    s_MatrixStack[s_CurrentMatrix] = mat4_identity();
+    bcSetModelViewMatrix(s_MatrixStack[s_CurrentMatrix].v);
+}
+
+void bcTranslatef(float x, float y, float z)
+{
+    s_MatrixStack[s_CurrentMatrix] = mat4_translate(s_MatrixStack[s_CurrentMatrix], x, y, z);
+    bcSetModelViewMatrix(s_MatrixStack[s_CurrentMatrix].v);
+}
+
+void bcRotatef(float deg, float x, float y, float z)
+{
+    s_MatrixStack[s_CurrentMatrix] = mat4_rotate_axis(s_MatrixStack[s_CurrentMatrix], to_radians(deg), x, y, z);
+    bcSetModelViewMatrix(s_MatrixStack[s_CurrentMatrix].v);
+}
+
+void bcScalef(float x, float y, float z)
+{
+    s_MatrixStack[s_CurrentMatrix] = mat4_scale(s_MatrixStack[s_CurrentMatrix], x, y, z);
+    bcSetModelViewMatrix(s_MatrixStack[s_CurrentMatrix].v);
+}
+
+void bcLoadMatrix(float *m)
+{
+    s_MatrixStack[s_CurrentMatrix] = mat4_from_array(m);
+    bcSetModelViewMatrix(s_MatrixStack[s_CurrentMatrix].v);
+}
+
+float * bcGetMatrix()
+{
+    return s_MatrixStack[s_CurrentMatrix].v;
 }
 
 // Camera
