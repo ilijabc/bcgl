@@ -6,6 +6,6 @@ file(GLOB SRCS *.c)
 
 add_executable(example ${SRCS})
 
-target_include_directories(example PUBLIC ../src)
+target_include_directories(example PUBLIC ../)
 
 target_link_libraries(example bcgl)

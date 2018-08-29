@@ -3,7 +3,7 @@
 set BCGL_ROOT="%cd%"
 
 if "%BCGL_OUTPUT%" == "" (
-    set BCGL_OUTPUT="debug"
+    set BCGL_OUTPUT="_debug"
 )
 
 echo BCGL_OUTPUT=%BCGL_OUTPUT%
