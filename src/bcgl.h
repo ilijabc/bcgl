@@ -47,6 +47,7 @@ enum BCShaderUniforms
     SHADER_UNIFORM_MODELVIEW,
     SHADER_UNIFORM_TEXTURE,
     SHADER_UNIFORM_USETEXTURE,
+    SHADER_UNIFORM_ALPHAONLYTEXTURE,
     SHADER_UNIFORM_ALPHATEST,
     SHADER_UNIFORM_VERTEX_COLOR_ENABLED,
     SHADER_UNIFORM_OBJECT_COLOR,
@@ -56,6 +57,13 @@ enum BCShaderUniforms
     SHADER_UNIFORM_LIGHT_POSITION,
     SHADER_UNIFORM_LIGHT_COLOR,
     SHADER_UNIFORM_MAX
+};
+
+enum BCFontType
+{
+    FONT_TYPE_TRUETYPE,
+    FONT_TYPE_ANGELCODE,
+    FONT_TYPE_BITMAP
 };
 
 // structs
@@ -125,8 +133,11 @@ typedef struct
 
 typedef struct
 {
-    BCTexture *texture;
+    enum BCFontType type;
+    int char_first;
+    int char_count;
     void *cdata;
+    BCTexture *texture;
 } BCFont;
 
 typedef struct
@@ -220,7 +231,6 @@ BCShader * bcCreateShaderFromFile(const char *filename);
 BCShader * bcCreateShaderFromCode(const char *vsCode, const char *fsCode);
 void bcDestroyShader(BCShader *shader);
 void bcBindShader(BCShader *shader);
-BCShader * bcGetShader();
 
 // View State
 void bcClear();
@@ -241,12 +251,6 @@ void bcDestroyMesh(BCMesh *mesh);
 void bcDrawMesh(BCMesh *mesh);
 void bcDumpMesh(BCMesh *mesh);
 BCMesh * bcCreateMeshFromShape(par_shapes_mesh *shape);
-
-// Font
-BCFont * bcCreateFontFromFile(const char *filename, float height);
-BCFont * bcCreateFontFromMemory(void *buffer, int size, float height);
-void bcDestroyFont(BCFont *font);
-void bcDrawText(BCFont *font, float x, float y, char *text);
 
 //
 // Gfx Draw module
@@ -282,13 +286,22 @@ void bcPrepareScene2D();
 void bcPrepareSceneGUI();
 
 // Draw 2D
-void bcDrawText2D(BCFont *font, float x, float y);
 void bcDrawTexture2D(BCTexture *texture, float x, float y, float w, float h, float sx, float sy, float sw, float sh);
 void bcDrawRect2D(float x, float y, float w, float h);
 void bcDrawLines2D(int count, float vertices[]);
 
 // Draw 3D
 void bcDrawCube(float x, float y, float z, float size_x, float size_y, float size_z);
+
+//
+// Gfx Font module
+//
+
+BCFont * bcCreateFontTTF(const char *filename, float height);
+BCFont * bcCreateFontFNT(const char *filename);
+BCFont * bcCreateFontBMP(const char *filename, int char_first, int char_count, int cols);
+void bcDestroyFont(BCFont *font);
+void bcDrawText(BCFont *font, float x, float y, char *text);
 
 //
 // Enums

@@ -13,7 +13,7 @@ static int s_CurrentMatrix = 0;
 
 void bcInitGfxDraw()
 {
-    s_Mesh = bcCreateMesh(512, 512, MESH_FLAGS_POS3 | MESH_FLAGS_NORM | MESH_FLAGS_TEX2 | MESH_FLAGS_COL4);
+    s_Mesh = bcCreateMesh(1024, 1024, MESH_FLAGS_POS3 | MESH_FLAGS_NORM | MESH_FLAGS_TEX2 | MESH_FLAGS_COL4);
     s_ProjectionMatrix = mat4_identity();
     s_MatrixStack[0] = mat4_identity();
 }
@@ -212,7 +212,6 @@ void bcPrepareSceneGUI()
 }
 
 // Draw 2D
-void bcDrawText2D(BCFont *font, float x, float y);
 
 void bcDrawTexture2D(BCTexture *texture, float x, float y, float w, float h, float sx, float sy, float sw, float sh)
 {

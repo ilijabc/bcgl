@@ -1,7 +1,10 @@
 #include "bcgl_internal.h"
 
+#define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
-#include <stb/stb_truetype.h>
+
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include <stb/stb_image_resize.h>
 
 static float s_BackgroundColor[4] = { 0.3f, 0.3f, 0.3f, 1.0f };
 static BCMaterial s_DefaultMaterial =
@@ -51,6 +54,7 @@ static struct
     { SHADER_UNIFORM_MODELVIEW, "mat4", "u_ModelViewMatrix" },
     { SHADER_UNIFORM_TEXTURE, "sampler2D", "u_Texture" },
     { SHADER_UNIFORM_USETEXTURE, "bool", "u_UseTexture" },
+    { SHADER_UNIFORM_ALPHAONLYTEXTURE, "bool", "u_AlphaOnlyTexture" },
     { SHADER_UNIFORM_ALPHATEST, "bool", "u_AlphaTest" },
     { SHADER_UNIFORM_VERTEX_COLOR_ENABLED, "bool", "u_VertexColorEnabled" },
     { SHADER_UNIFORM_OBJECT_COLOR, "vec4", "u_ObjectColor" },
@@ -86,6 +90,8 @@ static const char s_DefaultShaderCode[] =
 "        vec4 tex = texture2D(u_Texture, v_texCoord);\n" \
 "        if (u_AlphaTest && tex.a < 0.1)\n" \
 "            discard;\n" \
+"        if (u_AlphaOnlyTexture)\n" \
+"            tex = vec4(1, 1, 1, tex.a);\n" \
 "        gl_FragColor *= tex;\n" \
 "    }\n" \
 "    if (u_LightEnabled)\n" \
@@ -295,7 +301,11 @@ void bcBindTexture(BCTexture *texture)
     }
 #ifdef SUPPORT_GLSL
     glUniform1i(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_USETEXTURE], texture ? 1 : 0);
-    glUniform1i(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_TEXTURE], 0);
+    if (texture)
+    {
+        glUniform1i(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_TEXTURE], 0);
+        glUniform1i(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_ALPHAONLYTEXTURE], texture->format == GL_ALPHA ? 1 : 0);
+    }
 #else
     glActiveTexture(GL_TEXTURE0);
     if (texture)
@@ -468,15 +478,6 @@ void bcBindShader(BCShader *shader)
     // applyProjectionMatrix();
     // applyCurrentMatrix();
     bcSetMaterial(s_DefaultMaterial);
-#endif
-}
-
-BCShader * bcGetShader()
-{
-#ifdef SUPPORT_GLSL
-    return s_CurrentShader;
-#else
-    return NULL;
 #endif
 }
 
@@ -836,65 +837,4 @@ BCMesh * bcCreateMeshFromShape(par_shapes_mesh *shape)
     }
     memcpy(mesh->indices, shape->triangles, mesh->num_indices * sizeof(uint16_t));
     return mesh;
-}
-
-// Font
-BCFont * bcCreateFontFromFile(const char *filename, float height)
-{
-    BCFont *font = NULL;
-    unsigned char *ttf_buffer = NULL;
-    int size = bcLoadDataFile(filename, &ttf_buffer);
-    if (size > 0)
-    {
-        font = bcCreateFontFromMemory(ttf_buffer, size, height);
-        free(ttf_buffer);
-    }
-    return font;
-}
-
-BCFont * bcCreateFontFromMemory(void *buffer, int size, float height)
-{
-    BCFont *font = NEW_OBJECT(BCFont);
-    font->cdata = calloc(96, sizeof(stbtt_bakedchar));
-    BCImage *image = bcCreateImage(512, 512, 1);
-    stbtt_BakeFontBitmap(buffer, 0, height, image->data, 512, 512, 32, 96, (stbtt_bakedchar *) font->cdata); // no guarantee this fits!
-    font->texture = bcCreateTextureFromImage(image, 0);
-    bcDestroyImage(image);
-    return font;
-}
-
-void bcDestroyFont(BCFont *font)
-{
-    bcDestroyTexture(font->texture);
-    free(font->cdata);
-    free(font);
-}
-
-void bcDrawText(BCFont *font, float x, float y, char *text)
-{
-    bcBindTexture(font->texture);
-    bcBegin(BC_TRIANGLES);
-    while (*text)
-    {
-        if (*text >= 32 && *text < 128)
-        {
-            stbtt_aligned_quad q;
-            stbtt_GetBakedQuad(font->cdata, 512, 512, *text-32, &x, &y, &q, 1); // 1=opengl & d3d10+, 0=d3d9
-            bcTexCoord2f(q.s0,q.t0);
-            bcVertex2f(q.x0,q.y0);
-            bcTexCoord2f(q.s1,q.t0);
-            bcVertex2f(q.x1,q.y0);
-            bcTexCoord2f(q.s1,q.t1);
-            bcVertex2f(q.x1,q.y1);
-            bcTexCoord2f(q.s1,q.t1);
-            bcVertex2f(q.x1,q.y1);
-            bcTexCoord2f(q.s0,q.t1);
-            bcVertex2f(q.x0,q.y1);
-            bcTexCoord2f(q.s0,q.t0);
-            bcVertex2f(q.x0,q.y0);
-        }
-        ++text;
-    }
-    bcEnd();
-    bcBindTexture(NULL);
 }

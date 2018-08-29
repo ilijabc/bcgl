@@ -17,6 +17,9 @@ typedef struct
 static GameObject *objects[MAX_OBJECTS];
 
 static const BCColor ColorWhite = {1,1,1,1};
+static const BCColor ColorRed = {1,0,0,1};
+static const BCColor ColorGreen = {0,1,0,1};
+static const BCColor ColorBlue = {0,0,1,1};
 
 static BCShader *exampleShader = NULL;
 static BCTexture *texAlert = NULL;
@@ -145,7 +148,7 @@ void BC_onConfig(BCConfig *config)
 void BC_onStart()
 {
     exampleShader = bcCreateShaderFromFile("data/default.glsl");
-    bcBindShader(exampleShader);
+    // bcBindShader(exampleShader);
     texAlert = bcCreateTextureFromFile("data/platforms.png", 0);
     texGrass = bcCreateTextureFromFile("data/grass.png", 0);
     camera.pos.z = -6;
@@ -156,7 +159,8 @@ void BC_onStart()
     light.pos = vec3(0, 0, 1);
     light.followCamera = true;
     // font
-    myFont = bcCreateFontFromFile("data/vera.ttf", 20);
+    myFont = bcCreateFontTTF("data/vera.ttf", 20);
+    // myFont = bcCreateFontBMP("data/font.png", 0, 256, 16);
     // init objects
     for (int i = 0; i < MAX_OBJECTS; i++)
     {
@@ -203,6 +207,7 @@ void BC_onUpdate(float dt)
     bcClear();
     // game
     bcPrepareScene3D(60);
+    bcSetObjectColor(ColorWhite);
     // light
     bcSetLighting(true);
     // bcLightPosition(light.pos.x, light.pos.y, light.pos.z);
@@ -248,8 +253,8 @@ void BC_onUpdate(float dt)
     BCWindow *win = bcGetWindow();
     bcPrepareSceneGUI();
     bcSetObjectColor(ColorWhite);
-    bcDrawTexture2D(texAlert, win->width - texAlert->width / 2, 0, texAlert->width / 2, texAlert->height / 2, 0, 0, 1, 1);
-    bcDrawTexture2D(texAlert, win->width - texAlert->width / 2, texAlert->height, texAlert->width / 2, texAlert->height / 2, 0, 0, 1, 1);
+    // bcDrawTexture2D(texAlert, win->width - texAlert->width / 2, 0, texAlert->width / 2, texAlert->height / 2, 0, 0, 1, 1);
+    // bcDrawTexture2D(texAlert, win->width - texAlert->width / 2, texAlert->height, texAlert->width / 2, texAlert->height / 2, 0, 0, 1, 1);
     // fps
     static char s_fps[50] = "BCGL";
     if (bcGetTime() > fpsCounter.stored_time + 1)
@@ -260,6 +265,12 @@ void BC_onUpdate(float dt)
     }
     fpsCounter.counter++;
     bcDrawText(myFont, 30, 30, s_fps);
+    bcSetObjectColor(ColorRed);
+    bcDrawText(myFont, 30, 60, "Red Text");
+    bcSetObjectColor(ColorGreen);
+    bcDrawText(myFont, 30, 90, "Green Text");
+    bcSetObjectColor(ColorBlue);
+    bcDrawText(myFont, 30, 120, "Blue Text");
 }
 
 static const char *s_EventNames[] = {
