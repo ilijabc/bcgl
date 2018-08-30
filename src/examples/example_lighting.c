@@ -3,6 +3,7 @@
 #include <bcgl.h>
 #include <bcgl_opengl.h>
 #include <bcmath.h>
+#include <par/par_shapes.h>
 
 typedef struct
 {
@@ -14,7 +15,8 @@ typedef struct
 } GameObject;
 
 #define MAX_OBJECTS 36
-static GameObject *objects[MAX_OBJECTS];
+static GameObject *objects[MAX_OBJECTS] = { NULL };
+static GameObject *player = NULL;
 
 static const BCColor ColorWhite = {1,1,1,1};
 static const BCColor ColorRed = {1,0,0,1};
@@ -50,20 +52,40 @@ static struct
 
 static BCFont *myFont = NULL;
 
-GameObject * createGameObject(float x, float y)
+GameObject * createGameObject(float x, float y, const char *type)
 {
     GameObject *obj = NEW_OBJECT(GameObject);
-    par_shapes_mesh *rockShape = par_shapes_create_parametric_sphere(10, 10);
-    // par_shapes_mesh *rockShape = par_shapes_create_rock(bcGetRandom() * 100, 2);
-    obj->mesh = bcCreateMeshFromShape(rockShape);
+    par_shapes_mesh *objShape;
+    if (strcmp(type, "player") == 0)
+    {
+        objShape = par_shapes_create_rock(10,2);
+        par_shapes_mesh *s1 = par_shapes_create_parametric_sphere(10, 10);
+        par_shapes_translate(s1, 0, 0, 1);
+        par_shapes_merge(objShape, s1);
+        par_shapes_free_mesh(s1);
+        par_shapes_compute_normals(objShape);
+    }
+    else if (strcmp(type, "rock") == 0)
+    {
+        objShape = par_shapes_create_rock(bcGetRandom() * 100, 2);
+    }
+    else if (strcmp(type, "box") == 0)
+    {
+        objShape = par_shapes_create_cube();
+    }
+    else
+    {
+        objShape = par_shapes_create_parametric_sphere(10, 10);
+    }
+    obj->mesh = bcCreateMeshFromShape(objShape);
     obj->color.r = 1; //bcGetRandom();
     obj->color.g = 1; //bcGetRandom();
     obj->color.b = 1; //bcGetRandom();
     obj->color.a = 1;
     obj->pos = vec3(x, y, 0);
-    obj->rot = bcGetRandom() * 360;
-    obj->scale = 0.1 + bcGetRandom() * 2;
-    par_shapes_free_mesh(rockShape);
+    // obj->rot = bcGetRandom() * 360;
+    obj->scale = 1;// 0.1 + bcGetRandom() * 2;
+    par_shapes_free_mesh(objShape);
     return obj;
 }
 
@@ -162,10 +184,21 @@ void BC_onStart()
     myFont = bcCreateFontTTF("data/vera.ttf", 20);
     // myFont = bcCreateFontBMP("data/font.png", 0, 256, 16);
     // init objects
-    for (int i = 0; i < MAX_OBJECTS; i++)
+    objects[0] = player = createGameObject(0, 0, "player");
+    player->pos.z = 1;
+    mat4_t m = mat4_identity();
+    m = mat4_rotate_y(m, to_radians(45));
+    // m = mat4_scale(m, 0.3f, 1, 1);
+    // m = mat4_rotate_x(m, to_radians(45));
+    bcTransformMesh(player->mesh, m.v);
+    for (int i = 1; i < MAX_OBJECTS; i++)
     {
-        objects[i] = createGameObject((i/6)*2-4, (i%6)*2-4);
+        objects[i] = createGameObject((i/6)*2+4, (i%6)*2+4, "ball");
     }
+    // dump mesh
+    FILE *dump = fopen("dump-mesh.obj", "wt");
+    bcDumpMesh(player->mesh, dump);
+    fclose(dump);
 }
 
 void BC_onStop()
@@ -243,12 +276,12 @@ void BC_onUpdate(float dt)
     // scene
     bcSetModelViewMatrix(cm.v);
     DrawTiles(texGrass, 20, 20, 20, 20);
-    bcBindTexture(texGrass);
+    // bcBindTexture(texGrass);
     for (int i = 0; i < MAX_OBJECTS; i++)
     {
         drawGameObject(cm, objects[i]);
     }
-    bcBindTexture(NULL);
+    // bcBindTexture(NULL);
     // gui
     BCWindow *win = bcGetWindow();
     bcPrepareSceneGUI();

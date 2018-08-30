@@ -5,9 +5,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-// external dependencies
-#include <par/par_shapes.h>
-
 // Texture params
 #define TEXTURE_PARAM_LINEAR    0x1
 #define TEXTURE_PARAM_NEAREST   0x2
@@ -172,7 +169,7 @@ void BC_onEvent(int event, int x, int y);
 void BC_onUpdate(float dt);
 
 //
-// Core module
+// bcgl_core module
 //
 
 // Window
@@ -202,7 +199,7 @@ float bcGetMouseDeltaX();
 float bcGetMouseDeltaY();
 
 //
-// Common module
+// bcgl_common module
 //
 
 char * bcLoadTextFile(const char *filename);
@@ -211,7 +208,7 @@ BCColor bcHexToColor(uint32_t rgba);
 float bcGetRandom();
 
 //
-// Gfx module
+// bcgl_gfx module
 //
 
 // Image
@@ -249,11 +246,9 @@ BCMesh * bcCreateMesh(int num_vertices, int num_indices, int flags);
 BCMesh * bcCompileMesh(BCMesh *mesh);
 void bcDestroyMesh(BCMesh *mesh);
 void bcDrawMesh(BCMesh *mesh);
-void bcDumpMesh(BCMesh *mesh);
-BCMesh * bcCreateMeshFromShape(par_shapes_mesh *shape);
 
 //
-// Gfx Draw module
+// bcgl_gfx_draw module
 //
 
 // IM
@@ -294,7 +289,7 @@ void bcDrawLines2D(int count, float vertices[]);
 void bcDrawCube(float x, float y, float z, float size_x, float size_y, float size_z);
 
 //
-// Gfx Font module
+// bcgl_gfx_font module
 //
 
 BCFont * bcCreateFontTTF(const char *filename, float height);
@@ -302,6 +297,14 @@ BCFont * bcCreateFontFNT(const char *filename);
 BCFont * bcCreateFontBMP(const char *filename, int char_first, int char_count, int cols);
 void bcDestroyFont(BCFont *font);
 void bcDrawText(BCFont *font, float x, float y, char *text);
+
+//
+// bcgl_gfx_geometry module
+//
+
+BCMesh * bcCreateMeshFromShape(void *par_shape);
+void bcTransformMesh(BCMesh *mesh, float *m);
+void bcDumpMesh(BCMesh *mesh, FILE *stream);
 
 //
 // Enums
