@@ -11,4 +11,10 @@ add_library(bcgl ${SRCS})
 
 target_include_directories(bcgl PUBLIC external external/glad/include)
 
-target_link_libraries(bcgl glfw3 winmm gdi32 glu32 opengl32 wldap32 ws2_32 pthread)
+if(WIN32)
+    set(LIBS glfw3 winmm gdi32 glu32 opengl32 wldap32 ws2_32 pthread)
+else()
+    set(LIBS glfw GL m dl pthread)
+endif()
+
+target_link_libraries(bcgl ${LIBS})

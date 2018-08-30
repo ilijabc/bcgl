@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 // Texture params
 #define TEXTURE_PARAM_LINEAR    0x1

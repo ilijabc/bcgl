@@ -63,6 +63,10 @@ typedef struct mat4 {
 #define signf(f) ((f < 0) ? -1 : ((f > 0) ? 1 : 0))
 #define randomf() ((float) rand() / (float) RAND_MAX)
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 // vec2
 vec2_t vec2(float x, float y);
 
