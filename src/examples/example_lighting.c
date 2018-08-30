@@ -23,8 +23,7 @@ static const BCColor ColorRed = {1,0,0,1};
 static const BCColor ColorGreen = {0,1,0,1};
 static const BCColor ColorBlue = {0,0,1,1};
 
-static BCShader *exampleShader = NULL;
-static BCTexture *texAlert = NULL;
+static BCShader *defaultShader = NULL;
 static BCTexture *texGrass = NULL;
 static struct
 {
@@ -148,17 +147,6 @@ static void DrawLight(mat4_t cm)
     bcSetLighting(true);
 }
 
-static void dumpMatrix(float *m)
-{
-    char s[100] = "\n";
-    for (int i = 0; i < 16; i++)
-    {
-        sprintf(s, "%s %.2f", s, m[i]);
-        if ((i + 1) % 4 == 0)
-            sprintf(s, "%s\n", s);
-    }
-    bcLog("[%s ]", s);
-}
 
 void BC_onConfig(BCConfig *config)
 {
@@ -169,10 +157,9 @@ void BC_onConfig(BCConfig *config)
 
 void BC_onStart()
 {
-    exampleShader = bcCreateShaderFromFile("data/default.glsl");
-    // bcBindShader(exampleShader);
-    texAlert = bcCreateTextureFromFile("data/platforms.png", 0);
-    texGrass = bcCreateTextureFromFile("data/grass.png", 0);
+    defaultShader = bcCreateShaderFromFile("assets/default.glsl");
+    bcBindShader(defaultShader);
+    texGrass = bcCreateTextureFromFile("assets/grass.png", 0);
     camera.pos.z = -6;
     // light
     par_shapes_mesh *sphere = par_shapes_create_parametric_sphere(10, 10);
@@ -181,24 +168,14 @@ void BC_onStart()
     light.pos = vec3(0, 0, 1);
     light.followCamera = true;
     // font
-    myFont = bcCreateFontTTF("data/vera.ttf", 20);
-    // myFont = bcCreateFontBMP("data/font.png", 0, 256, 16);
+    myFont = bcCreateFontTTF("assets/vera.ttf", 20);
     // init objects
     objects[0] = player = createGameObject(0, 0, "player");
     player->pos.z = 1;
-    mat4_t m = mat4_identity();
-    m = mat4_rotate_y(m, to_radians(45));
-    // m = mat4_scale(m, 0.3f, 1, 1);
-    // m = mat4_rotate_x(m, to_radians(45));
-    bcTransformMesh(player->mesh, m.v);
     for (int i = 1; i < MAX_OBJECTS; i++)
     {
-        objects[i] = createGameObject((i/6)*2+4, (i%6)*2+4, "ball");
+        objects[i] = createGameObject((i/6)*2+4-4, (i%6)*2+4-4, "ball");
     }
-    // dump mesh
-    FILE *dump = fopen("dump-mesh.obj", "wt");
-    bcDumpMesh(player->mesh, dump);
-    fclose(dump);
 }
 
 void BC_onStop()
@@ -208,8 +185,7 @@ void BC_onStop()
         destroyGameObject(objects[i]);
     }
     bcDestroyFont(myFont);
-    bcDestroyTexture(texAlert);
-    bcDestroyShader(exampleShader);
+    bcDestroyShader(defaultShader);
 }
 
 void BC_onUpdate(float dt)
@@ -241,11 +217,7 @@ void BC_onUpdate(float dt)
     // game
     bcPrepareScene3D(60);
     bcSetObjectColor(ColorWhite);
-    // light
     bcSetLighting(true);
-    // bcLightPosition(light.pos.x, light.pos.y, light.pos.z);
-    // if (light.followCamera)
-    //     bcUpdateCameraMatrix();
     // camera
 #if 0
     bcTranslatef(0, 0, camera.pos.z);
@@ -266,7 +238,6 @@ void BC_onUpdate(float dt)
     {
         vec4_t pos = vec4_multiply_mat4(cm, vec4_from_vec3(light.pos, 1));
         bcLightPosition(pos.x, pos.y, pos.z);
-        // bcUpdateCameraMatrix();
         DrawLight(cm);
     }
     else
@@ -276,18 +247,16 @@ void BC_onUpdate(float dt)
     // scene
     bcSetModelViewMatrix(cm.v);
     DrawTiles(texGrass, 20, 20, 20, 20);
-    // bcBindTexture(texGrass);
+    bcBindTexture(texGrass);
     for (int i = 0; i < MAX_OBJECTS; i++)
     {
         drawGameObject(cm, objects[i]);
     }
-    // bcBindTexture(NULL);
+    bcBindTexture(NULL);
     // gui
     BCWindow *win = bcGetWindow();
     bcPrepareSceneGUI();
     bcSetObjectColor(ColorWhite);
-    // bcDrawTexture2D(texAlert, win->width - texAlert->width / 2, 0, texAlert->width / 2, texAlert->height / 2, 0, 0, 1, 1);
-    // bcDrawTexture2D(texAlert, win->width - texAlert->width / 2, texAlert->height, texAlert->width / 2, texAlert->height / 2, 0, 0, 1, 1);
     // fps
     static char s_fps[50] = "BCGL";
     if (bcGetTime() > fpsCounter.stored_time + 1)
@@ -339,10 +308,6 @@ void BC_onEvent(int event, int x, int y)
                 light.stored_pos = light.pos;
             else
                 light.pos = light.stored_pos;
-            break;
-        case BC_KEY_F3:
-            light.shader = !light.shader;
-            bcBindShader(light.shader ? exampleShader : NULL);
             break;
         }
     }
