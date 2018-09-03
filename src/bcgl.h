@@ -170,7 +170,7 @@ void BC_onEvent(int event, int x, int y);
 void BC_onUpdate(float dt);
 
 //
-// bcgl_core module
+// bcgl_app module
 //
 
 // Window

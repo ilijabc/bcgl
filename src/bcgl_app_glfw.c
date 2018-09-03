@@ -1,6 +1,10 @@
 #include "bcgl_internal.h"
 #include <GLFW/glfw3.h>
 
+#ifdef SUPPORT_GLAD
+#include "glad/src/glad.c"
+#endif
+
 static struct
 {
     int glfw_code;
