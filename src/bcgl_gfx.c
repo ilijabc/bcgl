@@ -20,7 +20,7 @@ static BCShader *s_DefaultShader = NULL;
 static BCShader *s_CurrentShader = NULL;
 #endif
 
-#ifdef PLATFORM_ANDROID
+#ifdef __ANDROID__
 #define GLSL_CODE_HEADER \
 "#version 100\n" \
 "precision mediump float;\n"
@@ -117,6 +117,7 @@ void bcInitGfx()
     // matrix stack
 #ifdef SUPPORT_GLSL
     s_DefaultShader = bcCreateShaderFromCode(s_DefaultShaderCode, s_DefaultShaderCode);
+    bcLog("s_DefaultShader=%p", s_DefaultShader);
     bcBindShader(NULL);
 #else
     glAlphaFunc(GL_GREATER, 0.1f);
@@ -125,6 +126,7 @@ void bcInitGfx()
     glEnable(GL_COLOR_MATERIAL);
     glShadeModel(GL_SMOOTH);
 #endif
+    // glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
     // default state
     glClearColor(s_BackgroundColor[0], s_BackgroundColor[1], s_BackgroundColor[2], s_BackgroundColor[3]);
     // gl default
@@ -132,6 +134,8 @@ void bcInitGfx()
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDepthFunc(GL_LEQUAL);
+    glFrontFace(GL_CCW);
     bcInitGfxDraw();
 }
 
@@ -221,15 +225,15 @@ BCTexture * bcCreateTextureFromImage(BCImage *image, int flags)
     switch (image->comps)
     {
     case 1:
-        internalFormat = GL_ALPHA8;
+        internalFormat = GL_ALPHA;
         texture->format = GL_ALPHA;
         break;
     case 3:
-        internalFormat = GL_RGB8;
+        internalFormat = GL_RGB;
         texture->format = GL_RGB;
         break;
     case 4:
-        internalFormat = GL_RGBA8;
+        internalFormat = GL_RGBA;
         texture->format = GL_RGBA;
         break;
     }
@@ -506,10 +510,12 @@ void bcSetDepthTest(bool enabled)
 
 void bcSetWireframe(bool enabled)
 {
+#ifndef __ANDROID__
     if (enabled)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     else
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+#endif
 }
 
 void bcSetLighting(bool enabled)

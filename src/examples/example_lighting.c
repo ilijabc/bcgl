@@ -5,6 +5,12 @@
 #include <bcmath.h>
 #include <par/par_shapes.h>
 
+#ifdef __ANDROID__
+#define PREFIX "/sdcard/bcgl/"
+#else
+#define PREFIX ""
+#endif
+
 typedef struct
 {
     BCMesh *mesh;
@@ -23,8 +29,9 @@ static const BCColor ColorRed = {1,0,0,1};
 static const BCColor ColorGreen = {0,1,0,1};
 static const BCColor ColorBlue = {0,0,1,1};
 
-static BCShader *defaultShader = NULL;
+// static BCShader *defaultShader = NULL;
 static BCTexture *texGrass = NULL;
+static BCTexture *texCursor = NULL;
 static struct
 {
     vec3_t pos;
@@ -32,7 +39,7 @@ static struct
 } camera =
 {
     { 0, 0, -6 },
-    { 0, 0, 0}
+    { -60, 0, 0}
 };
 // light
 static struct
@@ -150,16 +157,20 @@ static void DrawLight(mat4_t cm)
 
 void BC_onConfig(BCConfig *config)
 {
-    config->width = 640;
+    float aspect = (float) config->width / (float) config->height;
+// #ifndef __ANDROID__
     config->height = 480;
+    config->width = aspect * config->height;
     // config->vsync = true;
+// #endif
 }
 
 void BC_onStart()
 {
-    defaultShader = bcCreateShaderFromFile("assets/default.glsl");
-    bcBindShader(defaultShader);
-    texGrass = bcCreateTextureFromFile("assets/grass.png", 0);
+    // defaultShader = bcCreateShaderFromFile(PREFIX"assets/default.glsl");
+    // bcBindShader(defaultShader);
+    texGrass = bcCreateTextureFromFile(PREFIX"assets/grass.png", 0);
+    texCursor = bcCreateTextureFromFile(PREFIX"assets/cursor.png", 0);
     camera.pos.z = -6;
     // light
     par_shapes_mesh *sphere = par_shapes_create_parametric_sphere(10, 10);
@@ -168,7 +179,7 @@ void BC_onStart()
     light.pos = vec3(0, 0, 1);
     light.followCamera = true;
     // font
-    myFont = bcCreateFontTTF("assets/vera.ttf", 20);
+    myFont = bcCreateFontTTF(PREFIX"assets/vera.ttf", 20);
     // init objects
     objects[0] = player = createGameObject(0, 0, "player");
     player->pos.z = 1;
@@ -185,7 +196,7 @@ void BC_onStop()
         destroyGameObject(objects[i]);
     }
     bcDestroyFont(myFont);
-    bcDestroyShader(defaultShader);
+    // bcDestroyShader(defaultShader);
 }
 
 void BC_onUpdate(float dt)
@@ -210,6 +221,7 @@ void BC_onUpdate(float dt)
         if (bcIsKeyDown(BC_KEY_Q)) pobj->z += dt * lspeed;
         if (bcIsKeyDown(BC_KEY_E)) pobj->z -= dt * lspeed;
     }
+    // camera.rot.z += dt * 60;
     //
     // Game graphics
     //
@@ -217,7 +229,7 @@ void BC_onUpdate(float dt)
     // game
     bcPrepareScene3D(60);
     bcSetObjectColor(ColorWhite);
-    bcSetLighting(true);
+    // bcSetLighting(true);
     // camera
 #if 0
     bcTranslatef(0, 0, camera.pos.z);
@@ -238,7 +250,7 @@ void BC_onUpdate(float dt)
     {
         vec4_t pos = vec4_multiply_mat4(cm, vec4_from_vec3(light.pos, 1));
         bcLightPosition(pos.x, pos.y, pos.z);
-        DrawLight(cm);
+        // DrawLight(cm);
     }
     else
     {
@@ -257,6 +269,8 @@ void BC_onUpdate(float dt)
     BCWindow *win = bcGetWindow();
     bcPrepareSceneGUI();
     bcSetObjectColor(ColorWhite);
+    if (texCursor)
+        bcDrawTexture2D(texCursor, bcGetMouseX(), bcGetMouseY(), texCursor->width, texCursor->height, 0, 0, 1, 1);
     // fps
     static char s_fps[50] = "BCGL";
     if (bcGetTime() > fpsCounter.stored_time + 1)

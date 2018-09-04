@@ -194,7 +194,7 @@ void bcPrepareScene3D(float fov)
     bcIdentity();
     bcSetBlend(false);
     bcSetDepthTest(true);
-    // bcSetLighting(true);
+    bcSetLighting(true);
 }
 
 void bcPrepareScene2D()

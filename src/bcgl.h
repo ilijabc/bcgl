@@ -71,9 +71,12 @@ typedef struct
     const char *title;
     int width;
     int height;
+    int format;
     int mode;
     bool vsync;
     int msaa;
+    // Android specific
+    void *surface;
 } BCConfig;
 
 typedef struct
@@ -155,7 +158,8 @@ typedef struct
 #define DELETE_OBJECT(obj) free(obj);
 
 #ifdef __ANDROID__
-#define bcLog(format, ...) __android_log_print(ANDROID_LOG_INFO, "UCPlayer", "%s: " format, __FUNCTION__, ##__VA_ARGS__)
+#include <android/log.h>
+#define bcLog(format, ...) __android_log_print(ANDROID_LOG_INFO, "BCGL", "%s: " format, __FUNCTION__, ##__VA_ARGS__)
 #else
 #define bcLog(format, ...) { printf("[%s:%d] %s: " format "\n", __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__);  fflush(stdout); }
 #endif
@@ -185,12 +189,20 @@ BCWindow * bcGetWindow();
 bool bcInit();
 void bcTerm();
 void bcQuit(int code);
+float bcGetTime();
+
+//
+// bcgl_app_common
+//
+
+// Events
 BCEvent * bcSendEvent(int type, int x, int y);
 int bcPullEvents();
 BCEvent * bcGetEvent(int index);
-float bcGetTime();
 
 // Input state
+void bcResetStates();
+void bcSetMousePosition(int x, int y);
 bool bcIsKeyDown(int key);
 int bcGetMouseX();
 int bcGetMouseY();

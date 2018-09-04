@@ -1,10 +1,6 @@
 #include "bcgl_internal.h"
 #include <GLFW/glfw3.h>
 
-#ifdef SUPPORT_GLAD
-#include "glad/src/glad.c"
-#endif
-
 static struct
 {
     int glfw_code;
@@ -137,24 +133,6 @@ static struct
 // Private Functions
 //
 
-#define MAX_EVENTS 32
-static BCEvent s_EventQueue[2][MAX_EVENTS];
-static int s_CurrentIndex = 0;
-static int s_CurrentQueue = 0;
-static int s_PulledQueue = 1;
-
-static struct
-{
-    int x;
-    int y;
-    bool button[8];
-    float wheel;
-    float deltaX;
-    float deltaY;
-} s_MouseState = { 0 };
-
-static bool s_KeyState[BC_KEY_COUNT] = { false };
-
 static BCWindow *s_Window = NULL;
 
 static void glfw_ErrorCallback(int error, const char *description)
@@ -179,28 +157,20 @@ static void glfw_KeyCallback(GLFWwindow *nativeWindow, int keyCode, int scanCode
         return;
     }
     bcSendEvent((action == GLFW_PRESS) ? BC_EVENT_KEYPRESS : BC_EVENT_KEYRELEASE, appCode, 0);
-    // bcLog("keyevent: code=%d action=%d", appCode, action);
-    s_KeyState[appCode] = (action != GLFW_RELEASE);
 }
 
 static void glfw_CursorPosCallback(GLFWwindow *nativeWindow, double x, double y)
 {
-    s_MouseState.deltaX = x - s_MouseState.x;
-    s_MouseState.deltaY = y - s_MouseState.y;
-    s_MouseState.x = x;
-    s_MouseState.y = y;
     bcSendEvent(BC_EVENT_MOUSEMOVE, x, y);
 }
 
 static void glfw_MouseButtonCallback(GLFWwindow *nativeWindow, int button, int action, int mods)
 {
-    s_MouseState.button[button] = (action == GLFW_PRESS);
     bcSendEvent((action == GLFW_PRESS) ? BC_EVENT_MOUSEPRESS : BC_EVENT_MOUSERELEASE, button, 0);
 }
 
 static void glfw_ScrollCallback(GLFWwindow *nativeWindow, double dx, double dy)
 {
-    s_MouseState.wheel = dy;
     bcSendEvent(BC_EVENT_MOUSEWHEEL, dx, dy);
 }
 
@@ -251,79 +221,9 @@ void bcQuit(int code)
     bcCloseWindow(s_Window);
 }
 
-BCEvent * bcSendEvent(int type, int x, int y)
-{
-    if (s_CurrentIndex == MAX_EVENTS)
-    {
-        bcLog("Max app events reached!");
-        return NULL;
-    }
-    BCEvent *event = &(s_EventQueue[s_CurrentQueue][s_CurrentIndex]);
-    event->type = type;
-    event->x = x;
-    event->y = y;
-    s_CurrentIndex++;
-    return event;
-}
-
-int bcPullEvents()
-{
-    int n = s_CurrentIndex;
-    s_PulledQueue = s_CurrentQueue;
-    s_CurrentQueue++;
-    if (s_CurrentQueue == 2)
-        s_CurrentQueue = 0;
-    s_CurrentIndex = 0;
-    return n;
-}
-
-BCEvent * bcGetEvent(int index)
-{
-    return &(s_EventQueue[s_PulledQueue][index]);
-}
-
 float bcGetTime()
 {
     return (float) glfwGetTime();
-}
-
-//
-// Input state
-//
-
-bool bcIsKeyDown(int key)
-{
-    return s_KeyState[key];
-}
-
-int bcGetMouseX()
-{
-    return s_MouseState.x;
-}
-
-int bcGetMouseY()
-{
-    return s_MouseState.y;
-}
-
-bool bcIsMouseDown(int button)
-{
-    return s_MouseState.button[button];
-}
-
-float bcGetMouseWheel()
-{
-    return s_MouseState.wheel;
-}
-
-float bcGetMouseDeltaX()
-{
-    return s_MouseState.deltaX;
-}
-
-float bcGetMouseDeltaY()
-{
-    return s_MouseState.deltaY;
 }
 
 //
@@ -332,18 +232,20 @@ float bcGetMouseDeltaY()
 
 BCWindow * bcCreateWindow(BCConfig *config)
 {
+    if (s_Window != NULL)
+    {
+        bcLog("Only a single window supported!")
+        return NULL;
+    }
 
-    // Get the resolution of the primary monitor
-    const GLFWvidmode *vidmode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-    int screenWidth = vidmode->width;
-    int screenHeight = vidmode->height;
+    const GLFWvidmode *screen = glfwGetVideoMode(glfwGetPrimaryMonitor());
     if (config->width == 0)
     {
-        config->width = screenWidth;
+        config->width = screen->width;
     }
     if (config->height == 0)
     {
-        config->height = screenHeight;
+        config->height = screen->height;
     }
 
     // Configure our window
@@ -383,8 +285,8 @@ BCWindow * bcCreateWindow(BCConfig *config)
     {
         glfwSetWindowPos(
             nativeWindow,
-            (screenWidth - config->width) / 2,
-            (screenHeight - config->height) / 2);
+            (screen->width - config->width) / 2,
+            (screen->height - config->height) / 2);
     }
 
     // Make the OpenGL context current
@@ -431,12 +333,8 @@ void bcDestroyWindow(BCWindow *window)
 
 void bcUpdateWindow(BCWindow *window)
 {
+    bcResetStates();
     glfwSwapBuffers(window->nativeWindow);
-    // reset states
-    // TODO: not related to window!
-    s_MouseState.wheel = 0;
-    s_MouseState.deltaX = 0;
-    s_MouseState.deltaY = 0;
 }
 
 void bcCloseWindow(BCWindow *window)
@@ -466,6 +364,10 @@ int main(int argc, char * argv[])
     }
 
     BCConfig *config = NEW_OBJECT(BCConfig);
+    // Get the resolution of the primary monitor
+    const GLFWvidmode *screen = glfwGetVideoMode(glfwGetPrimaryMonitor());
+    config->width = screen->width;
+    config->height = screen->height;
     BC_onConfig(config);
 
     s_Window = bcCreateWindow(config);
