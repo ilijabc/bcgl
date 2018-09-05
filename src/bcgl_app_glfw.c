@@ -226,6 +226,10 @@ float bcGetTime()
     return (float) glfwGetTime();
 }
 
+void bcShowKeyboard(bool show)
+{
+}
+
 //
 // Window
 //

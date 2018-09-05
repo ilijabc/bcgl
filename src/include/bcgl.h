@@ -190,6 +190,7 @@ bool bcInit();
 void bcTerm();
 void bcQuit(int code);
 float bcGetTime();
+void bcShowKeyboard(bool show);
 
 //
 // bcgl_app_common
