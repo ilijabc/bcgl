@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.6)
 
+set(BCGL_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+
 # file(GLOB SRCS *.c)
 if(ANDROID)
     list(APPEND SRCS bcgl_app_android.c)
@@ -22,7 +24,7 @@ add_definitions("-D BC_MAIN_LOOP")
 
 add_library(bcgl ${SRCS})
 
-target_include_directories(bcgl PUBLIC external external/glad/include)
+target_include_directories(bcgl PUBLIC include external external/glad/include)
 
 if(ANDROID)
     include_directories(${ANDROID_SYSROOT}/usr/include/arm-linux-androideabi)

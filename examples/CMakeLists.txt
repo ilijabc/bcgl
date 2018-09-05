@@ -12,6 +12,6 @@ else()
     add_executable(example ${SRCS})
 endif()
 
-target_include_directories(example PUBLIC ../)
+target_include_directories(example PUBLIC ${BCGL_ROOT}/include)
 
 target_link_libraries(example bcgl)

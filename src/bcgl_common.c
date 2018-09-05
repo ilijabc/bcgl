@@ -1,4 +1,4 @@
-#include "bcgl.h"
+#include "bcgl_internal.h"
 
 char * bcLoadTextFile(const char *filename)
 {
@@ -33,7 +33,7 @@ int bcLoadDataFile(const char *filename, unsigned char **out)
     fseek(fp, 0, SEEK_END);
     int len = ftell(fp);
     fseek(fp, 0, SEEK_SET);
-    *out = (char *) malloc(sizeof(char) * len);
+    *out = (unsigned char *) malloc(sizeof(unsigned char) * len);
     fread(*out, sizeof(char), len, fp);
     fclose(fp);
     return len;
