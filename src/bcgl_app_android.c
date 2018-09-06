@@ -334,45 +334,45 @@ BCWindow * bcCreateWindow(BCConfig *inconfig)
     GLfloat ratio;
 
     if ((display = eglGetDisplay(EGL_DEFAULT_DISPLAY)) == EGL_NO_DISPLAY) {
-        bcLog("eglGetDisplay() returned error %d", eglGetError());
+        bcLogError("eglGetDisplay() returned error %d", eglGetError());
         goto window_create_error;
     }
 
     if (!eglInitialize(display, 0, 0)) {
-        bcLog("eglInitialize() returned error %d", eglGetError());
+        bcLogError("eglInitialize() returned error %d", eglGetError());
         goto window_create_error;
     }
 
     if (!eglChooseConfig(display, attribs, &config, 1, &numConfigs)) {
-        bcLog("eglChooseConfig() returned error %d", eglGetError());
+        bcLogError("eglChooseConfig() returned error %d", eglGetError());
         goto window_create_error;
     }
 
     if (!eglGetConfigAttrib(display, config, EGL_NATIVE_VISUAL_ID, &format)) {
-        bcLog("eglGetConfigAttrib() returned error %d", eglGetError());
+        bcLogError("eglGetConfigAttrib() returned error %d", eglGetError());
         goto window_create_error;
     }
 
     ANativeWindow_setBuffersGeometry(inconfig->surface, 0, 0, format);
 
     if (!(surface = eglCreateWindowSurface(display, config, inconfig->surface, 0))) {
-        bcLog("eglCreateWindowSurface() returned error %d", eglGetError());
+        bcLogError("eglCreateWindowSurface() returned error %d", eglGetError());
         goto window_create_error;
     }
 
     if (!(context = eglCreateContext(display, config, 0, context_attribs))) {
-        bcLog("eglCreateContext() returned error %d", eglGetError());
+        bcLogError("eglCreateContext() returned error %d", eglGetError());
         goto window_create_error;
     }
 
     if (!eglMakeCurrent(display, surface, surface, context)) {
-        bcLog("eglMakeCurrent() returned error %d", eglGetError());
+        bcLogError("eglMakeCurrent() returned error %d", eglGetError());
         goto window_create_error;
     }
 
     if (!eglQuerySurface(display, surface, EGL_WIDTH, &width) ||
             !eglQuerySurface(display, surface, EGL_HEIGHT, &height)) {
-        bcLog("eglQuerySurface() returned error %d", eglGetError());
+        bcLogError("eglQuerySurface() returned error %d", eglGetError());
         goto window_create_error;
     }
 
@@ -397,7 +397,7 @@ BCWindow * bcCreateWindow(BCConfig *inconfig)
     return s_Window;
 
 window_create_error:
-    bcLog("Failed creating window!");
+    bcLogError("Failed creating window!");
     return NULL;
 }
 
@@ -419,7 +419,7 @@ void bcUpdateWindow(BCWindow *window)
     BCAndroidWindow *nativeWindow = (BCAndroidWindow *) window->nativeWindow;
     if (!eglSwapBuffers(nativeWindow->_display, nativeWindow->_surface))
     {
-        bcLog("eglSwapBuffers() returned error %d", eglGetError());
+        bcLogError("eglSwapBuffers() returned error %d", eglGetError());
     }
     bcResetStates();
 }
@@ -554,7 +554,7 @@ void bcAndroidReleaseSurface(int id)
 
 void bcAndroidAppChengeState(int state)
 {
-    bcLog("state=%d", state);
+    // bcLog("state=%d", state);
     pthread_mutex_lock(&s_Mutex);
     if (state == EVENT_APP_PAUSE)
         bcSendEvent(BC_EVENT_WINDOWFOCUS, 0, 0);
@@ -565,7 +565,7 @@ void bcAndroidAppChengeState(int state)
 
 void bcAndroidTouchEvent(int event, int id, float x, float y)
 {
-    bcLog("event=%d id=%d x=%f y=%f", event, id, x, y);
+    // bcLog("event=%d id=%d x=%f y=%f", event, id, x, y);
     pthread_mutex_lock(&s_Mutex);
     switch (event)
     {
@@ -580,7 +580,7 @@ void bcAndroidTouchEvent(int event, int id, float x, float y)
         bcSendEvent(BC_EVENT_MOUSEMOVE, x, y);
         break;
     default:
-        bcLog("Unhandled event: %d", event);
+        bcLogWarning("Unhandled event: %d", event);
     }
     pthread_mutex_unlock(&s_Mutex);
 }
@@ -588,7 +588,7 @@ void bcAndroidTouchEvent(int event, int id, float x, float y)
 void bcAndroidKeyEvent(int event, int key, int code)
 {
     int appKey = convertAndroidKeyCode(key);
-    bcLog("event=%d key=%d code=%d appKey=%d", event, key, code, appKey);
+    // bcLog("event=%d key=%d code=%d appKey=%d", event, key, code, appKey);
     pthread_mutex_lock(&s_Mutex);
     switch (event)
     {
@@ -599,7 +599,7 @@ void bcAndroidKeyEvent(int event, int key, int code)
         bcSendEvent(BC_EVENT_KEYRELEASE, appKey, key);
         break;
     default:
-        bcLog("Unhandled event: %d", event);
+        bcLogWarning("Unhandled event: %d", event);
     }
     pthread_mutex_unlock(&s_Mutex);
 }

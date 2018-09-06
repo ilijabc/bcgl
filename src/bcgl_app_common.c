@@ -28,7 +28,6 @@ static void processEvent(BCEvent *event)
         s_MouseState.deltaY = event->y - s_MouseState.y;
         s_MouseState.x = event->x;
         s_MouseState.y = event->y;
-        bcLog("dx=%f dy=%f ex=%d ey=%d mx=%d my=%d", s_MouseState.deltaX, s_MouseState.deltaY, event->x, event->y, s_MouseState.x, s_MouseState.y);
         break;
     case BC_EVENT_MOUSEPRESS:
     case BC_EVENT_MOUSERELEASE:
@@ -48,7 +47,7 @@ BCEvent * bcSendEvent(int type, int x, int y)
 {
     if (s_CurrentIndex == MAX_EVENTS)
     {
-        bcLog("Max app events reached!");
+        bcLogWarning("Max app events reached!");
         return NULL;
     }
     BCEvent *event = &(s_EventQueue[s_CurrentQueue][s_CurrentIndex]);

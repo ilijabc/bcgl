@@ -39,12 +39,12 @@ bool bcBeginMesh(BCMesh *mesh)
 {
     if (s_TempMesh != NULL)
     {
-        bcLog("Mesh already locked!");
+        bcLogWarning("Mesh already locked!");
         return false;
     }
     if (mesh == NULL)
     {
-        bcLog("Mesh not provided!");
+        bcLogWarning("Mesh not provided!");
         return false;
     }
     s_TempMesh = mesh;
@@ -66,12 +66,12 @@ void bcVertex3f(float x, float y, float z)
 {
     if (s_TempMesh == NULL)
     {
-        bcLog("Mesh not locked!");
+        bcLogWarning("Mesh not locked!");
         return;
     }
     if (s_TempMesh->draw_count >= s_TempMesh->num_vertices)
     {
-        bcLog("Mesh limit reached!");
+        bcLogWarning("Mesh limit reached!");
         return;
     }
     s_TempVertexData[VERTEX_ATTR_POSITIONS] = vec4(x, y, z, 0);
@@ -128,7 +128,7 @@ void bcPushMatrix()
 {
     if (s_CurrentMatrix == MATRIX_STACK_SIZE - 1)
     {
-        bcLog("Max matrix stack reached!");
+        bcLogWarning("Max matrix stack reached!");
         return;
     }
     s_CurrentMatrix++;
@@ -140,7 +140,7 @@ void bcPopMatrix()
 {
     if (s_CurrentMatrix == 0)
     {
-        bcLog("Min matrix stack reached!");
+        bcLogWarning("Min matrix stack reached!");
         return;
     }
     s_CurrentMatrix--;

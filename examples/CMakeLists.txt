@@ -4,7 +4,6 @@ set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
 
 file(GLOB SRCS *.c)
 
-
 if(ANDROID)
     include_directories(${ANDROID_SYSROOT}/usr/include/arm-linux-androideabi)
     add_library(example ${SRCS})

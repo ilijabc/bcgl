@@ -137,7 +137,7 @@ static BCWindow *s_Window = NULL;
 
 static void glfw_ErrorCallback(int error, const char *description)
 {
-    bcLog("GLFW error: %d:%s", error, description);
+    bcLogError("GLFW error: %d:%s", error, description);
 }
 
 static void glfw_KeyCallback(GLFWwindow *nativeWindow, int keyCode, int scanCode, int action, int mods)
@@ -153,7 +153,7 @@ static void glfw_KeyCallback(GLFWwindow *nativeWindow, int keyCode, int scanCode
     }
     if (appCode == -1)
     {
-        bcLog("Unknown key code: %d !", keyCode);
+        bcLogWarning("Unknown key code: %d !", keyCode);
         return;
     }
     bcSendEvent((action == GLFW_PRESS) ? BC_EVENT_KEYPRESS : BC_EVENT_KEYRELEASE, appCode, 0);
@@ -204,7 +204,7 @@ bool bcInit()
     glfwSetErrorCallback(glfw_ErrorCallback);
     if (glfwInit() != GL_TRUE)
     {
-        bcLog("Unable to initialize GLFW");
+        bcLogError("Unable to initialize GLFW");
         return false;
     }
     bcLog("GLFW - Version: %s", glfwGetVersionString());
@@ -238,7 +238,7 @@ BCWindow * bcCreateWindow(BCConfig *config)
 {
     if (s_Window != NULL)
     {
-        bcLog("Only a single window supported!")
+        bcLogWarning("Only a single window supported!")
         return NULL;
     }
 
@@ -271,7 +271,7 @@ BCWindow * bcCreateWindow(BCConfig *config)
         NULL);
     if (nativeWindow == NULL)
     {
-        bcLog("Failed to create the GLFW window");
+        bcLogError("Failed to create the GLFW window");
         return NULL;
     }
 
@@ -300,7 +300,7 @@ BCWindow * bcCreateWindow(BCConfig *config)
 #ifdef SUPPORT_GLAD
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
     {
-        bcLog("Failed to initialize OpenGL context");
+        bcLogError("Failed to initialize OpenGL context");
         return NULL;
     }
     bcLog("OpenGL: %s", glGetString(GL_VERSION));
@@ -360,8 +360,13 @@ BCWindow * bcGetWindow()
 
 // Main entry point
 
-int main(int argc, char * argv[])
+int main(int argc, char **argv)
 {
+#ifdef __MINGW32__
+    setvbuf(stdout, NULL, _IONBF, 0);
+    setvbuf(stderr, NULL, _IONBF, 0);
+#endif
+
     if (!bcInit())
     {
         return 1;

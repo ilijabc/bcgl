@@ -160,8 +160,12 @@ typedef struct
 #ifdef __ANDROID__
 #include <android/log.h>
 #define bcLog(format, ...) __android_log_print(ANDROID_LOG_INFO, "BCGL", "%s: " format, __FUNCTION__, ##__VA_ARGS__)
+#define bcLogWarning(format, ...) __android_log_print(ANDROID_LOG_WARN, "BCGL", "%s: " format, __FUNCTION__, ##__VA_ARGS__)
+#define bcLogError(format, ...) __android_log_print(ANDROID_LOG_ERROR, "BCGL", "%s: " format, __FUNCTION__, ##__VA_ARGS__)
 #else
-#define bcLog(format, ...) { printf("[%s:%d] %s: " format "\n", __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__);  fflush(stdout); }
+#define bcLog(format, ...) { printf("[%s:%d] %s: " format "\n", __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__); }
+#define bcLogWarning(format, ...) { printf("[WARNING] [%s:%d] %s: " format "\n", __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__); }
+#define bcLogError(format, ...) { printf("[ERROR] [%s:%d] %s: " format "\n", __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__); }
 #endif
 
 //
@@ -177,17 +181,6 @@ void BC_onUpdate(float dt);
 // bcgl_app module
 //
 
-// Window
-BCWindow * bcCreateWindow(BCConfig *config);
-void bcDestroyWindow(BCWindow *window);
-void bcUpdateWindow(BCWindow *window);
-void bcCloseWindow(BCWindow *window);
-bool bcIsWindowOpened(BCWindow *window);
-BCWindow * bcGetWindow();
-
-// App
-bool bcInit();
-void bcTerm();
 void bcQuit(int code);
 float bcGetTime();
 void bcShowKeyboard(bool show);
@@ -196,12 +189,6 @@ void bcShowKeyboard(bool show);
 // bcgl_app_common
 //
 
-// Events
-BCEvent * bcSendEvent(int type, int x, int y);
-int bcPullEvents();
-BCEvent * bcGetEvent(int index);
-
-// Input state
 void bcResetStates();
 void bcSetMousePosition(int x, int y);
 bool bcIsKeyDown(int key);

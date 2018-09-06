@@ -157,6 +157,7 @@ static void DrawLight(mat4_t cm)
 
 void BC_onConfig(BCConfig *config)
 {
+    bcLog("screen: [%d %d]", config->width, config->height);
     float aspect = (float) config->width / (float) config->height;
 // #ifndef __ANDROID__
     config->height = 480;
@@ -167,6 +168,7 @@ void BC_onConfig(BCConfig *config)
 
 void BC_onStart()
 {
+    bcLog("");
     // defaultShader = bcCreateShaderFromFile(PREFIX"assets/default.glsl");
     // bcBindShader(defaultShader);
     texGrass = bcCreateTextureFromFile(PREFIX"assets/grass.png", 0);
@@ -191,6 +193,7 @@ void BC_onStart()
 
 void BC_onStop()
 {
+    bcLog("");
     for (int i = 0; i < MAX_OBJECTS; i++)
     {
         destroyGameObject(objects[i]);
@@ -266,7 +269,6 @@ void BC_onUpdate(float dt)
     }
     bcBindTexture(NULL);
     // gui
-    BCWindow *win = bcGetWindow();
     bcPrepareSceneGUI();
     bcSetObjectColor(ColorWhite);
     if (texCursor)
@@ -324,5 +326,9 @@ void BC_onEvent(int event, int x, int y)
                 light.pos = light.stored_pos;
             break;
         }
+    }
+    else if (event == BC_EVENT_WINDOWFOCUS)
+    {
+        bcLog("BC_EVENT_WINDOWFOCUS: %d", x);
     }
 }

@@ -21,12 +21,12 @@ static BCShader *s_CurrentShader = NULL;
 #endif
 
 #ifdef __ANDROID__
-#define GLSL_CODE_HEADER \
-"#version 100\n" \
-"precision mediump float;\n"
+    #define GLSL_CODE_HEADER \
+    "#version 100\n" \
+    "precision mediump float;\n"
 #else
-#define GLSL_CODE_HEADER \
-"#version 120\n"
+    #define GLSL_CODE_HEADER \
+    "#version 120\n"
 #endif
 
 static struct
@@ -167,10 +167,9 @@ BCImage * bcCreateImageFromFile(const char *filename)
     unsigned char *data = stbi_load(filename, &x, &y, &comp, 0);
     if (data == NULL)
     {
-        bcLog("Image file '%s' not found!", filename);
+        bcLogWarning("Image file '%s' not found!", filename);
         return NULL;
     }
-    bcLog("Image file '%s' loaded OK", filename);
     BCImage *image = NEW_OBJECT(BCImage);
     image->width = x;
     image->height = y;
@@ -185,7 +184,7 @@ BCImage * bcCreateImageFromMemory(void *buffer, int size)
     unsigned char *data = stbi_load_from_memory(buffer, size, &x, &y, &comp, 0);
     if (data == NULL)
     {
-        bcLog("Image data not valid!");
+        bcLogWarning("Image data not valid!");
         return NULL;
     }
     BCImage *image = NEW_OBJECT(BCImage);
@@ -327,19 +326,19 @@ static void bindShaderVariables(BCShader *shader)
     {
         shader->loc_attributes[i] = glGetAttribLocation(shader->programId, s_ShaderAttributes[i].name);
         if (shader->loc_attributes[i] == -1)
-            bcLog("Shader attribute '%s' not found!", s_ShaderAttributes[i].name);
+            bcLogWarning("Shader attribute '%s' not found!", s_ShaderAttributes[i].name);
     }
     for (int i = 0; i < SHADER_UNIFORM_MAX; i++)
     {
         shader->loc_uniforms[i] = glGetUniformLocation(shader->programId, s_ShaderUniforms[i].name);
         if (shader->loc_uniforms[i] == -1)
-            bcLog("Shader uniform '%s' not found!", s_ShaderUniforms[i].name);
+            bcLogWarning("Shader uniform '%s' not found!", s_ShaderUniforms[i].name);
     }
 }
 
 static GLuint loadShader(const char *code, GLenum shaderType)
 {
-    bcLog("loadShader...");
+    bcLog("type=%s", shaderType == GL_VERTEX_SHADER ? "GL_VERTEX_SHADER" : "GL_FRAGMENT_SHADER");
     // generate common shader code
     char common_code[1000] = "";
     if (shaderType == GL_VERTEX_SHADER)
@@ -365,7 +364,7 @@ static GLuint loadShader(const char *code, GLenum shaderType)
     GLuint shaderId = glCreateShader(shaderType);
     if (shaderId == 0)
     {
-        bcLog("glCreateShader failed!");
+        bcLogError("glCreateShader failed!");
         return 0;
     }
     glShaderSource(shaderId, 3, strings, lengths);
@@ -380,17 +379,17 @@ static GLuint loadShader(const char *code, GLenum shaderType)
     {
         if (compileError == GL_FALSE)
         {
-            bcLog("[ERROR] Compile shader:\n%s", errorLog);
+            bcLogError("Compile shader:\n%s", errorLog);
         }
         else
         {
-            bcLog("[WARNING] Compile shader:\n%s", errorLog);
+            bcLogWarning("Compile shader:\n%s", errorLog);
         }
     }
     if (compileError == GL_FALSE)
     {
         glDeleteShader(shaderId);
-        bcLog("Shader not created!");
+        bcLogError("Shader not created!");
         return 0;
     }
     return shaderId;
@@ -413,7 +412,7 @@ BCShader * bcCreateShaderFromCode(const char *vsCode, const char *fsCode)
     shader->programId = glCreateProgram();
     if (shader->programId == 0)
     {
-        bcLog("Error creating shader program!");
+        bcLogError("Error creating shader program!");
         goto shader_create_error;
     }
     // vertex shaders
@@ -434,7 +433,7 @@ BCShader * bcCreateShaderFromCode(const char *vsCode, const char *fsCode)
         char errorLog[2000];
         GLsizei errorLen = 0;
         glGetProgramInfoLog(shader->programId, 2000, &errorLen, errorLog);
-        bcLog("[ERROR] Link program:\n%s", errorLog);
+        bcLogError("Link program:\n%s", errorLog);
         goto shader_create_error;
     }
     // validate program
@@ -445,7 +444,7 @@ BCShader * bcCreateShaderFromCode(const char *vsCode, const char *fsCode)
         char errorLog[2000];
         GLsizei errorLen = 0;
         glGetProgramInfoLog(shader->programId, 2000, &errorLen, errorLog);
-        bcLog("[ERROR] Validate program:\n%s", errorLog);
+        bcLogError("Validate program:\n%s", errorLog);
         goto shader_create_error;
     }
     // variables
@@ -597,7 +596,7 @@ BCMesh * bcCreateMesh(int num_vertices, int num_indices, int flags)
 {
     if (num_vertices == 0)
     {
-        bcLog("Number of verticies must be a positive number!");
+        bcLogError("Number of verticies must be a positive number!");
         return NULL;
     }
     BCMesh *mesh = NEW_OBJECT(BCMesh);
@@ -641,7 +640,7 @@ BCMesh * bcCompileMesh(BCMesh *mesh)
 {
     if (mesh == NULL)
     {
-        bcLog("Invalid mesh!");
+        bcLogError("Invalid mesh!");
         return NULL;
     }
     // bind vertex data
@@ -684,7 +683,7 @@ void bcDestroyMesh(BCMesh *mesh)
 {
     if (mesh == NULL)
     {
-        bcLog("Invalid mesh!");
+        bcLogError("Invalid mesh!");
         return;
     }
     free(mesh->vertices);
@@ -700,7 +699,7 @@ void bcDrawMesh(BCMesh *mesh)
 {
     if (mesh == NULL)
     {
-        bcLog("Invalid mesh!");
+        bcLogError("Invalid mesh!");
         return;
     }
 #ifdef SUPPORT_GLSL
