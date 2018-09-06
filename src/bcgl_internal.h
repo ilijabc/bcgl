@@ -8,9 +8,11 @@
 // bcgl_app module
 //
 
+BCCallbacks bcGetCallbacks();
+
 // App
-bool bcInit();
-void bcTerm();
+bool bcInitApp();
+void bcTermApp();
 
 // Window
 BCWindow * bcCreateWindow(BCConfig *config);

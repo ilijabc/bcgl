@@ -1,4 +1,5 @@
 #include "bcgl_internal.h"
+#include <bcgl_desktop.h>
 #include <GLFW/glfw3.h>
 
 static struct
@@ -199,7 +200,7 @@ static void glfw_WindowIconifyCallback(GLFWwindow *nativeWindow, int iconified)
 // App
 //
 
-bool bcInit()
+bool bcInitApp()
 {
     glfwSetErrorCallback(glfw_ErrorCallback);
     if (glfwInit() != GL_TRUE)
@@ -211,7 +212,7 @@ bool bcInit()
     return true;
 }
 
-void bcTerm()
+void bcTermApp()
 {
     glfwTerminate();
 }
@@ -356,18 +357,16 @@ BCWindow * bcGetWindow()
     return s_Window;
 }
 
-#ifdef BC_MAIN_LOOP
-
-// Main entry point
-
-int main(int argc, char **argv)
+int bcDesktopMain(int argc, char **argv)
 {
 #ifdef __MINGW32__
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
 #endif
 
-    if (!bcInit())
+    BCCallbacks callbacks = bcGetCallbacks();
+
+    if (!bcInitApp())
     {
         return 1;
     }
@@ -377,16 +376,20 @@ int main(int argc, char **argv)
     const GLFWvidmode *screen = glfwGetVideoMode(glfwGetPrimaryMonitor());
     config->width = screen->width;
     config->height = screen->height;
-    BC_onConfig(config);
+    if (callbacks.onConfig)
+        callbacks.onConfig(config);
+    else
+        bcLogWarning("Missing onConfig callback!");
 
     s_Window = bcCreateWindow(config);
     if (s_Window == NULL)
     {
-        bcTerm();
+        bcTermApp();
         return 2;
     }
 
-    BC_onStart();
+    if (callbacks.onStart)
+        callbacks.onStart();
 
     // Main loop
     float lastTime = bcGetTime();
@@ -398,22 +401,23 @@ int main(int argc, char **argv)
         for (int i = 0; i < n; i++)
         {
             BCEvent *e = bcGetEvent(i);
-            BC_onEvent(e->type, e->x, e->y);
+            if (callbacks.onEvent)
+                callbacks.onEvent(e->type, e->x, e->y);
         }
         // update
-        BC_onUpdate(bcGetTime() - lastTime);
+        if (callbacks.onUpdate)
+            callbacks.onUpdate(bcGetTime() - lastTime);
         lastTime = bcGetTime();
         bcUpdateWindow(s_Window);
     }
 
-    BC_onStop();
+    if (callbacks.onStop)
+        callbacks.onStop();
 
     bcDestroyWindow(s_Window);
     free(config);
     
-    bcTerm();
+    bcTermApp();
 
     return 0;
 }
-
-#endif // BC_MAIN_LOOP

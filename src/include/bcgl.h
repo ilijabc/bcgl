@@ -171,16 +171,20 @@ typedef struct
 //
 // !!! OVERRIDE THIS IN APP !!!
 //
-void BC_onConfig(BCConfig *config);
-void BC_onStart();
-void BC_onStop();
-void BC_onEvent(int event, int x, int y);
-void BC_onUpdate(float dt);
+typedef struct
+{
+    void (*onConfig)(BCConfig *config);
+    void (*onStart)();
+    void (*onStop)();
+    void (*onUpdate)(float dt);
+    void (*onEvent)(int event, int x, int y);
+} BCCallbacks;
 
 //
 // bcgl_app module
 //
 
+void bcInit(BCCallbacks callbacks);
 void bcQuit(int code);
 float bcGetTime();
 void bcShowKeyboard(bool show);

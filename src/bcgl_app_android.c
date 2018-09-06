@@ -441,7 +441,7 @@ BCWindow * bcGetWindow()
 }
 
 // App
-bool bcInit()
+bool bcInitApp()
 {
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -449,7 +449,7 @@ bool bcInit()
     return true;
 }
 
-void bcTerm()
+void bcTermApp()
 {
 }
 
@@ -476,7 +476,9 @@ void bcShowKeyboard(bool show)
 
 static void * rendererThread(void *arg)
 {
-    if (!bcInit())
+    BCCallbacks callbacks = bcGetCallbacks();
+
+    if (!bcInitApp())
     {
         return NULL;
     }
@@ -484,16 +486,20 @@ static void * rendererThread(void *arg)
     bool isRunning = true;
 
     BCConfig *config = (BCConfig *) arg;
-    BC_onConfig(config);
+    if (callbacks.onConfig)
+        callbacks.onConfig(config);
+    else
+        bcLogWarning("Missing onConfig callback!");
 
     BCWindow *window = bcCreateWindow(config);
     if (window == NULL)
     {
-        bcTerm();
+        bcTermApp();
         return NULL;
     }
 
-    BC_onStart();
+    if (callbacks.onStart)
+        callbacks.onStart();
 
     bcLog("Android : start main loop");
 
@@ -507,23 +513,26 @@ static void * rendererThread(void *arg)
         for (int i = 0; i < n; i++)
         {
             BCEvent *e = bcGetEvent(i);
-            BC_onEvent(e->type, e->x, e->y);
+            if (callbacks.onEvent)
+                callbacks.onEvent(e->type, e->x, e->y);
         }
         pthread_mutex_unlock(&s_Mutex);
         // update
-        BC_onUpdate(bcGetTime() - lastTime);
+        if (callbacks.onUpdate)
+            callbacks.onUpdate(bcGetTime() - lastTime);
         lastTime = bcGetTime();
         bcUpdateWindow(window);
     }
 
     bcLog("Android : stop main loop");
 
-    BC_onStop();
+    if (callbacks.onStop)
+        callbacks.onStop();
 
     bcDestroyWindow(window);
     free(config);
     
-    bcTerm();
+    bcTermApp();
 
     return NULL;
 }

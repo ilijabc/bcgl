@@ -1,5 +1,7 @@
 #include "bcgl_internal.h"
 
+static BCCallbacks s_Callbacks;
+
 // event queues
 #define MAX_EVENTS 32
 static BCEvent s_EventQueue[2][MAX_EVENTS];
@@ -41,6 +43,16 @@ static void processEvent(BCEvent *event)
         s_KeyState[event->x] = (event->type == BC_EVENT_KEYPRESS);
         break;
     }
+}
+
+void bcInit(BCCallbacks callbacks)
+{
+    s_Callbacks = callbacks;
+}
+
+BCCallbacks bcGetCallbacks()
+{
+    return s_Callbacks;
 }
 
 BCEvent * bcSendEvent(int type, int x, int y)

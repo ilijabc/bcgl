@@ -20,7 +20,6 @@ list(APPEND SRCS bcmath.c)
 add_definitions("-D SUPPORT_GLSL")
 add_definitions("-D SUPPORT_PAR_SHAPES")
 add_definitions("-D SUPPORT_GLAD")
-add_definitions("-D BC_MAIN_LOOP")
 
 add_library(bcgl ${SRCS})
 
