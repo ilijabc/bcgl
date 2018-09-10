@@ -102,7 +102,7 @@ void bcDestroyFont(BCFont * font)
     free(font);
 }
 
-void bcDrawText(BCFont * font, float x, float y, char *text)
+void bcDrawText(BCFont * font, float x, float y, const char *text)
 {
     if (font == NULL)
         return;

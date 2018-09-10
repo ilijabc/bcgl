@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <android/native_window.h>
 
 #define EVENT_APP_CREATE    1
@@ -27,3 +31,7 @@ void bcAndroidKeyEvent(int event, int key, int code);
 
 void bcAndroidSetCallback(void (*callback)(int type, int x, int y));
 void bcAndroidSendMessage(int type, int x, int y);
+
+#ifdef __cplusplus
+}
+#endif

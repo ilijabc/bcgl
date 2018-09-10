@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <math.h>
 
 typedef struct vec2 {
@@ -135,3 +139,7 @@ mat4_t mat4_rotate_z(mat4_t m1, float rad);
 mat4_t mat4_rotate_axis(mat4_t m1, float rad, float x, float y, float z);
 mat4_t mat4_scale(mat4_t m1, float x, float y, float z);
 mat4_t mat4_transpose(mat4_t m);
+
+#ifdef __cplusplus
+}
+#endif

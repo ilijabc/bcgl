@@ -154,8 +154,7 @@ static void DrawLight(mat4_t cm)
     bcSetLighting(true);
 }
 
-
-void BC_onConfig(BCConfig *config)
+static void BC_onConfig(BCConfig *config)
 {
     bcLog("screen: [%d %d]", config->width, config->height);
     float aspect = (float) config->width / (float) config->height;
@@ -166,7 +165,7 @@ void BC_onConfig(BCConfig *config)
 // #endif
 }
 
-void BC_onStart()
+static void BC_onStart()
 {
     bcLog("");
     // defaultShader = bcCreateShaderFromFile(PREFIX"assets/default.glsl");
@@ -191,7 +190,7 @@ void BC_onStart()
     }
 }
 
-void BC_onStop()
+static void BC_onStop()
 {
     bcLog("");
     for (int i = 0; i < MAX_OBJECTS; i++)
@@ -202,7 +201,7 @@ void BC_onStop()
     // bcDestroyShader(defaultShader);
 }
 
-void BC_onUpdate(float dt)
+static void BC_onUpdate(float dt)
 {
     //
     // Game logic
@@ -303,7 +302,7 @@ static const char *s_EventNames[] = {
     "BC_EVENT_WINDOWICONIFY",
 };
 
-void BC_onEvent(int event, int x, int y)
+static void BC_onEvent(int event, int x, int y)
 {
     static bool wire = false;
     // bcLog("%s: [ %d, %d ]", s_EventNames[event], x, y);
@@ -325,10 +324,25 @@ void BC_onEvent(int event, int x, int y)
             else
                 light.pos = light.stored_pos;
             break;
+        case BC_KEY_1:
+            bcShowKeyboard(true);
+            break;
         }
     }
     else if (event == BC_EVENT_WINDOWFOCUS)
     {
         bcLog("BC_EVENT_WINDOWFOCUS: %d", x);
     }
+}
+
+extern "C" void initGame()
+{
+    BCCallbacks callbacks = {
+        BC_onConfig,
+        BC_onStart,
+        BC_onStop,
+        BC_onUpdate,
+        BC_onEvent,
+    };
+    bcInit(callbacks);
 }

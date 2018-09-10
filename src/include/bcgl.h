@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -301,7 +305,7 @@ BCFont * bcCreateFontTTF(const char *filename, float height);
 BCFont * bcCreateFontFNT(const char *filename);
 BCFont * bcCreateFontBMP(const char *filename, int char_first, int char_count, int cols);
 void bcDestroyFont(BCFont *font);
-void bcDrawText(BCFont *font, float x, float y, char *text);
+void bcDrawText(BCFont *font, float x, float y, const char *text);
 
 //
 // bcgl_gfx_geometry module
@@ -454,3 +458,7 @@ enum BCKeyCode
     BC_KEY_MENU,
     BC_KEY_COUNT,
 };
+
+#ifdef __cplusplus
+}
+#endif
