@@ -68,7 +68,22 @@ enum BCFontType
     FONT_TYPE_BITMAP
 };
 
-// structs
+enum BCFileMode
+{
+    FILE_READ,
+    FILE_WRITE,
+    FILE_APPEND
+};
+
+typedef struct
+{
+    void *handle;
+    char *name;
+    bool isDir;
+    bool isAsset;
+    size_t length;
+    void *aux;
+} BCFile;
 
 typedef struct
 {
@@ -82,13 +97,6 @@ typedef struct
     // Android specific
     void *surface;
 } BCConfig;
-
-typedef struct
-{
-    int width;
-    int height;
-    void *nativeWindow;
-} BCWindow;
 
 typedef struct
 {
@@ -208,17 +216,33 @@ float bcGetMouseDeltaX();
 float bcGetMouseDeltaY();
 
 //
-// bcgl_common module
+// bcgl_file module
 //
 
+// File
+BCFile * bcOpenFile(const char *filename, enum BCFileMode mode);
+void bcCloseFile(BCFile *file);
+size_t bcReadFile(BCFile *file, void* buf, size_t count);
+size_t bcWriteFile(BCFile *file, void* buf, size_t count);
+size_t bcSeekFile(BCFile *file, size_t offset);
+size_t bcGetFilePosition(BCFile *file);
+const char * bcReadFileLine(BCFile *file);
+
+// Dir
+BCFile * bcOpenDir(const char *path);
+void bcCloseDir(BCFile *file);
+void bcRewindDir(BCFile *file);
+BCFile * bcGetNextFile(BCFile *file);
+
+// Data
 char * bcLoadTextFile(const char *filename);
-int bcLoadDataFile(const char *filename, unsigned char **out);
-BCColor bcHexToColor(uint32_t rgba);
-float bcGetRandom();
+unsigned char * bcLoadDataFile(const char *filename, int * psize);
 
 //
 // bcgl_gfx module
 //
+
+BCColor bcHexToColor(uint32_t rgba);
 
 // Image
 BCImage * bcCreateImage(int width, int height, int format);
@@ -312,6 +336,8 @@ void bcDrawText(BCFont *font, float x, float y, const char *text);
 //
 
 BCMesh * bcCreateMeshFromShape(void *par_shape);
+BCMesh * bcCreateMeshCube();
+BCMesh * bcCreateMeshSphere(int slices, int stacks);
 void bcTransformMesh(BCMesh *mesh, float *m);
 void bcDumpMesh(BCMesh *mesh, FILE *stream);
 

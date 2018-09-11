@@ -147,6 +147,23 @@ void bcTermGfx()
 #endif
 }
 
+BCColor bcHexToColor(uint32_t rgba)
+{
+    BCColor color;
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    color.a = (rgba & 0xff) / 255.0f;
+    color.b = (rgba >> 8 & 0xff) / 255.0f;
+    color.g = (rgba >> 16 & 0xff) / 255.0f;
+    color.r = (rgba >> 24 & 0xff) / 255.0f;
+#else
+    color.r = (rgba & 0xff) / 255.0f;
+    color.g = (rgba >> 8 & 0xff) / 255.0f;
+    color.b = (rgba >> 16 & 0xff) / 255.0f;
+    color.a = (rgba >> 24 & 0xff) / 255.0f;
+#endif
+    return color;
+}
+
 //
 // Image
 //

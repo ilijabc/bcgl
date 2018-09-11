@@ -43,6 +43,22 @@ BCMesh * bcCreateMeshFromShape(void *par_shape)
     return mesh;
 }
 
+BCMesh * bcCreateMeshCube()
+{
+    par_shapes_mesh *shape = par_shapes_create_cube();
+    BCMesh *mesh = bcCreateMeshFromShape(shape);
+    par_shapes_free_mesh(shape);
+    return mesh;
+}
+
+BCMesh * bcCreateMeshSphere(int slices, int stacks)
+{
+    par_shapes_mesh *shape = par_shapes_create_parametric_sphere(slices, stacks);
+    BCMesh *mesh = bcCreateMeshFromShape(shape);
+    par_shapes_free_mesh(shape);
+    return mesh;
+}
+
 void bcTransformMesh(BCMesh *mesh, float *m)
 {
     mat4_t tm = mat4_from_array(m);

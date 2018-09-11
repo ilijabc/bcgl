@@ -49,9 +49,8 @@ static bool getFontQuad(BCFont *font, char ch, float *px, float *py, stbtt_align
 
 BCFont * bcCreateFontTTF(const char *filename, float height)
 {
-    unsigned char *ttf_buffer = NULL;
-    int size = bcLoadDataFile(filename, &ttf_buffer);
-    if (size == 0)
+    unsigned char *ttf_buffer = bcLoadDataFile(filename, NULL);
+    if (ttf_buffer == NULL)
         return NULL;
     BCFont *font = NEW_OBJECT(BCFont);
     font->type = FONT_TYPE_TRUETYPE;

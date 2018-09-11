@@ -4,6 +4,13 @@
 #include <bcgl_opengl.h>
 #include <bcmath.h>
 
+typedef struct
+{
+    int width;
+    int height;
+    void *nativeWindow;
+} BCWindow;
+
 //
 // bcgl_app module
 //
