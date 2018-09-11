@@ -32,6 +32,8 @@ extern "C" {
 #define BC_LINES                1
 #define BC_QUADS                2
 
+#define ASSETS_DIR "assets/"
+
 // enums
 
 enum BCVertexAttributes
@@ -229,10 +231,10 @@ size_t bcGetFilePosition(BCFile *file);
 const char * bcReadFileLine(BCFile *file);
 
 // Dir
-BCFile * bcOpenDir(const char *path);
+BCFile * bcOpenDir(const char *filename);
 void bcCloseDir(BCFile *file);
 void bcRewindDir(BCFile *file);
-BCFile * bcGetNextFile(BCFile *file);
+const char * bcGetNextFileName(BCFile *file);
 
 // Data
 char * bcLoadTextFile(const char *filename);

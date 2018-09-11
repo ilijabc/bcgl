@@ -451,6 +451,7 @@ bool bcInitApp()
 
 void bcTermApp()
 {
+    bcTermFiles();
 }
 
 void bcQuit(int code)
@@ -535,6 +536,11 @@ static void * rendererThread(void *arg)
     bcTermApp();
 
     return NULL;
+}
+
+void bcAndroidSetAssetManager(AAssetManager *manager)
+{
+    bcInitFiles(manager);
 }
 
 void bcAndroidAcquireSurface(int id, ANativeWindow *surface, int format, int width, int height)

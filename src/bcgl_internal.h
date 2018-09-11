@@ -35,6 +35,13 @@ int bcPullEvents();
 BCEvent * bcGetEvent(int index);
 
 //
+// bcgl_files module
+//
+
+void bcInitFiles(void *ctx);
+void bcTermFiles();
+
+//
 // bcgl_gfx module
 //
 

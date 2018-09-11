@@ -4,6 +4,7 @@
 extern "C" {
 #endif
 
+#include <android/asset_manager.h>
 #include <android/native_window.h>
 
 #define EVENT_APP_CREATE    1
@@ -23,6 +24,7 @@ extern "C" {
 #define MSG_FINISH_ACTIVITY 1
 #define MSG_SHOW_KEYBOARD   2
 
+void bcAndroidSetAssetManager(AAssetManager *manager);
 void bcAndroidAcquireSurface(int id, ANativeWindow *window, int format, int width, int height);
 void bcAndroidReleaseSurface(int id);
 void bcAndroidAppChengeState(int state);

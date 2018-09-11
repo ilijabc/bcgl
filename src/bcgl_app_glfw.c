@@ -202,6 +202,7 @@ static void glfw_WindowIconifyCallback(GLFWwindow *nativeWindow, int iconified)
 
 bool bcInitApp()
 {
+    bcInitFiles(NULL);
     glfwSetErrorCallback(glfw_ErrorCallback);
     if (glfwInit() != GL_TRUE)
     {
@@ -215,6 +216,7 @@ bool bcInitApp()
 void bcTermApp()
 {
     glfwTerminate();
+    bcTermFiles();
 }
 
 void bcQuit(int code)
