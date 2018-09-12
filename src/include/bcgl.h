@@ -27,14 +27,16 @@ extern "C" {
 #define MESH_FLAGS_COL3         0x40
 #define MESH_FLAGS_COL4         0x80
 
-// Draw params
-#define BC_TRIANGLES            0
-#define BC_LINES                1
-#define BC_QUADS                2
-
 #define ASSETS_DIR "assets/"
 
 // enums
+
+enum BCDrawMode
+{
+    BC_TRIANGLES,
+    BC_LINES,
+    BC_QUADS
+};
 
 enum BCVertexAttributes
 {
@@ -287,16 +289,17 @@ void bcDrawMesh(BCMesh *mesh);
 //
 
 // IM
-bool bcBegin(int type);
+bool bcBegin(enum BCDrawMode mode);
 void bcEnd();
-bool bcBeginMesh(BCMesh *mesh);
+bool bcBeginMesh(BCMesh *mesh, enum BCDrawMode mode);
 void bcEndMesh();
 void bcVertex3f(float x, float y, float z);
 void bcVertex2f(float x, float y);
 void bcTexCoord2f(float u, float v);
-void bcNormalf(float x, float y, float z);
+void bcNormal3f(float x, float y, float z);
 void bcColor4f(float r, float g, float b, float a);
 void bcColor3f(float r, float g, float b);
+void glIndexi(int i);
 
 // Matrix Stack
 void bcSetPerspective(float fovy, float aspect, float znear, float zfar);

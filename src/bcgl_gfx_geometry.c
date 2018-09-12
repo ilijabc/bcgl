@@ -45,9 +45,47 @@ BCMesh * bcCreateMeshFromShape(void *par_shape)
 
 BCMesh * bcCreateMeshCube()
 {
-    par_shapes_mesh *shape = par_shapes_create_cube();
-    BCMesh *mesh = bcCreateMeshFromShape(shape);
-    par_shapes_free_mesh(shape);
+    BCMesh *mesh = bcCreateMesh(24, 0, MESH_FLAGS_POS3 | MESH_FLAGS_NORM );
+    if (bcBeginMesh(mesh, BC_QUADS))
+    {
+        bcColor3f(0.0f, 1.0f, 0.0f);     // Green
+        bcNormal3f(0, 1, 0);
+        bcVertex3f( 1.0f, 1.0f, -1.0f);
+        bcVertex3f(-1.0f, 1.0f, -1.0f);
+        bcVertex3f(-1.0f, 1.0f,  1.0f);
+        bcVertex3f( 1.0f, 1.0f,  1.0f);
+        bcColor3f(1.0f, 0.5f, 0.0f);     // Orange
+        bcNormal3f(0, -1, 0);
+        bcVertex3f( 1.0f, -1.0f,  1.0f);
+        bcVertex3f(-1.0f, -1.0f,  1.0f);
+        bcVertex3f(-1.0f, -1.0f, -1.0f);
+        bcVertex3f( 1.0f, -1.0f, -1.0f);
+        bcColor3f(1.0f, 0.0f, 0.0f);     // Red
+        bcNormal3f(0, 0, 1);
+        bcVertex3f( 1.0f,  1.0f, 1.0f);
+        bcVertex3f(-1.0f,  1.0f, 1.0f);
+        bcVertex3f(-1.0f, -1.0f, 1.0f);
+        bcVertex3f( 1.0f, -1.0f, 1.0f);
+        bcColor3f(1.0f, 1.0f, 0.0f);     // Yellow
+        bcNormal3f(0, 0, -1);
+        bcVertex3f( 1.0f, -1.0f, -1.0f);
+        bcVertex3f(-1.0f, -1.0f, -1.0f);
+        bcVertex3f(-1.0f,  1.0f, -1.0f);
+        bcVertex3f( 1.0f,  1.0f, -1.0f);
+        bcColor3f(0.0f, 0.0f, 1.0f);     // Blue
+        bcNormal3f(-1, 0, 0);
+        bcVertex3f(-1.0f,  1.0f,  1.0f);
+        bcVertex3f(-1.0f,  1.0f, -1.0f);
+        bcVertex3f(-1.0f, -1.0f, -1.0f);
+        bcVertex3f(-1.0f, -1.0f,  1.0f);
+        bcColor3f(1.0f, 0.0f, 1.0f);     // Magenta
+        bcNormal3f(1, 0, 0);
+        bcVertex3f(1.0f,  1.0f, -1.0f);
+        bcVertex3f(1.0f,  1.0f,  1.0f);
+        bcVertex3f(1.0f, -1.0f,  1.0f);
+        bcVertex3f(1.0f, -1.0f, -1.0f);
+        bcEndMesh(mesh);
+    }
     return mesh;
 }
 

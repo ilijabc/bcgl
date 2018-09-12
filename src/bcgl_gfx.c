@@ -117,7 +117,6 @@ void bcInitGfx()
     // matrix stack
 #ifdef SUPPORT_GLSL
     s_DefaultShader = bcCreateShaderFromCode(s_DefaultShaderCode, s_DefaultShaderCode);
-    bcLog("s_DefaultShader=%p", s_DefaultShader);
     bcBindShader(NULL);
 #else
     glAlphaFunc(GL_GREATER, 0.1f);

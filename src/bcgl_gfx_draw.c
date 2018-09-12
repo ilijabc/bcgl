@@ -6,10 +6,19 @@ static BCMesh *s_Mesh = NULL;
 
 static BCMesh * s_TempMesh = NULL;
 static vec4_t s_TempVertexData[VERTEX_ATTR_MAX];
+static int s_VertexCounter = -1;
+static int s_IndexCounter = -1;
 
 static mat4_t s_ProjectionMatrix;
 static mat4_t s_MatrixStack[MATRIX_STACK_SIZE];
 static int s_CurrentMatrix = 0;
+
+// Must match BCDrawMode
+static int s_DrawMode[] = {
+    GL_TRIANGLES,
+    GL_LINES,
+    GL_QUADS
+};
 
 void bcInitGfxDraw()
 {
@@ -25,17 +34,18 @@ void bcTermGfxDraw()
 
 // IM
 
-bool bcBegin(int type)
+bool bcBegin(enum BCDrawMode mode)
 {
-    return bcBeginMesh(s_Mesh);
+    return bcBeginMesh(s_Mesh, mode);
 }
 
 void bcEnd()
 {
-    bcEndMesh(s_TempMesh);
+    bcEndMesh(s_Mesh);
+    bcDrawMesh(s_Mesh);
 }
 
-bool bcBeginMesh(BCMesh *mesh)
+bool bcBeginMesh(BCMesh *mesh, enum BCDrawMode mode)
 {
     if (s_TempMesh != NULL)
     {
@@ -49,16 +59,29 @@ bool bcBeginMesh(BCMesh *mesh)
     }
     s_TempMesh = mesh;
     s_TempMesh->draw_count = 0;
+    s_TempMesh->draw_mode = s_DrawMode[mode];
     s_TempVertexData[VERTEX_ATTR_POSITIONS] = vec4(0, 0, 0, 0);
     s_TempVertexData[VERTEX_ATTR_NORMALS] = vec4(0, 0, 1, 0);
     s_TempVertexData[VERTEX_ATTR_TEXCOORDS] = vec4(0, 0, 0, 0);
     s_TempVertexData[VERTEX_ATTR_COLORS] = vec4(1, 1, 1, 1);
+    s_VertexCounter = 0;
+    s_IndexCounter = 0;
     return true;
 }
 
 void bcEndMesh()
 {
-    bcDrawMesh(s_TempMesh);
+    // process indices
+    if (s_TempMesh->num_indices > 0 && s_IndexCounter == 0)
+    {
+        for (int i = 0; i < s_VertexCounter; i++)
+        {
+            s_TempMesh->indices[i] = i;
+        }
+        s_IndexCounter = s_VertexCounter;
+    }
+    // assign counter
+    s_TempMesh->draw_count = (s_TempMesh->num_indices > 0) ? s_IndexCounter : s_VertexCounter;
     s_TempMesh = NULL;
 }
 
@@ -69,20 +92,22 @@ void bcVertex3f(float x, float y, float z)
         bcLogWarning("Mesh not locked!");
         return;
     }
-    if (s_TempMesh->draw_count >= s_TempMesh->num_vertices)
+    if (s_VertexCounter == s_TempMesh->num_vertices)
     {
         bcLogWarning("Mesh limit reached!");
         return;
     }
     s_TempVertexData[VERTEX_ATTR_POSITIONS] = vec4(x, y, z, 0);
-    float *vert_ptr = &(s_TempMesh->vertices[s_TempMesh->draw_count * s_TempMesh->total_comps]);
+    float *vert_ptr = &(s_TempMesh->vertices[s_VertexCounter * s_TempMesh->total_comps]);
     for (int i = 0; i < VERTEX_ATTR_MAX; i++)
     {
-        memcpy(vert_ptr, s_TempVertexData[i].v, s_TempMesh->total_comps * sizeof(float));
-        vert_ptr += s_TempMesh->comps[i];
+        if (s_TempMesh->comps[i] > 0)
+        {
+            memcpy(vert_ptr, s_TempVertexData[i].v, s_TempMesh->comps[i] * sizeof(float));
+            vert_ptr += s_TempMesh->comps[i];
+        }
     }
-    s_TempMesh->indices[s_TempMesh->draw_count] = s_TempMesh->draw_count;
-    s_TempMesh->draw_count++;
+    s_VertexCounter++;
 }
 
 void bcVertex2f(float x, float y)
@@ -95,7 +120,7 @@ void bcTexCoord2f(float u, float v)
     s_TempVertexData[VERTEX_ATTR_TEXCOORDS] = vec4(u, v, 0, 0);
 }
 
-void bcNormalf(float x, float y, float z)
+void bcNormal3f(float x, float y, float z)
 {
     s_TempVertexData[VERTEX_ATTR_NORMALS] = vec4(x, y, z, 0);
 }
@@ -216,8 +241,7 @@ void bcPrepareSceneGUI()
 void bcDrawTexture2D(BCTexture *texture, float x, float y, float w, float h, float sx, float sy, float sw, float sh)
 {
     bcBindTexture(texture);
-    // TODO: bcBegin(GL_TRIANGLES);
-    bcBegin(0);
+    bcBegin(BC_TRIANGLES);
     bcTexCoord2f(sx, sy);
     bcVertex2f(x, y);
     bcTexCoord2f(sx + sw, sy);
