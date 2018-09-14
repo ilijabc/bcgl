@@ -45,40 +45,35 @@ BCMesh * bcCreateMeshFromShape(void *par_shape)
 
 BCMesh * bcCreateMeshCube()
 {
-    BCMesh *mesh = bcCreateMesh(24, 0, MESH_FLAGS_POS3 | MESH_FLAGS_NORM );
+    BCMesh *mesh = bcCreateMesh(24, 0, MESH_FLAGS_POS3 | MESH_FLAGS_NORM | MESH_FLAGS_TEX2);
     if (bcBeginMesh(mesh, BC_QUADS))
     {
-        bcColor3f(0.0f, 1.0f, 0.0f);     // Green
+        // TODO: generate tex coords
         bcNormal3f(0, 1, 0);
         bcVertex3f( 1.0f, 1.0f, -1.0f);
         bcVertex3f(-1.0f, 1.0f, -1.0f);
         bcVertex3f(-1.0f, 1.0f,  1.0f);
         bcVertex3f( 1.0f, 1.0f,  1.0f);
-        bcColor3f(1.0f, 0.5f, 0.0f);     // Orange
         bcNormal3f(0, -1, 0);
         bcVertex3f( 1.0f, -1.0f,  1.0f);
         bcVertex3f(-1.0f, -1.0f,  1.0f);
         bcVertex3f(-1.0f, -1.0f, -1.0f);
         bcVertex3f( 1.0f, -1.0f, -1.0f);
-        bcColor3f(1.0f, 0.0f, 0.0f);     // Red
         bcNormal3f(0, 0, 1);
         bcVertex3f( 1.0f,  1.0f, 1.0f);
         bcVertex3f(-1.0f,  1.0f, 1.0f);
         bcVertex3f(-1.0f, -1.0f, 1.0f);
         bcVertex3f( 1.0f, -1.0f, 1.0f);
-        bcColor3f(1.0f, 1.0f, 0.0f);     // Yellow
         bcNormal3f(0, 0, -1);
         bcVertex3f( 1.0f, -1.0f, -1.0f);
         bcVertex3f(-1.0f, -1.0f, -1.0f);
         bcVertex3f(-1.0f,  1.0f, -1.0f);
         bcVertex3f( 1.0f,  1.0f, -1.0f);
-        bcColor3f(0.0f, 0.0f, 1.0f);     // Blue
         bcNormal3f(-1, 0, 0);
         bcVertex3f(-1.0f,  1.0f,  1.0f);
         bcVertex3f(-1.0f,  1.0f, -1.0f);
         bcVertex3f(-1.0f, -1.0f, -1.0f);
         bcVertex3f(-1.0f, -1.0f,  1.0f);
-        bcColor3f(1.0f, 0.0f, 1.0f);     // Magenta
         bcNormal3f(1, 0, 0);
         bcVertex3f(1.0f,  1.0f, -1.0f);
         bcVertex3f(1.0f,  1.0f,  1.0f);

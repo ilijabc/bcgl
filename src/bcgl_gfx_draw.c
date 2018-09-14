@@ -115,6 +115,22 @@ void bcVertex2f(float x, float y)
     bcVertex3f(x, y, 0);
 }
 
+void bcIndexi(int i)
+{
+    if (s_TempMesh == NULL)
+    {
+        bcLogWarning("Mesh not locked!");
+        return;
+    }
+    if (s_IndexCounter == s_TempMesh->num_indices)
+    {
+        bcLogWarning("Mesh limit reached!");
+        return;
+    }
+    s_TempMesh->indices[s_IndexCounter] = i;
+    s_IndexCounter++;
+}
+
 void bcTexCoord2f(float u, float v)
 {
     s_TempVertexData[VERTEX_ATTR_TEXCOORDS] = vec4(u, v, 0, 0);

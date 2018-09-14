@@ -295,11 +295,11 @@ bool bcBeginMesh(BCMesh *mesh, enum BCDrawMode mode);
 void bcEndMesh();
 void bcVertex3f(float x, float y, float z);
 void bcVertex2f(float x, float y);
+void bcIndexi(int i);
 void bcTexCoord2f(float u, float v);
 void bcNormal3f(float x, float y, float z);
 void bcColor4f(float r, float g, float b, float a);
 void bcColor3f(float r, float g, float b);
-void glIndexi(int i);
 
 // Matrix Stack
 void bcSetPerspective(float fovy, float aspect, float znear, float zfar);
