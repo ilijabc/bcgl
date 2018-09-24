@@ -33,9 +33,13 @@ extern "C" {
 
 enum BCDrawMode
 {
-    BC_TRIANGLES,
     BC_LINES,
-    BC_QUADS
+    BC_LINE_LOOP,
+    BC_LINE_STRIP,
+    BC_TRIANGLES,
+    BC_TRIANGLE_STRIP,
+    BC_TRIANGLE_FAN,
+    BC_QUADS // works only on mashes with indices
 };
 
 enum BCVertexAttributes
@@ -98,8 +102,7 @@ typedef struct
     int mode;
     bool vsync;
     int msaa;
-    // Android specific
-    void *surface;
+    int orientation;
 } BCConfig;
 
 typedef struct
@@ -277,6 +280,8 @@ void bcSetMaterial(BCMaterial material);
 void bcSetObjectColor(BCColor color);
 void bcSetProjectionMatrix(float *m);
 void bcSetModelViewMatrix(float *m);
+float * bcGetProjectionMatrix();
+float * bcGetModelViewMatrix();
 
 // Mesh
 BCMesh * bcCreateMesh(int num_vertices, int num_indices, int flags);
@@ -310,8 +315,6 @@ void bcIdentity();
 void bcTranslatef(float x, float y, float z);
 void bcRotatef(float deg, float x, float y, float z);
 void bcScalef(float x, float y, float z);
-void bcLoadMatrix(float *m);
-float * bcGetMatrix();
 
 // Camera
 void bcPrepareScene3D(float fov);
@@ -355,6 +358,7 @@ enum BCEventType
 {
     BC_EVENT_KEYPRESS,
     BC_EVENT_KEYRELEASE,
+    BC_EVENT_KEYREPEAT,
     BC_EVENT_MOUSEPRESS,
     BC_EVENT_MOUSERELEASE,
     BC_EVENT_MOUSEMOVE,

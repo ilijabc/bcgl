@@ -14,6 +14,8 @@ static BCMaterial s_DefaultMaterial =
     /*ambientColor*/ { 0.2f, 0.2f, 0.2f, 1 },
     /*texture*/ NULL
 };
+static mat4_t s_ProjectionMatrix;
+static mat4_t s_ModelViewMatrix;
 
 #ifdef SUPPORT_GLSL
 static BCShader *s_DefaultShader = NULL;
@@ -114,7 +116,6 @@ static const char s_DefaultShaderCode[] =
 
 void bcInitGfx()
 {
-    // matrix stack
 #ifdef SUPPORT_GLSL
     s_DefaultShader = bcCreateShaderFromCode(s_DefaultShaderCode, s_DefaultShaderCode);
     bcBindShader(NULL);
@@ -588,6 +589,7 @@ void bcSetObjectColor(BCColor color)
 
 void bcSetProjectionMatrix(float *m)
 {
+    s_ProjectionMatrix = mat4_from_array(m);
 #ifdef SUPPORT_GLSL
     glUniformMatrix4fv(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_PROJECTION], 1, GL_FALSE, m);
 #else
@@ -599,11 +601,22 @@ void bcSetProjectionMatrix(float *m)
 
 void bcSetModelViewMatrix(float *m)
 {
+    s_ModelViewMatrix = mat4_from_array(m);
 #ifdef SUPPORT_GLSL
     glUniformMatrix4fv(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_MODELVIEW], 1, GL_FALSE, m);
 #else
     glLoadMatrixf(m);
 #endif
+}
+
+float * bcGetProjectionMatrix()
+{
+    return s_ProjectionMatrix.v;
+}
+
+float * bcGetModelViewMatrix()
+{
+    return s_ModelViewMatrix.v;
 }
 
 // Mesh

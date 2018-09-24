@@ -157,7 +157,12 @@ static void glfw_KeyCallback(GLFWwindow *nativeWindow, int keyCode, int scanCode
         bcLogWarning("Unknown key code: %d !", keyCode);
         return;
     }
-    bcSendEvent((action == GLFW_PRESS) ? BC_EVENT_KEYPRESS : BC_EVENT_KEYRELEASE, appCode, 0);
+    if (action == GLFW_PRESS)
+        bcSendEvent(BC_EVENT_KEYPRESS, appCode, 0);
+    else if (action == GLFW_RELEASE)
+        bcSendEvent( BC_EVENT_KEYRELEASE, appCode, 0);
+    else if (action == GLFW_REPEAT)
+        bcSendEvent( BC_EVENT_KEYREPEAT, appCode, 0);
 }
 
 static void glfw_CursorPosCallback(GLFWwindow *nativeWindow, double x, double y)
@@ -373,17 +378,26 @@ int bcDesktopMain(int argc, char **argv)
         return 1;
     }
 
-    BCConfig *config = NEW_OBJECT(BCConfig);
     // Get the resolution of the primary monitor
     const GLFWvidmode *screen = glfwGetVideoMode(glfwGetPrimaryMonitor());
-    config->width = screen->width;
-    config->height = screen->height;
+
+    // Default config
+    BCConfig config;
+    config.title = NULL;
+    config.width = screen->width;
+    config.height = screen->height;
+    config.format = 0;
+    config.mode = 0;
+    config.vsync = true;
+    config.msaa = 0;
+    config.orientation = 0;
+
     if (callbacks.onConfig)
-        callbacks.onConfig(config);
+        callbacks.onConfig(&config);
     else
         bcLogWarning("Missing onConfig callback!");
 
-    s_Window = bcCreateWindow(config);
+    s_Window = bcCreateWindow(&config);
     if (s_Window == NULL)
     {
         bcTermApp();
@@ -417,7 +431,6 @@ int bcDesktopMain(int argc, char **argv)
         callbacks.onStop();
 
     bcDestroyWindow(s_Window);
-    free(config);
     
     bcTermApp();
 

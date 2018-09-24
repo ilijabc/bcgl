@@ -292,6 +292,7 @@ static pthread_t s_ThreadId;
 static pthread_mutex_t s_Mutex;
 static bool s_ThreadRunning;
 static void (*s_JniCallback)(int type, int x, int y) = NULL;
+static ANativeWindow * s_Surface = NULL;
 
 static int convertAndroidKeyCode(int keyCode)
 {
@@ -353,9 +354,9 @@ BCWindow * bcCreateWindow(BCConfig *inconfig)
         goto window_create_error;
     }
 
-    ANativeWindow_setBuffersGeometry(inconfig->surface, 0, 0, format);
+    ANativeWindow_setBuffersGeometry(s_Surface, 0, 0, format);
 
-    if (!(surface = eglCreateWindowSurface(display, config, inconfig->surface, 0))) {
+    if (!(surface = eglCreateWindowSurface(display, config, s_Surface, 0))) {
         bcLogError("eglCreateWindowSurface() returned error %d", eglGetError());
         goto window_create_error;
     }
@@ -551,9 +552,9 @@ void bcAndroidAcquireSurface(int id, ANativeWindow *surface, int format, int wid
     config->width = width;
     config->height = height;
     config->format = format;
-    config->surface = surface;
     config->vsync = true;
 
+    s_Surface = surface;
     s_ThreadRunning = true;
 
     pthread_mutex_init(&s_Mutex, 0);
@@ -564,6 +565,7 @@ void bcAndroidReleaseSurface(int id)
 {
     bcLog("id=%d", id);
     s_ThreadRunning = false;
+    s_Surface = NULL;
     pthread_join(s_ThreadId, 0);
 }
 

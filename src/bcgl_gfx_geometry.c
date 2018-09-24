@@ -45,7 +45,7 @@ BCMesh * bcCreateMeshFromShape(void *par_shape)
 
 BCMesh * bcCreateMeshCube()
 {
-    BCMesh *mesh = bcCreateMesh(24, 0, MESH_FLAGS_POS3 | MESH_FLAGS_NORM | MESH_FLAGS_TEX2);
+    BCMesh *mesh = bcCreateMesh(24, 360, MESH_FLAGS_POS3 | MESH_FLAGS_NORM | MESH_FLAGS_TEX2);
     if (bcBeginMesh(mesh, BC_QUADS))
     {
         // TODO: generate tex coords
