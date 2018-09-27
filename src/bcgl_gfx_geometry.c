@@ -45,40 +45,101 @@ BCMesh * bcCreateMeshFromShape(void *par_shape)
 
 BCMesh * bcCreateMeshCube()
 {
+    return bcCreateMeshBox(-0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f);
+}
+
+BCMesh * bcCreateMeshBox(float x1, float y1, float z1, float x2, float y2, float z2)
+{
     BCMesh *mesh = bcCreateMesh(24, 360, MESH_FLAGS_POS3 | MESH_FLAGS_NORM | MESH_FLAGS_TEX2);
     if (bcBeginMesh(mesh, BC_QUADS))
     {
         // TODO: generate tex coords
         bcNormal3f(0, 1, 0);
-        bcVertex3f( 1.0f, 1.0f, -1.0f);
-        bcVertex3f(-1.0f, 1.0f, -1.0f);
-        bcVertex3f(-1.0f, 1.0f,  1.0f);
-        bcVertex3f( 1.0f, 1.0f,  1.0f);
+        bcVertex3f(x2, y2, z1);
+        bcVertex3f(x1, y2, z1);
+        bcVertex3f(x1, y2, z2);
+        bcVertex3f(x2, y2, z2);
         bcNormal3f(0, -1, 0);
-        bcVertex3f( 1.0f, -1.0f,  1.0f);
-        bcVertex3f(-1.0f, -1.0f,  1.0f);
-        bcVertex3f(-1.0f, -1.0f, -1.0f);
-        bcVertex3f( 1.0f, -1.0f, -1.0f);
+        bcVertex3f(x2, y1, z2);
+        bcVertex3f(x1, y1, z2);
+        bcVertex3f(x1, y1, z1);
+        bcVertex3f(x2, y1, z1);
         bcNormal3f(0, 0, 1);
-        bcVertex3f( 1.0f,  1.0f, 1.0f);
-        bcVertex3f(-1.0f,  1.0f, 1.0f);
-        bcVertex3f(-1.0f, -1.0f, 1.0f);
-        bcVertex3f( 1.0f, -1.0f, 1.0f);
+        bcVertex3f(x2, y2,z2);
+        bcVertex3f(x1, y2,z2);
+        bcVertex3f(x1, y1,z2);
+        bcVertex3f(x2, y1,z2);
         bcNormal3f(0, 0, -1);
-        bcVertex3f( 1.0f, -1.0f, -1.0f);
-        bcVertex3f(-1.0f, -1.0f, -1.0f);
-        bcVertex3f(-1.0f,  1.0f, -1.0f);
-        bcVertex3f( 1.0f,  1.0f, -1.0f);
+        bcVertex3f(x2, y1, z1);
+        bcVertex3f(x1, y1, z1);
+        bcVertex3f(x1, y2, z1);
+        bcVertex3f(x2, y2, z1);
         bcNormal3f(-1, 0, 0);
-        bcVertex3f(-1.0f,  1.0f,  1.0f);
-        bcVertex3f(-1.0f,  1.0f, -1.0f);
-        bcVertex3f(-1.0f, -1.0f, -1.0f);
-        bcVertex3f(-1.0f, -1.0f,  1.0f);
+        bcVertex3f(x1, y2, z2);
+        bcVertex3f(x1, y2, z1);
+        bcVertex3f(x1, y1, z1);
+        bcVertex3f(x1, y1, z2);
         bcNormal3f(1, 0, 0);
-        bcVertex3f(1.0f,  1.0f, -1.0f);
-        bcVertex3f(1.0f,  1.0f,  1.0f);
-        bcVertex3f(1.0f, -1.0f,  1.0f);
-        bcVertex3f(1.0f, -1.0f, -1.0f);
+        bcVertex3f(x2, y2, z1);
+        bcVertex3f(x2, y2, z2);
+        bcVertex3f(x2, y1, z2);
+        bcVertex3f(x2, y1, z1);
+        bcEndMesh(mesh);
+    }
+    return mesh;
+}
+
+BCMesh * bcCreateCylinder(float radius, float height, int slices)
+{
+    BCMesh *mesh = bcCreateMesh(240, 360, MESH_FLAGS_POS3 | MESH_FLAGS_NORM | MESH_FLAGS_TEX2);
+    if (bcBeginMesh(mesh, BC_QUADS))
+    {
+        bcNormal3f(0, 0, -1);
+        bcVertex3f(0, 0, 0);
+        bcNormal3f(0, 0, 1);
+        bcVertex3f(0, 0, height);
+        int i1, i2, j1, j2;
+        int k1, k2, k3, k4;
+        i2 = (slices - 1) * 4 + 2;
+        j2 = (slices - 1) * 4 + 3;
+        k3 = (slices - 1) * 4 + 4;
+        k4 = (slices - 1) * 4 + 5;
+        for (int i = 0; i < slices; i++)
+        {
+            float t = (float) i / slices * M_PI * 2;
+            float st = sinf(t);
+            float ct = cosf(t);
+            float x = st * radius;
+            float y = ct * radius;
+            bcNormal3f(0, 0, -1);
+            i1 = bcVertex3f(x, y, 0);
+            bcNormal3f(0, 0, 1);
+            j1 = bcVertex3f(x, y, height);
+            {
+                // bottom caps
+                bcIndexi(0);
+                bcIndexi(i1);
+                bcIndexi(i2);
+                // top caps
+                bcIndexi(1);
+                bcIndexi(j1);
+                bcIndexi(j2);
+                // body
+                bcNormal3f(st, ct, 0);
+                k1 = bcVertex3f(x, y, 0);
+                k2 = bcVertex3f(x, y, height);
+                bcIndexi(k1);
+                bcIndexi(k3);
+                bcIndexi(k2);
+                bcIndexi(k2);
+                bcIndexi(k3);
+                bcIndexi(k4);
+            }
+            i2 = i1;
+            j2 = j1;
+            k3 = k1;
+            k4 = k2;
+        }
         bcEndMesh(mesh);
     }
     return mesh;

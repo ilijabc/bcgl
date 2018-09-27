@@ -111,17 +111,17 @@ void bcEndMesh()
     s_TempMesh = NULL;
 }
 
-void bcVertex3f(float x, float y, float z)
+int bcVertex3f(float x, float y, float z)
 {
     if (s_TempMesh == NULL)
     {
         bcLogWarning("Mesh not locked!");
-        return;
+        return -1;
     }
     if (s_VertexCounter == s_TempMesh->num_vertices)
     {
         bcLogWarning("Mesh limit reached!");
-        return;
+        return -1;
     }
     s_TempVertexData[VERTEX_ATTR_POSITIONS] = vec4(x, y, z, 0);
     float *vert_ptr = &(s_TempMesh->vertices[s_VertexCounter * s_TempMesh->total_comps]);
@@ -133,12 +133,12 @@ void bcVertex3f(float x, float y, float z)
             vert_ptr += s_TempMesh->comps[i];
         }
     }
-    s_VertexCounter++;
+    return s_VertexCounter++;
 }
 
-void bcVertex2f(float x, float y)
+int bcVertex2f(float x, float y)
 {
-    bcVertex3f(x, y, 0);
+    return bcVertex3f(x, y, 0);
 }
 
 void bcIndexi(int i)
@@ -285,7 +285,20 @@ void bcDrawTexture2D(BCTexture *texture, float x, float y, float w, float h, flo
     bcEnd();
 }
 
-void bcDrawRect2D(float x, float y, float w, float h);
+void bcDrawRect2D(enum BCDrawMode mode, float x, float y, float w, float h)
+{
+    bcBegin(mode);
+    bcTexCoord2f(0, 0);
+    bcVertex2f(x, y);
+    bcTexCoord2f(1, 0);
+    bcVertex2f(x + w, y);
+    bcTexCoord2f(1, 1);
+    bcVertex2f(x + w, y + h);
+    bcTexCoord2f(0, 1);
+    bcVertex2f(x, y + h);
+    bcEnd();
+}
+
 void bcDrawLines2D(int count, float vertices[]);
 
 // Draw 3D
@@ -298,4 +311,30 @@ void bcDrawCube(float x, float y, float z, float size_x, float size_y, float siz
     bcScalef(size_x, size_y, size_z);
     bcDrawMesh(s_ReusableCubeMesh);
     bcPopMatrix();
+}
+
+void bcDrawGrid(int size_x, int size_y)
+{
+    bcBegin(BC_LINES);
+    for (int x = 0; x < size_x + 1; x++)
+    {
+        bcVertex2f(x, 0);
+        bcVertex2f(x, size_y);
+    }
+    for (int y = 0; y < size_y + 1; y++)
+    {
+        bcVertex2f(0, y);
+        bcVertex2f(size_x, y);
+    }
+    bcEnd();
+}
+
+void bcDrawPlane(int size_x, int size_y)
+{
+    bcBegin(BC_QUADS);
+    bcVertex2f(0, 0);
+    bcVertex2f(size_x, 0);
+    bcVertex2f(size_x, size_y);
+    bcVertex2f(0, size_y);
+    bcEnd();
 }

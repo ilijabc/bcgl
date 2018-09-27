@@ -298,8 +298,8 @@ bool bcBegin(enum BCDrawMode mode);
 void bcEnd();
 bool bcBeginMesh(BCMesh *mesh, enum BCDrawMode mode);
 void bcEndMesh();
-void bcVertex3f(float x, float y, float z);
-void bcVertex2f(float x, float y);
+int bcVertex3f(float x, float y, float z);
+int bcVertex2f(float x, float y);
 void bcIndexi(int i);
 void bcTexCoord2f(float u, float v);
 void bcNormal3f(float x, float y, float z);
@@ -323,11 +323,13 @@ void bcPrepareSceneGUI();
 
 // Draw 2D
 void bcDrawTexture2D(BCTexture *texture, float x, float y, float w, float h, float sx, float sy, float sw, float sh);
-void bcDrawRect2D(float x, float y, float w, float h);
+void bcDrawRect2D(enum BCDrawMode mode, float x, float y, float w, float h);
 void bcDrawLines2D(int count, float vertices[]);
 
 // Draw 3D
 void bcDrawCube(float x, float y, float z, float size_x, float size_y, float size_z);
+void bcDrawGrid(int size_x, int size_y);
+void bcDrawPlane(int size_x, int size_y);
 
 //
 // bcgl_gfx_font module
@@ -345,6 +347,8 @@ void bcDrawText(BCFont *font, float x, float y, const char *text);
 
 BCMesh * bcCreateMeshFromShape(void *par_shape);
 BCMesh * bcCreateMeshCube();
+BCMesh * bcCreateMeshBox(float x1, float y1, float z1, float x2, float y2, float z2);
+BCMesh * bcCreateCylinder(float radius, float height, int slices);
 BCMesh * bcCreateMeshSphere(int slices, int stacks);
 void bcTransformMesh(BCMesh *mesh, float *m);
 void bcDumpMesh(BCMesh *mesh, FILE *stream);
