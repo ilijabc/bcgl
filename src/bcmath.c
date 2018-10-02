@@ -263,35 +263,35 @@ float vec3_dot(vec3_t v1, vec3_t v2)
 // {
 //     float d = vec2_dot(v1, v1);
 //     float s = vec2_dot(v0, v1) / d;
-//     result[0] = v1[0] * s;
-//     result[1] = v1[1] * s;
-//     result[2] = v1[2] * s;
+//     result.v[0] = v1[0] * s;
+//     result.v[1] = v1[1] * s;
+//     result.v[2] = v1[2] * s;
 //     return result;
 // }
 
 // vec3_t vec3_slide(vec3_t result, vec3_t v0, vec3_t normal)
 // {
 //     float d = vec3_dot(v0, normal);
-//     result[0] = v0[0] - normal[0] * d;
-//     result[1] = v0[1] - normal[1] * d;
-//     result[2] = v0[2] - normal[2] * d;
+//     result.v[0] = v0[0] - normal[0] * d;
+//     result.v[1] = v0[1] - normal[1] * d;
+//     result.v[2] = v0[2] - normal[2] * d;
 //     return result;
 // }
 
 // vec3_t vec3_reflect(vec3_t result, vec3_t v0, vec3_t normal)
 // {
-//     float d = MFLOAT_C(2.0) * vec3_dot(v0, normal);
-//     result[0] = normal[0] * d - v0[0];
-//     result[1] = normal[1] * d - v0[1];
-//     result[2] = normal[2] * d - v0[2];
+//     float d = 2.0f * vec3_dot(v0, normal);
+//     result.v[0] = normal[0] * d - v0[0];
+//     result.v[1] = normal[1] * d - v0[1];
+//     result.v[2] = normal[2] * d - v0[2];
 //     return result;
 // }
 
 // vec3_t vec3_lerp(vec3_t result, vec3_t v0, vec3_t v1, float f)
 // {
-//     result[0] = v0[0] + (v1[0] - v0[0]) * f;
-//     result[1] = v0[1] + (v1[1] - v0[1]) * f;
-//     result[2] = v0[2] + (v1[2] - v0[2]) * f;
+//     result.v[0] = v0[0] + (v1[0] - v0[0]) * f;
+//     result.v[1] = v0[1] + (v1[1] - v0[1]) * f;
+//     result.v[2] = v0[2] + (v1[2] - v0[2]) * f;
 //     return result;
 // }
 
@@ -524,6 +524,12 @@ mat4_t mat4_rotation_axis(float rad, float x, float y, float z)
     return result;
 }
 
+mat4_t mat4_rotation_quat(quat_t q)
+{
+    mat4_t result;
+    return result;
+}
+
 mat4_t mat4_scaling(float x, float y, float z)
 {
     mat4_t result = {
@@ -588,6 +594,12 @@ mat4_t mat4_rotate_axis(mat4_t m1, float rad, float x, float y, float z)
     return mat4_multiply(m1, m2);
 }
 
+mat4_t mat4_rotate_quat(mat4_t m1, quat_t q)
+{
+    mat4_t m2 = mat4_rotation_quat(q);
+    return mat4_multiply(m1, m2);
+}
+
 mat4_t mat4_scale(mat4_t m1, float x, float y, float z)
 {
     mat4_t m2 = mat4_scaling(x, y, z);
@@ -622,3 +634,248 @@ void mat4_dump(mat4_t m)
     printf("\n]\n");
 }
 #endif
+
+//
+// quat
+//
+
+// bool quat_is_zero(quat_t q0);
+// bool quat_is_equal(quat_t q0, quat_t q1);
+
+quat_t quat(float x, float y, float z, float w)
+{
+    quat_t result = { x, y, z, w };
+    return result;
+}
+
+quat_t quat_from_array(float *v)
+{
+    quat_t result = { v[0], v[1], v[2], v[3] };
+    return result;
+}
+
+quat_t quat_zero()
+{
+    quat_t result = { 0, 0, 0, 0 };
+    return result;
+}
+
+quat_t quat_unit()
+{
+    quat_t result = { 0, 0, 0, 1 };
+    return result;
+}
+
+quat_t quat_multiply(quat_t q0, quat_t q1)
+{
+    quat_t result = {
+        q0.v[3] * q1.v[0] + q0.v[0] * q1.v[3] + q0.v[1] * q1.v[2] - q0.v[2] * q1.v[1],
+        q0.v[3] * q1.v[1] + q0.v[1] * q1.v[3] + q0.v[2] * q1.v[0] - q0.v[0] * q1.v[2],
+        q0.v[3] * q1.v[2] + q0.v[2] * q1.v[3] + q0.v[0] * q1.v[1] - q0.v[1] * q1.v[0],
+        q0.v[3] * q1.v[3] - q0.v[0] * q1.v[0] - q0.v[1] * q1.v[1] - q0.v[2] * q1.v[2],
+    };
+    return result;
+}
+
+quat_t quat_multiply_f(quat_t q0, float f)
+{
+    quat_t result = {
+        q0.v[0] * f,
+        q0.v[1] * f,
+        q0.v[2] * f,
+        q0.v[3] * f,
+    };
+    return result;
+}
+
+quat_t quat_divide(quat_t q0, quat_t q1)
+{
+    float x = q0.v[0];
+    float y = q0.v[1];
+    float z = q0.v[2];
+    float w = q0.v[3];
+    float ls = q1.v[0] * q1.v[0] + q1.v[1] * q1.v[1] + q1.v[8] * q1.v[8] + q1.v[3] * q1.v[3];
+    float normalized_x = -q1.v[0] / ls;
+    float normalized_y = -q1.v[1] / ls;
+    float normalized_z = -q1.v[8] / ls;
+    float normalized_w = q1.v[3] / ls;
+    quat_t result = {
+        x * normalized_w + normalized_x * w + (y * normalized_z - z * normalized_y),
+        y * normalized_w + normalized_y * w + (z * normalized_x - x * normalized_z),
+        z * normalized_w + normalized_z * w + (x * normalized_y - y * normalized_x),
+        w * normalized_w - (x * normalized_x + y * normalized_y + z * normalized_z),
+    };
+    return result;
+}
+
+quat_t quat_divide_f(quat_t q0, float f)
+{
+    quat_t result = {
+        q0.v[0] / f,
+        q0.v[1] / f,
+        q0.v[2] / f,
+        q0.v[3] / f,
+    };
+    return result;
+}
+
+quat_t quat_negative(quat_t q0)
+{
+    quat_t result = {
+        -q0.v[0],
+        -q0.v[1],
+        -q0.v[2],
+        -q0.v[3],
+    };
+    return result;
+}
+
+quat_t quat_conjugate(quat_t q0)
+{
+    quat_t result = {
+        -q0.v[0],
+        -q0.v[1],
+        -q0.v[2],
+        q0.v[3],
+    };
+    return result;
+}
+
+quat_t quat_inverse(quat_t q0)
+{
+    float l = 1.0f / (q0.v[0] * q0.v[0] + q0.v[1] * q0.v[1] + q0.v[2] * q0.v[2] + q0.v[3] * q0.v[3]);
+    quat_t result = {
+        -q0.v[0] * l,
+        -q0.v[1] * l,
+        -q0.v[2] * l,
+        q0.v[3] * l,
+    };
+    return result;
+}
+
+quat_t quat_normalize(quat_t q0)
+{
+    float l = 1.0f / sqrtf(q0.v[0] * q0.v[0] + q0.v[1] * q0.v[1] + q0.v[2] * q0.v[2] + q0.v[3] * q0.v[3]);
+    quat_t result = {
+        q0.v[0] * l,
+        q0.v[1] * l,
+        q0.v[2] * l,
+        q0.v[3] * l,
+    };
+    return result;
+}
+
+float quat_dot(quat_t q0, quat_t q1)
+{
+    return q0.v[0] * q1.v[0] + q0.v[1] * q1.v[1] + q0.v[2] * q1.v[2] + q0.v[3] * q1.v[3];
+}
+
+// quat_t quat_power(quat_t q0, float exponent);
+
+quat_t quat_from_axis_angle(vec3_t axis, float angle)
+{
+    float half = angle * 0.5f;
+    float s = sinf(half);
+    quat_t result = {
+        axis.v[0] * s,
+        axis.v[1] * s,
+        axis.v[2] * s,
+        cosf(half),
+    };
+    return result;
+}
+
+// quat_t quat_from_vec3(float *v0, float *v1);
+
+quat_t quat_from_mat4(mat4_t m0)
+{
+    float scale = m0.v[0] + m0.v[5] + m0.v[10];
+    quat_t result;
+    if (scale > 0.0f) {
+        float sr = sqrtf(scale + 1.0f);
+        result.v[3] = sr * 0.5f;
+        sr = 0.5f / sr;
+        result.v[0] = (m0.v[9] - m0.v[6]) * sr;
+        result.v[1] = (m0.v[2] - m0.v[8]) * sr;
+        result.v[2] = (m0.v[4] - m0.v[1]) * sr;
+    } else if ((m0.v[0] >= m0.v[5]) && (m0.v[0] >= m0.v[10])) {
+        float sr = sqrtf(1.0f + m0.v[0] - m0.v[5] - m0.v[10]);
+        float half = 0.5f / sr;
+        result.v[0] = 0.5f * sr;
+        result.v[1] = (m0.v[4] + m0.v[1]) * half;
+        result.v[2] = (m0.v[8] + m0.v[2]) * half;
+        result.v[3] = (m0.v[9] - m0.v[6]) * half;
+    } else if (m0.v[5] > m0.v[10]) {
+        float sr = sqrtf(1.0f + m0.v[5] - m0.v[0] - m0.v[10]);
+        float half = 0.5f / sr;
+        result.v[0] = (m0.v[1] + m0.v[4]) * half;
+        result.v[1] = 0.5f * sr;
+        result.v[2] = (m0.v[6] + m0.v[9]) * half;
+        result.v[3] = (m0.v[2] - m0.v[8]) * half;
+    } else {
+        float sr = sqrtf(1.0f + m0.v[10] - m0.v[0] - m0.v[5]);
+        float half = 0.5f / sr;
+        result.v[0] = (m0.v[2] + m0.v[8]) * half;
+        result.v[1] = (m0.v[6] + m0.v[9]) * half;
+        result.v[2] = 0.5f * sr;
+        result.v[3] = (m0.v[4] - m0.v[1]) * half;
+    }
+    return result;
+}
+
+quat_t quat_lerp(quat_t q0, quat_t q1, float f)
+{
+    quat_t result = {
+        q0.v[0] + (q1.v[0] - q0.v[0]) * f,
+        q0.v[1] + (q1.v[1] - q0.v[1]) * f,
+        q0.v[2] + (q1.v[2] - q0.v[2]) * f,
+        q0.v[3] + (q1.v[3] - q0.v[3]) * f,
+    };
+    return result;
+}
+
+quat_t quat_slerp(quat_t q0, quat_t q1, float f)
+{
+    quat_t tmp1;
+    float d = quat_dot(q0, q1);
+    float f0;
+    float f1;
+    tmp1 = q1;
+    if (d < 0.0f) {
+        tmp1 = quat_negative(tmp1);
+        d = -d;
+    }
+    if (d > 0.9995f) {
+        f0 = 1.0f - f;
+        f1 = f;
+    } else {
+        float theta = acosf(d);
+        float sin_theta = sinf(theta);
+        f0 = sinf((1.0f - f) * theta) / sin_theta;
+        f1 = sinf(f * theta) / sin_theta;
+    }
+    quat_t result = {
+        q0.v[0] * f0 + tmp1.v[0] * f1,
+        q0.v[1] * f0 + tmp1.v[1] * f1,
+        q0.v[2] * f0 + tmp1.v[2] * f1,
+        q0.v[3] * f0 + tmp1.v[3] * f1,
+    };
+    return result;
+}
+
+float quat_length(quat_t q0)
+{
+    return sqrtf(q0.v[0] * q0.v[0] + q0.v[1] * q0.v[1] + q0.v[2] * q0.v[2] + q0.v[3] * q0.v[3]);
+}
+
+float quat_length_squared(quat_t q0)
+{
+    return q0.v[0] * q0.v[0] + q0.v[1] * q0.v[1] + q0.v[2] * q0.v[2] + q0.v[3] * q0.v[3];
+}
+
+float quat_angle(quat_t q0, quat_t q1)
+{
+    float s = sqrtf(quat_length_squared(q0) * quat_length_squared(q1));
+    s = 1.0f / s;
+    return acosf(quat_dot(q0, q1) * s);
+}

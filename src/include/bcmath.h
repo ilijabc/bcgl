@@ -39,6 +39,8 @@ typedef struct vec4 {
     };
 } vec4_t;
 
+typedef vec4_t quat_t;
+
 typedef struct mat3 {
     union {
         struct {
@@ -130,6 +132,7 @@ mat4_t mat4_rotation_x(float rad);
 mat4_t mat4_rotation_y(float rad);
 mat4_t mat4_rotation_z(float rad);
 mat4_t mat4_rotation_axis(float rad, float x, float y, float z);
+mat4_t mat4_rotation_quat(quat_t q);
 mat4_t mat4_scaling(float x, float y, float z);
 mat4_t mat4_multiply(mat4_t m1, mat4_t m2);
 mat4_t mat4_translate(mat4_t m1, float x, float y, float z);
@@ -137,9 +140,36 @@ mat4_t mat4_rotate_x(mat4_t m1, float rad);
 mat4_t mat4_rotate_y(mat4_t m1, float rad);
 mat4_t mat4_rotate_z(mat4_t m1, float rad);
 mat4_t mat4_rotate_axis(mat4_t m1, float rad, float x, float y, float z);
+mat4_t mat4_rotate_quat(mat4_t m1, quat_t q);
 mat4_t mat4_scale(mat4_t m1, float x, float y, float z);
 mat4_t mat4_transpose(mat4_t m);
 void mat4_dump(mat4_t m);
+
+// quat
+// bool quat_is_zero(quat_t q0);
+// bool quat_is_equal(quat_t q0, quat_t q1);
+quat_t quat(float x, float y, float z, float w);
+quat_t quat_from_array(float *v);
+quat_t quat_zero();
+quat_t quat_unit();
+quat_t quat_multiply(quat_t q0, quat_t q1);
+quat_t quat_multiply_f(quat_t q0, float f);
+quat_t quat_divide(quat_t q0, quat_t q1);
+quat_t quat_divide_f(quat_t q0, float f);
+quat_t quat_negative(quat_t q0);
+quat_t quat_conjugate(quat_t q0);
+quat_t quat_inverse(quat_t q0);
+quat_t quat_normalize(quat_t q0);
+float quat_dot(quat_t q0, quat_t q1);
+// quat_t quat_power(quat_t q0, float exponent);
+quat_t quat_from_axis_angle(vec3_t axis, float angle);
+// quat_t quat_from_vec3(float *v0, float *v1);
+quat_t quat_from_mat4(mat4_t m0);
+quat_t quat_lerp(quat_t q0, quat_t q1, float f);
+quat_t quat_slerp(quat_t q0, quat_t q1, float f);
+float quat_length(quat_t q0);
+float quat_length_squared(quat_t q0);
+float quat_angle(quat_t q0, quat_t q1);
 
 #ifdef __cplusplus
 }
