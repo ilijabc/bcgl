@@ -145,9 +145,10 @@ BCMesh * bcCreateCylinder(float radius, float height, int slices)
     return mesh;
 }
 
-BCMesh * bcCreateMeshSphere(int slices, int stacks)
+BCMesh * bcCreateMeshSphere(float radius, int slices, int stacks)
 {
     par_shapes_mesh *shape = par_shapes_create_parametric_sphere(slices, stacks);
+    par_shapes_scale(shape, radius/2, radius/2, radius/2);
     BCMesh *mesh = bcCreateMeshFromShape(shape);
     par_shapes_free_mesh(shape);
     return mesh;
@@ -159,7 +160,7 @@ void bcTransformMesh(BCMesh *mesh, float *m)
     float *vert_ptr = mesh->vertices;
     for (int i = 0; i < mesh->num_vertices; i++)
     {
-        vec4_t v = vec4(vert_ptr[0], vert_ptr[1], vert_ptr[2], 0);
+        vec4_t v = vec4(vert_ptr[0], vert_ptr[1], vert_ptr[2], 1);
         v = vec4_multiply_mat4(tm, v);
         vert_ptr[0] = v.x;
         vert_ptr[1] = v.y;

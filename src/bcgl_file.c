@@ -234,7 +234,7 @@ const char * bcGetNextFileName(BCFile *file)
     return dir->d_name;
 }
 
-char * bcLoadTextFile(const char *filename)
+char * bcLoadTextFile(const char *filename, int *out_size)
 {
     if (filename == NULL)
         return NULL;
@@ -248,10 +248,12 @@ char * bcLoadTextFile(const char *filename)
     bcReadFile(file, text, file->length);
     text[file->length] = '\0';
     bcCloseFile(file);
+    if (out_size)
+        *out_size = file->length + 1;
     return text;
 }
 
-unsigned char * bcLoadDataFile(const char *filename, int * psize)
+unsigned char * bcLoadDataFile(const char *filename, int *out_size)
 {
     if (filename == NULL)
         return NULL;
@@ -264,7 +266,7 @@ unsigned char * bcLoadDataFile(const char *filename, int * psize)
     unsigned char *out = (unsigned char *) malloc(sizeof(unsigned char) * file->length);
     bcReadFile(file, out, file->length);
     bcCloseFile(file);
-    if (psize)
-        *psize = file->length;
+    if (out_size)
+        *out_size = file->length;
     return out;
 }

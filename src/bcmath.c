@@ -604,3 +604,21 @@ mat4_t mat4_transpose(mat4_t m)
     };
     return result;
 }
+
+#if 1
+void mat4_dump(mat4_t m)
+{}
+#else
+#include <stdio.h>
+void mat4_dump(mat4_t m)
+{
+    printf("[");
+    for (int i = 0; i < 16; i++)
+    {
+        if (i % 4 == 0)
+            printf("\n  ");
+        printf("%.2f ", m.v[i]);
+    }
+    printf("\n]\n");
+}
+#endif

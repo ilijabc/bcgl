@@ -414,7 +414,7 @@ static GLuint loadShader(const char *code, GLenum shaderType)
 
 BCShader * bcCreateShaderFromFile(const char *filename)
 {
-    char *code = bcLoadTextFile(filename);
+    char *code = bcLoadTextFile(filename, NULL);
     if (code == NULL)
         return NULL;
     BCShader *shader = bcCreateShaderFromCode(code, code);

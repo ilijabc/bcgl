@@ -242,8 +242,8 @@ void bcRewindDir(BCFile *file);
 const char * bcGetNextFileName(BCFile *file);
 
 // Data
-char * bcLoadTextFile(const char *filename);
-unsigned char * bcLoadDataFile(const char *filename, int * psize);
+char * bcLoadTextFile(const char *filename, int *out_size);
+unsigned char * bcLoadDataFile(const char *filename, int *out_size);
 
 //
 // bcgl_gfx module
@@ -315,6 +315,7 @@ void bcIdentity();
 void bcTranslatef(float x, float y, float z);
 void bcRotatef(float deg, float x, float y, float z);
 void bcScalef(float x, float y, float z);
+void bcMultMatrixf(float *m);
 
 // Camera
 void bcPrepareScene3D(float fov);
@@ -349,7 +350,7 @@ BCMesh * bcCreateMeshFromShape(void *par_shape);
 BCMesh * bcCreateMeshCube();
 BCMesh * bcCreateMeshBox(float x1, float y1, float z1, float x2, float y2, float z2);
 BCMesh * bcCreateCylinder(float radius, float height, int slices);
-BCMesh * bcCreateMeshSphere(int slices, int stacks);
+BCMesh * bcCreateMeshSphere(float radius, int slices, int stacks);
 void bcTransformMesh(BCMesh *mesh, float *m);
 void bcDumpMesh(BCMesh *mesh, FILE *stream);
 

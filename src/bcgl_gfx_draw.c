@@ -235,6 +235,11 @@ void bcScalef(float x, float y, float z)
     bcSetModelViewMatrix(mat4_scale(getCurrentMatrix(), x, y, z).v);
 }
 
+void bcMultMatrixf(float *m)
+{
+    bcSetModelViewMatrix(mat4_multiply(getCurrentMatrix(), mat4_from_array(m)).v);
+}
+
 // Camera
 
 void bcPrepareScene3D(float fov)
