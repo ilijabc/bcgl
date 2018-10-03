@@ -26,6 +26,12 @@ vec3_t vec3_from_array(float *v)
     return result;
 }
 
+vec3_t vec3_from_mat4(mat4_t m)
+{
+    vec3_t result = { m.v[12], m.v[13], m.v[14] };
+    return result;
+}
+
 vec3_t vec3_zero()
 {
     vec3_t result = { 0, 0, 0 };
@@ -287,13 +293,15 @@ float vec3_dot(vec3_t v1, vec3_t v2)
 //     return result;
 // }
 
-// vec3_t vec3_lerp(vec3_t result, vec3_t v0, vec3_t v1, float f)
-// {
-//     result.v[0] = v0[0] + (v1[0] - v0[0]) * f;
-//     result.v[1] = v0[1] + (v1[1] - v0[1]) * f;
-//     result.v[2] = v0[2] + (v1[2] - v0[2]) * f;
-//     return result;
-// }
+vec3_t vec3_lerp(vec3_t v0, vec3_t v1, float f)
+{
+    vec3_t result = {
+        v0.v[0] + (v1.v[0] - v0.v[0]) * f,
+        v0.v[1] + (v1.v[1] - v0.v[1]) * f,
+        v0.v[2] + (v1.v[2] - v0.v[2]) * f,
+    };
+    return result;
+}
 
 // vec3_t vec3_bezier3(vec3_t result, vec3_t v0, vec3_t v1, vec3_t v2, float f)
 // {
@@ -524,9 +532,36 @@ mat4_t mat4_rotation_axis(float rad, float x, float y, float z)
     return result;
 }
 
-mat4_t mat4_rotation_quat(quat_t q)
+mat4_t mat4_rotation_quat(quat_t q0)
 {
-    mat4_t result;
+    // q0 = quat_normalize(q0);
+    float xx = q0.v[0] * q0.v[0];
+    float yy = q0.v[1] * q0.v[1];
+    float zz = q0.v[2] * q0.v[2];
+    float xy = q0.v[0] * q0.v[1];
+    float zw = q0.v[2] * q0.v[3];
+    float xz = q0.v[0] * q0.v[2];
+    float yw = q0.v[1] * q0.v[3];
+    float yz = q0.v[1] * q0.v[2];
+    float xw = q0.v[0] * q0.v[3];
+    mat4_t result = {
+        1.0f - 2.0f * (yy + zz),
+        2.0f * (xy - zw),
+        2.0f * (xz + yw),
+        0.0f,
+        2.0f * (xy + zw),
+        1.0f - 2.0f * (xx + zz),
+        2.0f * (yz - xw),
+        0.0f,
+        2.0f * (xz - yw),
+        2.0f * (yz + xw),
+        1.0f - 2.0f * (xx + yy),
+        0.0f,
+        0.0f,
+        0.0f,
+        0.0f,
+        1.0f,
+    };
     return result;
 }
 
