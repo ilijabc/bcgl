@@ -290,9 +290,9 @@ void bcDrawTexture2D(BCTexture *texture, float x, float y, float w, float h, flo
     bcEnd();
 }
 
-void bcDrawRect2D(enum BCDrawMode mode, float x, float y, float w, float h)
+void bcDrawRect2D(float x, float y, float w, float h, bool fill)
 {
-    bcBegin(mode);
+    bcBegin(fill ? BC_QUADS : BC_LINE_LOOP);
     bcTexCoord2f(0, 0);
     bcVertex2f(x, y);
     bcTexCoord2f(1, 0);
@@ -301,6 +301,23 @@ void bcDrawRect2D(enum BCDrawMode mode, float x, float y, float w, float h)
     bcVertex2f(x + w, y + h);
     bcTexCoord2f(0, 1);
     bcVertex2f(x, y + h);
+    bcEnd();
+}
+
+void bcDrawCircle2D(float x, float y, float r, int segments, bool fill)
+{
+    bcBegin(fill ? BC_TRIANGLE_FAN : BC_LINE_LOOP);
+    int n = segments;
+    if (fill)
+    {
+        bcVertex2f(x, y);
+        n++;
+    }
+    for (int i = 0; i < n; i++)
+    {
+        float t = (float) i / (float) segments * M_PI * 2;
+        bcVertex2f(x + cosf(t) * r, y + sinf(t) * r);
+    }
     bcEnd();
 }
 

@@ -5,6 +5,8 @@ extern "C" {
 #endif
 
 #include <math.h>
+#include <stdbool.h>
+#include <float.h>
 
 typedef struct vec2 {
     union {
@@ -70,11 +72,59 @@ typedef struct mat4 {
 #define randomf() ((float) rand() / (float) RAND_MAX)
 
 #ifndef M_PI
-#define M_PI 3.14159265358979323846
+#define M_PI 3.1415926536f
+#endif
+
+#ifndef M_PI_2
+#define M_PI_2 1.5707963268f
+#endif
+
+#ifndef M_PI_4
+#define M_PI_4 0.7853981634f
 #endif
 
 // vec2
 vec2_t vec2(float x, float y);
+vec2_t vec2_from_array(float *v);
+bool vec2_is_zero(vec2_t v0);
+bool vec2_is_equal(vec2_t v0, vec2_t v1);
+vec2_t vec2_zero();
+vec2_t vec2_one();
+// vec2_t vec2_sign(vec2_t v0);
+// vec2_t vec2_add(vec2_t v0, vec2_t v1);
+// vec2_t vec2_add_f(vec2_t v0, float f);
+vec2_t vec2_subtract(vec2_t v0, vec2_t v1);
+vec2_t vec2_subtract_f(vec2_t v0, float f);
+// vec2_t vec2_multiply(vec2_t v0, vec2_t v1);
+// vec2_t vec2_multiply_f(vec2_t v0, float f);
+// vec2_t vec2_multiply_mat2(vec2_t v0, vec2_t m0);
+// vec2_t vec2_divide(vec2_t v0, vec2_t v1);
+// vec2_t vec2_divide_f(vec2_t v0, float f);
+// vec2_t vec2_snap(vec2_t v0, vec2_t v1);
+// vec2_t vec2_snap_f(vec2_t v0, float f);
+// vec2_t vec2_negative(vec2_t v0);
+// vec2_t vec2_abs(vec2_t v0);
+// vec2_t vec2_floor(vec2_t v0);
+// vec2_t vec2_ceil(vec2_t v0);
+// vec2_t vec2_round(vec2_t v0);
+// vec2_t vec2_max(vec2_t v0, vec2_t v1);
+// vec2_t vec2_min(vec2_t v0, vec2_t v1);
+// vec2_t vec2_clamp(vec2_t v0, vec2_t v1, vec2_t v2);
+vec2_t vec2_normalize(vec2_t v0);
+// float vec2_dot(vec2_t v0, vec2_t v1);
+// vec2_t vec2_project(vec2_t v0, vec2_t v1);
+// vec2_t vec2_slide(vec2_t v0, vec2_t normal);
+// vec2_t vec2_reflect(vec2_t v0, vec2_t normal);
+// vec2_t vec2_tangent(vec2_t v0);
+// vec2_t vec2_rotate(vec2_t v0, float f);
+// vec2_t vec2_lerp(vec2_t v0, vec2_t v1, float f);
+// vec2_t vec2_bezier3(vec2_t v0, vec2_t v1, vec2_t v2, float f);
+// vec2_t vec2_bezier4(vec2_t v0, vec2_t v1, vec2_t v2, vec2_t v3, float f);
+float vec2_angle(vec2_t v0);
+float vec2_length(vec2_t v0);
+float vec2_length_squared(vec2_t v0);
+float vec2_distance(vec2_t v0, vec2_t v1);
+float vec2_distance_squared(vec2_t v0, vec2_t v1);
 
 // vec3
 vec3_t vec3(float x, float y, float z);

@@ -10,6 +10,109 @@ vec2_t vec2(float x, float y)
     return result;
 }
 
+vec2_t vec2_from_array(float *v)
+{
+    vec2_t result = { v[0], v[1] };
+    return result;
+}
+
+bool vec2_is_zero(vec2_t v0)
+{
+    return v0.v[0] < FLT_EPSILON && v0.v[1] < FLT_EPSILON;
+}
+
+bool vec2_is_equal(vec2_t v0, vec2_t v1)
+{
+    return fabsf(v0.v[0] - v1.v[0]) < FLT_EPSILON && fabsf(v0.v[1] - v1.v[1]) < FLT_EPSILON;
+}
+
+vec2_t vec2_zero()
+{
+    vec2_t result = { 0, 0 };
+    return result;
+}
+vec2_t vec2_one()
+{
+    vec2_t result = { 1, 1 };
+    return result;
+}
+
+// vec2_t vec2_sign(vec2_t v0);
+// vec2_t vec2_add(vec2_t v0, vec2_t v1);
+// vec2_t vec2_add_f(vec2_t v0, float f);
+vec2_t vec2_subtract(vec2_t v0, vec2_t v1)
+{
+    vec2_t result = { v0.x - v1.x, v0.y - v1.y };
+    return result;
+}
+
+vec2_t vec2_subtract_f(vec2_t v0, float f)
+{
+    vec2_t result = { v0.x - f, v0.y - f };
+    return result;
+}
+
+// vec2_t vec2_multiply(vec2_t v0, vec2_t v1);
+// vec2_t vec2_multiply_f(vec2_t v0, float f);
+// vec2_t vec2_multiply_mat2(vec2_t v0, vec2_t m0);
+// vec2_t vec2_divide(vec2_t v0, vec2_t v1);
+// vec2_t vec2_divide_f(vec2_t v0, float f);
+// vec2_t vec2_snap(vec2_t v0, vec2_t v1);
+// vec2_t vec2_snap_f(vec2_t v0, float f);
+// vec2_t vec2_negative(vec2_t v0);
+// vec2_t vec2_abs(vec2_t v0);
+// vec2_t vec2_floor(vec2_t v0);
+// vec2_t vec2_ceil(vec2_t v0);
+// vec2_t vec2_round(vec2_t v0);
+// vec2_t vec2_max(vec2_t v0, vec2_t v1);
+// vec2_t vec2_min(vec2_t v0, vec2_t v1);
+// vec2_t vec2_clamp(vec2_t v0, vec2_t v1, vec2_t v2);
+
+vec2_t vec2_normalize(vec2_t v0)
+{
+    float l = sqrtf(v0.v[0] * v0.v[0] + v0.v[1] * v0.v[1]);
+    vec2_t result = {
+        v0.v[0] / l,
+        v0.v[1] / l,
+    };
+    return result;
+}
+
+// float vec2_dot(vec2_t v0, vec2_t v1);
+// vec2_t vec2_project(vec2_t v0, vec2_t v1);
+// vec2_t vec2_slide(vec2_t v0, vec2_t normal);
+// vec2_t vec2_reflect(vec2_t v0, vec2_t normal);
+// vec2_t vec2_tangent(vec2_t v0);
+// vec2_t vec2_rotate(vec2_t v0, float f);
+// vec2_t vec2_lerp(vec2_t v0, vec2_t v1, float f);
+// vec2_t vec2_bezier3(vec2_t v0, vec2_t v1, vec2_t v2, float f);
+// vec2_t vec2_bezier4(vec2_t v0, vec2_t v1, vec2_t v2, vec2_t v3, float f);
+
+float vec2_angle(vec2_t v0)
+{
+    return atan2f(v0.v[1], v0.v[0]);
+}
+
+float vec2_length(vec2_t v0)
+{
+    return sqrtf(v0.v[0] * v0.v[0] + v0.v[1] * v0.v[1]);
+}
+
+float vec2_length_squared(vec2_t v0)
+{
+    return v0.v[0] * v0.v[0] + v0.v[1] * v0.v[1];
+}
+
+float vec2_distance(vec2_t v0, vec2_t v1)
+{
+    return sqrtf((v0.v[0] - v1.v[0]) * (v0.v[0] - v1.v[0]) + (v0.v[1] - v1.v[1]) * (v0.v[1] - v1.v[1]));
+}
+
+float vec2_distance_squared(vec2_t v0, vec2_t v1)
+{
+    return (v0.v[0] - v1.v[0]) * (v0.v[0] - v1.v[0]) + (v0.v[1] - v1.v[1]) * (v0.v[1] - v1.v[1]);
+}
+
 //
 // vec3
 //
@@ -729,10 +832,10 @@ quat_t quat_divide(quat_t q0, quat_t q1)
     float y = q0.v[1];
     float z = q0.v[2];
     float w = q0.v[3];
-    float ls = q1.v[0] * q1.v[0] + q1.v[1] * q1.v[1] + q1.v[8] * q1.v[8] + q1.v[3] * q1.v[3];
+    float ls = q1.v[0] * q1.v[0] + q1.v[1] * q1.v[1] + q1.v[2] * q1.v[2] + q1.v[3] * q1.v[3];
     float normalized_x = -q1.v[0] / ls;
     float normalized_y = -q1.v[1] / ls;
-    float normalized_z = -q1.v[8] / ls;
+    float normalized_z = -q1.v[2] / ls;
     float normalized_w = q1.v[3] / ls;
     quat_t result = {
         x * normalized_w + normalized_x * w + (y * normalized_z - z * normalized_y),

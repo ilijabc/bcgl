@@ -324,7 +324,8 @@ void bcPrepareSceneGUI();
 
 // Draw 2D
 void bcDrawTexture2D(BCTexture *texture, float x, float y, float w, float h, float sx, float sy, float sw, float sh);
-void bcDrawRect2D(enum BCDrawMode mode, float x, float y, float w, float h);
+void bcDrawRect2D(float x, float y, float w, float h, bool fill);
+void bcDrawCircle2D(float x, float y, float r, int segments, bool fill);
 void bcDrawLines2D(int count, float vertices[]);
 
 // Draw 3D
