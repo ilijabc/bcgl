@@ -207,6 +207,9 @@ void bcInit(BCCallbacks callbacks);
 void bcQuit(int code);
 float bcGetTime();
 void bcShowKeyboard(bool show);
+int bcGetDisplayWidth();
+int bcGetDisplayHeight();
+float bcGetDisplayDensity();
 
 //
 // bcgl_app_common
@@ -278,6 +281,7 @@ void bcSetLighting(bool enabled);
 void bcLightPosition(float x, float y, float z);
 void bcSetMaterial(BCMaterial material);
 void bcSetObjectColor(BCColor color);
+void bcSetObjectColorf(float r, float g, float b, float a);
 void bcSetProjectionMatrix(float *m);
 void bcSetModelViewMatrix(float *m);
 float * bcGetProjectionMatrix();

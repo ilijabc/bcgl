@@ -247,9 +247,9 @@ char * bcLoadTextFile(const char *filename, int *out_size)
     char *text = (char *) malloc(sizeof(char) * (file->length + 1));
     bcReadFile(file, text, file->length);
     text[file->length] = '\0';
-    bcCloseFile(file);
     if (out_size)
         *out_size = file->length + 1;
+    bcCloseFile(file);
     return text;
 }
 
@@ -265,8 +265,8 @@ unsigned char * bcLoadDataFile(const char *filename, int *out_size)
     }
     unsigned char *out = (unsigned char *) malloc(sizeof(unsigned char) * file->length);
     bcReadFile(file, out, file->length);
-    bcCloseFile(file);
     if (out_size)
         *out_size = file->length;
+    bcCloseFile(file);
     return out;
 }

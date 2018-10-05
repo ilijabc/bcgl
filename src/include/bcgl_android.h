@@ -24,6 +24,8 @@ extern "C" {
 #define MSG_FINISH_ACTIVITY 1
 #define MSG_SHOW_KEYBOARD   2
 
+#define GET_NUMBER_DENSITY  1
+
 void bcAndroidSetAssetManager(AAssetManager *manager);
 void bcAndroidAcquireSurface(int id, ANativeWindow *window, int format, int width, int height);
 void bcAndroidReleaseSurface(int id);
@@ -31,8 +33,9 @@ void bcAndroidAppChengeState(int state);
 void bcAndroidTouchEvent(int event, int id, float x, float y);
 void bcAndroidKeyEvent(int event, int key, int code);
 
-void bcAndroidSetCallback(void (*callback)(int type, int x, int y));
+void bcAndroidSetCallbacks(void (*msg_callback)(int type, int x, int y), float (*num_callback)(int key));
 void bcAndroidSendMessage(int type, int x, int y);
+float bcAndroidGetNumber(int key);
 
 #ifdef __cplusplus
 }

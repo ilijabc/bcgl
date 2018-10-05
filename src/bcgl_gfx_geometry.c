@@ -84,7 +84,7 @@ BCMesh * bcCreateMeshBox(float x1, float y1, float z1, float x2, float y2, float
         bcVertex3f(x2, y2, z2);
         bcVertex3f(x2, y1, z2);
         bcVertex3f(x2, y1, z1);
-        bcEndMesh(mesh);
+        bcEndMesh();
     }
     return mesh;
 }
@@ -140,7 +140,7 @@ BCMesh * bcCreateCylinder(float radius, float height, int slices)
             k3 = k1;
             k4 = k2;
         }
-        bcEndMesh(mesh);
+        bcEndMesh();
     }
     return mesh;
 }

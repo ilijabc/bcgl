@@ -50,6 +50,16 @@ void bcInit(BCCallbacks callbacks)
     s_Callbacks = callbacks;
 }
 
+int bcGetDisplayWidth()
+{
+    return bcGetWindow()->width;
+}
+
+int bcGetDisplayHeight()
+{
+    return bcGetWindow()->height;
+}
+
 BCCallbacks bcGetCallbacks()
 {
     return s_Callbacks;

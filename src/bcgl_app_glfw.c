@@ -238,6 +238,11 @@ void bcShowKeyboard(bool show)
 {
 }
 
+float bcGetDisplayDensity()
+{
+    return 1.0f;
+}
+
 //
 // Window
 //

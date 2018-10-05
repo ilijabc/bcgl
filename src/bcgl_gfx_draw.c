@@ -16,6 +16,7 @@ static BCMesh *s_ReusableCubeMesh = NULL;
 
 void bcInitGfxDraw()
 {
+    s_MatrixCounter = 0;
 }
 
 void bcTermGfxDraw()
@@ -58,7 +59,7 @@ bool bcBegin(enum BCDrawMode mode)
 
 void bcEnd()
 {
-    bcEndMesh(s_ReusableSolidMesh);
+    bcEndMesh();
     bcDrawMesh(s_ReusableSolidMesh);
 }
 

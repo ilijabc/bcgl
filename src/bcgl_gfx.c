@@ -583,7 +583,16 @@ void bcSetObjectColor(BCColor color)
 #ifdef SUPPORT_GLSL
     glUniform4fv(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_OBJECT_COLOR], 1, (float *) &(color));
 #else
-    glColor4f(color.r, color.g, color.b, color.a);
+    glColor4f((float *) &(color));
+#endif
+}
+
+void bcSetObjectColorf(float r, float g, float b, float a)
+{
+#ifdef SUPPORT_GLSL
+    glUniform4f(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_OBJECT_COLOR], r, g, b, a);
+#else
+    glColor4f(r, g, b, a);
 #endif
 }
 

@@ -291,7 +291,8 @@ static long s_StartTimeSec;
 static pthread_t s_ThreadId;
 static pthread_mutex_t s_Mutex;
 static bool s_ThreadRunning;
-static void (*s_JniCallback)(int type, int x, int y) = NULL;
+static void (*s_MsgCallback)(int type, int x, int y) = NULL;
+static float (*s_NumCallback)(int key) = NULL;
 static ANativeWindow * s_Surface = NULL;
 
 static int convertAndroidKeyCode(int keyCode)
@@ -472,6 +473,11 @@ void bcShowKeyboard(bool show)
     bcAndroidSendMessage(MSG_SHOW_KEYBOARD, show, 0);
 }
 
+float bcGetDisplayDensity()
+{
+    return bcAndroidGetNumber(GET_NUMBER_DENSITY);
+}
+
 //
 // BCGL Android API
 //
@@ -622,15 +628,23 @@ void bcAndroidKeyEvent(int event, int key, int code)
 }
 
 
-void bcAndroidSetCallback(void (*callback)(int type, int x, int y))
+void bcAndroidSetCallbacks(void (*msg_callback)(int type, int x, int y), float (*num_callback)(int key))
 {
-    s_JniCallback = callback;
+    s_MsgCallback = msg_callback;
+    s_NumCallback = num_callback;
 }
 
 void bcAndroidSendMessage(int type, int x, int y)
 {
     // pthread_mutex_lock(&s_Mutex);
-    if (s_JniCallback)
-        s_JniCallback(type, x, y);
+    if (s_MsgCallback)
+        s_MsgCallback(type, x, y);
     // pthread_mutex_unlock(&s_Mutex);
+}
+
+float bcAndroidGetNumber(int key)
+{
+    if (s_NumCallback)
+        return s_NumCallback(key);
+    return 0.0f;
 }
