@@ -585,7 +585,7 @@ void bcSetObjectColor(BCColor color)
 #ifdef SUPPORT_GLSL
     glUniform4fv(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_OBJECT_COLOR], 1, (float *) &(color));
 #else
-    glColor4f((float *) &(color));
+    glColor4fv((float *) &(color));
 #endif
 }
 
@@ -762,8 +762,8 @@ void bcBeginMeshDraw(BCMesh *mesh)
         glBindBuffer(GL_ARRAY_BUFFER, mesh->vert_vbo);
     if (mesh->indx_vbo)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indx_vbo);
-#ifdef SUPPORT_GLSL
     float *vert_ptr = (mesh->vert_vbo ? (float *) 0 : mesh->vertices);
+#ifdef SUPPORT_GLSL
     for (int i = 0; i < VERTEX_ATTR_MAX; i++)
     {
         if (mesh->comps[i] > 0)
@@ -775,7 +775,6 @@ void bcBeginMeshDraw(BCMesh *mesh)
     }
     glUniform1i(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_VERTEX_COLOR_ENABLED], mesh->comps[VERTEX_ATTR_COLORS]);
 #else
-    float *vert_ptr = mesh->vertices;
     for (int i = 0; i < VERTEX_ATTR_MAX; i++)
     {
         if (mesh->comps[i] > 0)

@@ -328,7 +328,7 @@ void bcDrawLines2D(int count, float vertices[]);
 void bcDrawCube(float x, float y, float z, float size_x, float size_y, float size_z)
 {
     if (s_ReusableCubeMesh == NULL)
-        s_ReusableCubeMesh = bcCreateMeshCube();
+        s_ReusableCubeMesh = bcCompileMesh(bcCreateMeshCube());
     bcPushMatrix();
     bcTranslatef(x, y, z);
     bcScalef(size_x, size_y, size_z);
