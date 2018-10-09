@@ -22,6 +22,8 @@ static BCShader *s_DefaultShader = NULL;
 static BCShader *s_CurrentShader = NULL;
 #endif
 
+static BCMesh *s_CurrentMesh = NULL;
+
 #ifdef __ANDROID__
     #define GLSL_CODE_HEADER \
     "#version 100\n" \
@@ -686,14 +688,14 @@ BCMesh * bcCompileMesh(BCMesh *mesh)
     {
         glGenBuffers(1, &(mesh->vert_vbo));
         glBindBuffer(GL_ARRAY_BUFFER, mesh->vert_vbo);
-        glBufferData(GL_ARRAY_BUFFER, mesh->num_vertices * mesh->total_comps, mesh->vertices, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, mesh->num_vertices * mesh->total_comps * sizeof(float), mesh->vertices, GL_STATIC_DRAW);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
     else
     {
         // TODO: GL_DYNAMIC_DRAW
         glBindBuffer(GL_ARRAY_BUFFER, mesh->vert_vbo);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, mesh->num_vertices * mesh->total_comps, mesh->vertices);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, mesh->num_vertices * mesh->total_comps * sizeof(float), mesh->vertices);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
     // bind index data
@@ -740,8 +742,28 @@ void bcDrawMesh(BCMesh *mesh)
         bcLogError("Invalid mesh!");
         return;
     }
+    bcDrawMeshEx(mesh, 0, mesh->draw_count);
+}
+
+void bcBeginMeshDraw(BCMesh *mesh)
+{
+    if (mesh == NULL)
+    {
+        bcLogError("Invalid mesh!");
+        return;
+    }
+    if (s_CurrentMesh != NULL)
+    {
+        bcLogError("Mesh already assigned!");
+        return;
+    }
+    s_CurrentMesh = mesh;
+    if (mesh->vert_vbo)
+        glBindBuffer(GL_ARRAY_BUFFER, mesh->vert_vbo);
+    if (mesh->indx_vbo)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indx_vbo);
 #ifdef SUPPORT_GLSL
-    float *vert_ptr = mesh->vertices;
+    float *vert_ptr = (mesh->vert_vbo ? (float *) 0 : mesh->vertices);
     for (int i = 0; i < VERTEX_ATTR_MAX; i++)
     {
         if (mesh->comps[i] > 0)
@@ -752,18 +774,6 @@ void bcDrawMesh(BCMesh *mesh)
         }
     }
     glUniform1i(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_VERTEX_COLOR_ENABLED], mesh->comps[VERTEX_ATTR_COLORS]);
-    if (mesh->indices) {
-        glDrawElements(mesh->draw_mode, mesh->draw_count, GL_UNSIGNED_SHORT, mesh->indices);
-    } else {
-        glDrawArrays(mesh->draw_mode, 0, mesh->draw_count);
-    }
-    for (int i = 0; i < VERTEX_ATTR_MAX; i++)
-    {
-        if (mesh->comps[i] > 0)
-        {
-            glDisableVertexAttribArray(s_CurrentShader->loc_attributes[i]);
-        }
-    }
 #else
     float *vert_ptr = mesh->vertices;
     for (int i = 0; i < VERTEX_ATTR_MAX; i++)
@@ -792,14 +802,66 @@ void bcDrawMesh(BCMesh *mesh)
             vert_ptr += mesh->comps[i];
         }
     }
-    if (mesh->indices) {
-        glDrawElements(mesh->draw_mode, mesh->draw_count, GL_UNSIGNED_SHORT, mesh->indices);
-    } else {
-        glDrawArrays(mesh->draw_mode, 0, mesh->draw_count);
+#endif
+}
+
+void bcEndMeshDraw(BCMesh *mesh)
+{
+    if (mesh == NULL)
+    {
+        bcLogError("Invalid mesh!");
+        return;
     }
+    if (mesh != s_CurrentMesh)
+    {
+        bcLogError("Mesh not assigned!");
+        return;
+    }
+#ifdef SUPPORT_GLSL
+    for (int i = 0; i < VERTEX_ATTR_MAX; i++)
+    {
+        if (mesh->comps[i] > 0)
+        {
+            glDisableVertexAttribArray(s_CurrentShader->loc_attributes[i]);
+        }
+    }
+#else
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_NORMAL_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glDisableClientState(GL_COLOR_ARRAY);
 #endif
+    if (mesh->vert_vbo)
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    if (mesh->indx_vbo)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    s_CurrentMesh = NULL;
+}
+
+void bcDrawMeshEx(BCMesh *mesh, int start, int count)
+{
+    if (mesh == NULL)
+    {
+        bcLogError("Invalid mesh!");
+        return;
+    }
+    bool autoEnd = false;
+    if (s_CurrentMesh == NULL)
+    {
+        bcBeginMeshDraw(mesh);
+        autoEnd = true;
+    }
+    uint16_t *elem_start = (mesh->indx_vbo ? (uint16_t *) 0 : mesh->indices) + start;
+    if (mesh->indices)
+    {
+        glDrawElements(mesh->draw_mode, count, GL_UNSIGNED_SHORT, elem_start);
+    }
+    else
+    {
+        glDrawArrays(mesh->draw_mode, start, count);
+    }
+    if (autoEnd)
+    {
+        bcEndMeshDraw(mesh);
+    }
 }

@@ -292,6 +292,9 @@ BCMesh * bcCreateMesh(int num_vertices, int num_indices, int flags);
 BCMesh * bcCompileMesh(BCMesh *mesh);
 void bcDestroyMesh(BCMesh *mesh);
 void bcDrawMesh(BCMesh *mesh);
+void bcBeginMeshDraw(BCMesh *mesh);
+void bcEndMeshDraw(BCMesh *mesh);
+void bcDrawMeshEx(BCMesh *mesh, int start, int count);
 
 //
 // bcgl_gfx_draw module
