@@ -573,11 +573,17 @@ void bcSetMaterial(BCMaterial material)
     glUniform4fv(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_OBJECT_COLOR], 1, (float *) &(material.objectColor));
     glUniform4fv(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_DIFFUSE_COLOR], 1, (float *) &(material.diffuseColor));
     glUniform4fv(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_AMBIENT_COLOR], 1, (float *) &(material.ambientColor));
-    if (material.texture)
-        bcBindTexture(material.texture);
 #else
-    // glColor4f(r, g, b, a);
+   glColor4fv((float *) &(material.objectColor));
+   glMaterialfv(GL_FRONT, GL_DIFFUSE, (float *) &(material.diffuseColor));
+   glMaterialfv(GL_FRONT, GL_AMBIENT, (float *) &(material.ambientColor));
 #endif
+    bcBindTexture(material.texture);
+}
+
+void bcResetMaterial()
+{
+    bcSetMaterial(s_DefaultMaterial);
 }
 
 void bcSetObjectColor(BCColor color)
@@ -664,11 +670,11 @@ BCMesh * bcCreateMesh(int num_vertices, int num_indices, int flags)
         mesh->total_comps += mesh->comps[i];
     }
     // vertices
-    mesh->vertices = (float *) calloc(mesh->num_vertices * mesh->total_comps, sizeof(float));
+    mesh->vertices = NEW_ARRAY(float, mesh->num_vertices * mesh->total_comps);
     // indices
     if (num_indices)
     {
-        mesh->indices = (uint16_t *) calloc(num_indices, sizeof(uint16_t));
+        mesh->indices = NEW_ARRAY(uint16_t, num_indices);
     }
     // draw
     mesh->draw_mode = GL_TRIANGLES;

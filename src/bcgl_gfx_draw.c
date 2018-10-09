@@ -54,16 +54,16 @@ bool bcBegin(enum BCDrawMode mode)
 {
     if (s_ReusableSolidMesh == NULL)
         s_ReusableSolidMesh = bcCreateMesh(1024, 1024, MESH_FLAGS_POS3 | MESH_FLAGS_NORM | MESH_FLAGS_TEX2 | MESH_FLAGS_COL4);
-    return bcBeginMesh(s_ReusableSolidMesh, mode);
+    return bcBeginMeshEdit(s_ReusableSolidMesh, mode);
 }
 
 void bcEnd()
 {
-    bcEndMesh();
+    bcEndMeshEdit(s_ReusableSolidMesh);
     bcDrawMesh(s_ReusableSolidMesh);
 }
 
-bool bcBeginMesh(BCMesh *mesh, enum BCDrawMode mode)
+bool bcBeginMeshEdit(BCMesh *mesh, enum BCDrawMode mode)
 {
     if (s_TempMesh != NULL)
     {
@@ -88,8 +88,12 @@ bool bcBeginMesh(BCMesh *mesh, enum BCDrawMode mode)
     return true;
 }
 
-void bcEndMesh()
+void bcEndMeshEdit(BCMesh *mesh)
 {
+    if (mesh != s_TempMesh)
+    {
+        bcLogError("Wrong mesh!");
+    }
     // generate indices
     if (s_TempMesh->num_indices > 0 && s_IndexCounter == 0)
     {

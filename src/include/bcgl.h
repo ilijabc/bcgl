@@ -173,8 +173,23 @@ typedef struct
     BCTexture *texture;
 } BCMaterial;
 
-#define NEW_OBJECT(T) (T*)calloc(1, sizeof(T));
-#define DELETE_OBJECT(obj) free(obj);
+typedef struct
+{
+    char *name;
+    int start;
+    int count;
+} BCMeshPart;
+
+typedef struct
+{
+    BCMesh *mesh;
+    BCMaterial material;
+    int parts_count;
+    BCMeshPart *parts_list;
+} BCModel;
+
+#define NEW_OBJECT(T)       (T*)calloc(1, sizeof(T))
+#define NEW_ARRAY(T,N)      (T*)calloc(N, sizeof(T))
 
 #ifdef __ANDROID__
 #include <android/log.h>
@@ -185,6 +200,12 @@ typedef struct
 #define bcLog(format, ...) { printf("[%s:%d] %s: " format "\n", __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__); }
 #define bcLogWarning(format, ...) { printf("[WARNING] [%s:%d] %s: " format "\n", __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__); }
 #define bcLogError(format, ...) { printf("[ERROR] [%s:%d] %s: " format "\n", __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__); }
+#endif
+
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#define HEX_COLOR(rgba) { (rgba >> 24 & 0xff) / 255.0f, (rgba >> 16 & 0xff) / 255.0f, (rgba >> 8 & 0xff) / 255.0f, (rgba & 0xff) / 255.0f }
+#else
+#define HEX_COLOR(rgba) { (rgba & 0xff) / 255.0f, (rgba >> 8 & 0xff) / 255.0f, (rgba >> 16 & 0xff) / 255.0f, (rgba >> 24 & 0xff) / 255.0f }
 #endif
 
 //
@@ -280,6 +301,7 @@ void bcSetWireframe(bool enabled);
 void bcSetLighting(bool enabled);
 void bcLightPosition(float x, float y, float z);
 void bcSetMaterial(BCMaterial material);
+void bcResetMaterial();
 void bcSetObjectColor(BCColor color);
 void bcSetObjectColorf(float r, float g, float b, float a);
 void bcSetProjectionMatrix(float *m);
@@ -295,6 +317,7 @@ void bcDrawMesh(BCMesh *mesh);
 void bcBeginMeshDraw(BCMesh *mesh);
 void bcEndMeshDraw(BCMesh *mesh);
 void bcDrawMeshEx(BCMesh *mesh, int start, int count);
+BCMesh * bcMergeMeshes(BCMesh **meshes, int count);
 
 //
 // bcgl_gfx_draw module
@@ -303,8 +326,8 @@ void bcDrawMeshEx(BCMesh *mesh, int start, int count);
 // IM
 bool bcBegin(enum BCDrawMode mode);
 void bcEnd();
-bool bcBeginMesh(BCMesh *mesh, enum BCDrawMode mode);
-void bcEndMesh();
+bool bcBeginMeshEdit(BCMesh *mesh, enum BCDrawMode mode);
+void bcEndMeshEdit(BCMesh *mesh);
 int bcVertex3f(float x, float y, float z);
 int bcVertex2f(float x, float y);
 void bcIndexi(int i);
@@ -361,6 +384,19 @@ BCMesh * bcCreateCylinder(float radius, float height, int slices);
 BCMesh * bcCreateMeshSphere(float radius, int slices, int stacks);
 void bcTransformMesh(BCMesh *mesh, float *m);
 void bcDumpMesh(BCMesh *mesh, FILE *stream);
+
+//
+// bcgl_gfx_model module
+//
+
+BCModel * bcCreateModel(BCMesh *mesh, BCMaterial material, int parts);
+BCModel * bcCreateModelFromFile(const char *filename);
+void bcDestroyModel(BCModel *model);
+void bcDrawModel(BCModel *model);
+void bcBeginModelDraw(BCModel *model);
+void bcEndModelDraw(BCModel *model);
+void bcDrawModelPart(BCModel *model, int part);
+int bcGetModelPartByName(BCModel *model, const char *name);
 
 //
 // Enums

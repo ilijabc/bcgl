@@ -15,6 +15,7 @@ list(APPEND SRCS bcgl_gfx.c)
 list(APPEND SRCS bcgl_gfx_draw.c)
 list(APPEND SRCS bcgl_gfx_font.c)
 list(APPEND SRCS bcgl_gfx_geometry.c)
+list(APPEND SRCS bcgl_gfx_model.c)
 list(APPEND SRCS bcmath.c)
 
 add_definitions("-D SUPPORT_GLSL")

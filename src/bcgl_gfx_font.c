@@ -56,7 +56,7 @@ BCFont * bcCreateFontTTF(const char *filename, float height)
     font->type = FONT_TYPE_TRUETYPE;
     font->char_first = BAKE_CHAR_FIRST;
     font->char_count = BAKE_CHAR_COUNT;
-    font->cdata = calloc(BAKE_CHAR_COUNT, sizeof(stbtt_bakedchar));
+    font->cdata = NEW_ARRAY(stbtt_bakedchar, BAKE_CHAR_COUNT);
     BCImage *image = bcCreateImage(BAKE_BITMAP_WIDTH, BAKE_BITMAP_HEIGHT, 1);
     stbtt_BakeFontBitmap(ttf_buffer, 0, height, image->data,
                          BAKE_BITMAP_WIDTH, BAKE_BITMAP_HEIGHT,
