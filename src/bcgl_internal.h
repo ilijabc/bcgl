@@ -18,8 +18,7 @@ typedef struct
 BCCallbacks bcGetCallbacks();
 
 // App
-bool bcInitApp();
-void bcTermApp();
+void bcAppMain(BCConfig *config);
 
 // Window
 BCWindow * bcCreateWindow(BCConfig *config);
@@ -27,7 +26,9 @@ void bcDestroyWindow(BCWindow *window);
 void bcUpdateWindow(BCWindow *window);
 void bcCloseWindow(BCWindow *window);
 bool bcIsWindowOpened(BCWindow *window);
+void bcPullWindowEvents(BCWindow *window);
 BCWindow * bcGetWindow();
+void bcSetWindow(BCWindow *window);
 
 // Events
 BCEvent * bcSendEvent(int type, int x, int y);

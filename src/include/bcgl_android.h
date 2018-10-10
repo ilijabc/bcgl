@@ -27,8 +27,9 @@ extern "C" {
 #define GET_NUMBER_DENSITY  1
 
 void bcAndroidSetAssetManager(AAssetManager *manager);
-void bcAndroidAcquireSurface(int id, ANativeWindow *window, int format, int width, int height);
-void bcAndroidReleaseSurface(int id);
+void bcAndroidSurfaceCreated(ANativeWindow *window);
+void bcAndroidSurfaceDestroyed();
+void bcAndroidSurfaceChanged(int format, int width, int height);
 void bcAndroidAppChengeState(int state);
 void bcAndroidTouchEvent(int event, int id, float x, float y);
 void bcAndroidKeyEvent(int event, int key, int code);

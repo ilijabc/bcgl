@@ -134,8 +134,6 @@ static struct
 // Private Functions
 //
 
-static BCWindow *s_Window = NULL;
-
 static void glfw_ErrorCallback(int error, const char *description)
 {
     bcLogError("GLFW error: %d:%s", error, description);
@@ -182,12 +180,6 @@ static void glfw_ScrollCallback(GLFWwindow *nativeWindow, double dx, double dy)
 
 static void glfw_WindowSizeCallback(GLFWwindow *nativeWindow, int width, int height)
 {
-    if (s_Window != NULL)
-    {
-        s_Window->width = width;
-        s_Window->height = height;
-    }
-    glViewport(0, 0, width, height);
     bcSendEvent(BC_EVENT_WINDOWSIZE, width, height);
 }
 
@@ -204,30 +196,6 @@ static void glfw_WindowIconifyCallback(GLFWwindow *nativeWindow, int iconified)
 //
 // App
 //
-
-bool bcInitApp()
-{
-    bcInitFiles(NULL);
-    glfwSetErrorCallback(glfw_ErrorCallback);
-    if (glfwInit() != GL_TRUE)
-    {
-        bcLogError("Unable to initialize GLFW");
-        return false;
-    }
-    bcLog("GLFW - Version: %s", glfwGetVersionString());
-    return true;
-}
-
-void bcTermApp()
-{
-    glfwTerminate();
-    bcTermFiles();
-}
-
-void bcQuit(int code)
-{
-    bcCloseWindow(s_Window);
-}
 
 float bcGetTime()
 {
@@ -249,12 +217,6 @@ float bcGetDisplayDensity()
 
 BCWindow * bcCreateWindow(BCConfig *config)
 {
-    if (s_Window != NULL)
-    {
-        bcLogWarning("Only a single window supported!")
-        return NULL;
-    }
-
     const GLFWvidmode *screen = glfwGetVideoMode(glfwGetPrimaryMonitor());
     if (config->width == 0)
     {
@@ -364,9 +326,9 @@ bool bcIsWindowOpened(BCWindow *window)
     return !glfwWindowShouldClose(window->nativeWindow);
 }
 
-BCWindow * bcGetWindow()
+void bcPullWindowEvents(BCWindow *window)
 {
-    return s_Window;
+    glfwPollEvents();
 }
 
 int bcDesktopMain(int argc, char **argv)
@@ -376,12 +338,15 @@ int bcDesktopMain(int argc, char **argv)
     setvbuf(stderr, NULL, _IONBF, 0);
 #endif
 
-    BCCallbacks callbacks = bcGetCallbacks();
-
-    if (!bcInitApp())
+    glfwSetErrorCallback(glfw_ErrorCallback);
+    if (glfwInit() != GL_TRUE)
     {
-        return 1;
+        bcLogError("Unable to initialize GLFW");
+        return false;
     }
+    bcLog("GLFW - Version: %s", glfwGetVersionString());
+
+    bcInitFiles(NULL);
 
     // Get the resolution of the primary monitor
     const GLFWvidmode *screen = glfwGetVideoMode(glfwGetPrimaryMonitor());
@@ -397,47 +362,9 @@ int bcDesktopMain(int argc, char **argv)
     config.msaa = 0;
     config.orientation = 0;
 
-    if (callbacks.onConfig)
-        callbacks.onConfig(&config);
-    else
-        bcLogWarning("Missing onConfig callback!");
+    bcAppMain(&config);
 
-    s_Window = bcCreateWindow(&config);
-    if (s_Window == NULL)
-    {
-        bcTermApp();
-        return 2;
-    }
+    bcTermFiles();
 
-    if (callbacks.onStart)
-        callbacks.onStart();
-
-    // Main loop
-    float lastTime = bcGetTime();
-    while (bcIsWindowOpened(s_Window))
-    {
-        // events
-        glfwPollEvents();
-        int n = bcPullEvents();
-        for (int i = 0; i < n; i++)
-        {
-            BCEvent *e = bcGetEvent(i);
-            if (callbacks.onEvent)
-                callbacks.onEvent(e->type, e->x, e->y);
-        }
-        // update
-        if (callbacks.onUpdate)
-            callbacks.onUpdate(bcGetTime() - lastTime);
-        lastTime = bcGetTime();
-        bcUpdateWindow(s_Window);
-    }
-
-    if (callbacks.onStop)
-        callbacks.onStop();
-
-    bcDestroyWindow(s_Window);
-    
-    bcTermApp();
-
-    return 0;
+    glfwTerminate();
 }

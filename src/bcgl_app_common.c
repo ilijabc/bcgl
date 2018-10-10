@@ -1,6 +1,9 @@
+#include <pthread.h>
+
 #include "bcgl_internal.h"
 
 static BCCallbacks s_Callbacks;
+static BCWindow *s_Window = NULL;
 
 // event queues
 #define MAX_EVENTS 32
@@ -8,6 +11,7 @@ static BCEvent s_EventQueue[2][MAX_EVENTS];
 static int s_CurrentIndex = 0;
 static int s_CurrentQueue = 0;
 static int s_PulledQueue = 1;
+static pthread_mutex_t s_Mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static struct
 {
@@ -42,12 +46,72 @@ static void processEvent(BCEvent *event)
     case BC_EVENT_KEYRELEASE:
         s_KeyState[event->x] = (event->type == BC_EVENT_KEYPRESS);
         break;
+    case BC_EVENT_WINDOWSIZE:
+        {
+            BCWindow *win = bcGetWindow();
+            win->width = event->x;
+            win->height = event->y;
+        }
+        glViewport(0, 0, event->x, event->y);
+        break;
     }
 }
 
 void bcInit(BCCallbacks callbacks)
 {
     s_Callbacks = callbacks;
+}
+
+void bcAppMain(BCConfig *config)
+{
+    BCCallbacks callbacks = bcGetCallbacks();
+
+    if (callbacks.onConfig)
+        callbacks.onConfig(config);
+    else
+        bcLogWarning("Missing onConfig callback!");
+
+    if (callbacks.onCreate)
+        callbacks.onCreate();
+
+    BCWindow *window = bcCreateWindow(config);
+    if (window == NULL)
+    {
+        bcLogError("Unable to create window!");
+        return;
+    }
+    bcSetWindow(window);
+
+    if (callbacks.onStart)
+        callbacks.onStart();
+
+    // Main loop
+    float lastTime = bcGetTime();
+    while (bcIsWindowOpened(window))
+    {
+        // events
+        bcPullWindowEvents(window);
+        int n = bcPullEvents();
+        for (int i = 0; i < n; i++)
+        {
+            BCEvent *e = bcGetEvent(i);
+            if (callbacks.onEvent)
+                callbacks.onEvent(e->type, e->x, e->y);
+        }
+        // update
+        if (callbacks.onUpdate)
+            callbacks.onUpdate(bcGetTime() - lastTime);
+        lastTime = bcGetTime();
+        bcUpdateWindow(window);
+    }
+
+    if (callbacks.onStop)
+        callbacks.onStop();
+
+    bcDestroyWindow(window);
+
+    if (callbacks.onDestroy)
+        callbacks.onDestroy();
 }
 
 int bcGetDisplayWidth()
@@ -67,8 +131,10 @@ BCCallbacks bcGetCallbacks()
 
 BCEvent * bcSendEvent(int type, int x, int y)
 {
+    pthread_mutex_lock(&s_Mutex);
     if (s_CurrentIndex == MAX_EVENTS)
     {
+        pthread_mutex_unlock(&s_Mutex);
         bcLogWarning("Max app events reached!");
         return NULL;
     }
@@ -77,11 +143,13 @@ BCEvent * bcSendEvent(int type, int x, int y)
     event->x = x;
     event->y = y;
     s_CurrentIndex++;
+    pthread_mutex_unlock(&s_Mutex);
     return event;
 }
 
 int bcPullEvents()
 {
+    pthread_mutex_lock(&s_Mutex);
     int n = s_CurrentIndex;
     s_PulledQueue = s_CurrentQueue;
     s_CurrentQueue++;
@@ -93,6 +161,7 @@ int bcPullEvents()
     {
         processEvent(bcGetEvent(i));
     }
+    pthread_mutex_unlock(&s_Mutex);
     return n;
 }
 
@@ -101,6 +170,20 @@ BCEvent * bcGetEvent(int index)
     return &(s_EventQueue[s_PulledQueue][index]);
 }
 
+void bcQuit(int code)
+{
+    bcCloseWindow(s_Window);
+}
+
+BCWindow * bcGetWindow()
+{
+    return s_Window;
+}
+
+void bcSetWindow(BCWindow *window)
+{
+    s_Window = window;
+}
 
 //
 // Input state

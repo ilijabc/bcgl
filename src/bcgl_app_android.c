@@ -285,11 +285,9 @@ static struct
     { -1, -1 }
 };
 
-static BCWindow * s_Window = NULL;
 static long s_StartTimeSec;
 
 static pthread_t s_ThreadId;
-static pthread_mutex_t s_Mutex;
 static bool s_ThreadRunning;
 static void (*s_MsgCallback)(int type, int x, int y) = NULL;
 static float (*s_NumCallback)(int key) = NULL;
@@ -386,17 +384,20 @@ BCWindow * bcCreateWindow(BCConfig *inconfig)
     nativeWindow->_surface = surface;
     nativeWindow->_context = context;
 
-    s_Window = NEW_OBJECT(BCWindow);
-    s_Window->width = inconfig->width;
-    s_Window->height = inconfig->height;
-    s_Window->nativeWindow = nativeWindow;
+    inconfig->width = width;
+    inconfig->height = height;
+
+    BCWindow *window = NEW_OBJECT(BCWindow);
+    window->width = inconfig->width;
+    window->height = inconfig->height;
+    window->nativeWindow = nativeWindow;
 
     bcInitGfx();
 
     // Enable v-sync
     eglSwapInterval(nativeWindow->_display, inconfig->vsync ? 1 : 0);
 
-    return s_Window;
+    return window;
 
 window_create_error:
     bcLogError("Failed creating window!");
@@ -428,38 +429,19 @@ void bcUpdateWindow(BCWindow *window)
 
 void bcCloseWindow(BCWindow *window)
 {
-    BCAndroidWindow *nativeWindow = (BCAndroidWindow *) window->nativeWindow;
+    bcAndroidSendMessage(MSG_FINISH_ACTIVITY, 0, 0);
 }
 
 bool bcIsWindowOpened(BCWindow *window)
 {
-    BCAndroidWindow *nativeWindow = (BCAndroidWindow *) window->nativeWindow;
-    return true;
+    return s_ThreadRunning;
 }
 
-BCWindow * bcGetWindow()
+void bcPullWindowEvents(BCWindow *window)
 {
-    return s_Window;
 }
 
 // App
-bool bcInitApp()
-{
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    s_StartTimeSec = tv.tv_sec;
-    return true;
-}
-
-void bcTermApp()
-{
-    bcTermFiles();
-}
-
-void bcQuit(int code)
-{
-    bcAndroidSendMessage(MSG_FINISH_ACTIVITY, code, 0);
-}
 
 float bcGetTime()
 {
@@ -484,63 +466,11 @@ float bcGetDisplayDensity()
 
 static void * rendererThread(void *arg)
 {
-    BCCallbacks callbacks = bcGetCallbacks();
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    s_StartTimeSec = tv.tv_sec;
 
-    if (!bcInitApp())
-    {
-        return NULL;
-    }
-
-    bool isRunning = true;
-
-    BCConfig *config = (BCConfig *) arg;
-    if (callbacks.onConfig)
-        callbacks.onConfig(config);
-    else
-        bcLogWarning("Missing onConfig callback!");
-
-    BCWindow *window = bcCreateWindow(config);
-    if (window == NULL)
-    {
-        bcTermApp();
-        return NULL;
-    }
-
-    if (callbacks.onStart)
-        callbacks.onStart();
-
-    bcLog("Android : start main loop");
-
-    // Main loop
-    float lastTime = bcGetTime();
-    while (s_ThreadRunning && bcIsWindowOpened(window))
-    {
-        // events
-        pthread_mutex_lock(&s_Mutex);
-        int n = bcPullEvents();
-        for (int i = 0; i < n; i++)
-        {
-            BCEvent *e = bcGetEvent(i);
-            if (callbacks.onEvent)
-                callbacks.onEvent(e->type, e->x, e->y);
-        }
-        pthread_mutex_unlock(&s_Mutex);
-        // update
-        if (callbacks.onUpdate)
-            callbacks.onUpdate(bcGetTime() - lastTime);
-        lastTime = bcGetTime();
-        bcUpdateWindow(window);
-    }
-
-    bcLog("Android : stop main loop");
-
-    if (callbacks.onStop)
-        callbacks.onStop();
-
-    bcDestroyWindow(window);
-    free(config);
-    
-    bcTermApp();
+    bcAppMain((BCConfig *)arg);
 
     return NULL;
 }
@@ -550,50 +480,46 @@ void bcAndroidSetAssetManager(AAssetManager *manager)
     bcInitFiles(manager);
 }
 
-void bcAndroidAcquireSurface(int id, ANativeWindow *surface, int format, int width, int height)
+void bcAndroidSurfaceCreated(ANativeWindow *window)
 {
-    bcLog("id=%d surface=%p format=%d width=%d height=%d", id, surface, format, width, height);
-
     BCConfig *config = NEW_OBJECT(BCConfig);
-    config->width = width;
-    config->height = height;
-    config->format = format;
+    config->width = 0;
+    config->height = 0;
+    config->format = 0;
     config->vsync = true;
 
-    s_Surface = surface;
+    s_Surface = window;
     s_ThreadRunning = true;
 
-    pthread_mutex_init(&s_Mutex, 0);
     pthread_create(&s_ThreadId, 0, rendererThread, config);
 }
 
-void bcAndroidReleaseSurface(int id)
+void bcAndroidSurfaceDestroyed()
 {
-    bcLog("id=%d", id);
     s_ThreadRunning = false;
     s_Surface = NULL;
     pthread_join(s_ThreadId, 0);
 }
 
+void bcAndroidSurfaceChanged(int format, int width, int height)
+{
+    bcSendEvent(BC_EVENT_WINDOWSIZE, width, height);
+}
+
 void bcAndroidAppChengeState(int state)
 {
-    // bcLog("state=%d", state);
-    pthread_mutex_lock(&s_Mutex);
     if (state == EVENT_APP_PAUSE)
         bcSendEvent(BC_EVENT_WINDOWFOCUS, 0, 0);
     else if (state == EVENT_APP_RESUME)
         bcSendEvent(BC_EVENT_WINDOWFOCUS, 1, 0);
-    pthread_mutex_unlock(&s_Mutex);
 }
 
 void bcAndroidTouchEvent(int event, int id, float x, float y)
 {
-    // bcLog("event=%d id=%d x=%f y=%f", event, id, x, y);
-    pthread_mutex_lock(&s_Mutex);
     switch (event)
     {
     case EVENT_TOUCH_DOWN:
-        bcSetMousePosition(x, y);
+        bcSendEvent(BC_EVENT_MOUSEMOVE, x, y);
         bcSendEvent(BC_EVENT_MOUSEPRESS, id, 0);
         break;
     case EVENT_TOUCH_UP:
@@ -605,14 +531,11 @@ void bcAndroidTouchEvent(int event, int id, float x, float y)
     default:
         bcLogWarning("Unhandled event: %d", event);
     }
-    pthread_mutex_unlock(&s_Mutex);
 }
 
 void bcAndroidKeyEvent(int event, int key, int code)
 {
     int appKey = convertAndroidKeyCode(key);
-    // bcLog("event=%d key=%d code=%d appKey=%d", event, key, code, appKey);
-    pthread_mutex_lock(&s_Mutex);
     switch (event)
     {
     case EVENT_KEY_DOWN:
@@ -624,7 +547,6 @@ void bcAndroidKeyEvent(int event, int key, int code)
     default:
         bcLogWarning("Unhandled event: %d", event);
     }
-    pthread_mutex_unlock(&s_Mutex);
 }
 
 
@@ -636,10 +558,8 @@ void bcAndroidSetCallbacks(void (*msg_callback)(int type, int x, int y), float (
 
 void bcAndroidSendMessage(int type, int x, int y)
 {
-    // pthread_mutex_lock(&s_Mutex);
     if (s_MsgCallback)
         s_MsgCallback(type, x, y);
-    // pthread_mutex_unlock(&s_Mutex);
 }
 
 float bcAndroidGetNumber(int key)
