@@ -141,6 +141,7 @@ typedef struct
 {
     int num_vertices;
     int num_indices;
+    int format;
     int comps[VERTEX_ATTR_MAX];
     int total_comps;
     float *vertices;
@@ -175,6 +176,7 @@ typedef struct
 
 typedef struct
 {
+    BCMesh *mesh;
     char *name;
     int start;
     int count;
@@ -189,7 +191,8 @@ typedef struct
 } BCModel;
 
 #define NEW_OBJECT(T)       (T*)calloc(1, sizeof(T))
-#define NEW_ARRAY(T,N)      (T*)calloc(N, sizeof(T))
+#define NEW_ARRAY(N,T)      (T*)calloc(N, sizeof(T))
+#define EXTEND_ARRAY(P,N,T) (T*)realloc(P, (N) * sizeof(T))
 
 #ifdef __ANDROID__
 #include <android/log.h>
@@ -318,8 +321,10 @@ void bcDestroyMesh(BCMesh *mesh);
 void bcDrawMesh(BCMesh *mesh);
 void bcBeginMeshDraw(BCMesh *mesh);
 void bcEndMeshDraw(BCMesh *mesh);
+void bcDrawMeshPart(BCMeshPart part);
 void bcDrawMeshEx(BCMesh *mesh, int start, int count);
-BCMesh * bcMergeMeshes(BCMesh **meshes, int count);
+BCMeshPart bcPartFromMesh(BCMesh *mesh);
+BCMeshPart bcAttachMesh(BCMesh *mesh, BCMesh *src, bool destroy_src);
 
 //
 // bcgl_gfx_draw module

@@ -13,7 +13,7 @@ BCModel * bcCreateModel(BCMesh *mesh, BCMaterial material, int parts)
     if (parts)
     {
         model->parts_count = parts;
-        model->parts_list = NEW_ARRAY(BCMeshPart, parts);
+        model->parts_list = NEW_ARRAY(parts, BCMeshPart);
     }
     return model;
 }

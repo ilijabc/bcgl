@@ -640,14 +640,10 @@ float * bcGetModelViewMatrix()
 
 BCMesh * bcCreateMesh(int num_vertices, int num_indices, int flags)
 {
-    if (num_vertices == 0)
-    {
-        bcLogError("Number of verticies must be a positive number!");
-        return NULL;
-    }
     BCMesh *mesh = NEW_OBJECT(BCMesh);
     mesh->num_vertices = num_vertices;
     mesh->num_indices = num_indices;
+    mesh->format = flags;
     // vertices
     mesh->comps[VERTEX_ATTR_POSITIONS] =
         (flags & MESH_FLAGS_POS2) ? 2 :
@@ -670,11 +666,14 @@ BCMesh * bcCreateMesh(int num_vertices, int num_indices, int flags)
         mesh->total_comps += mesh->comps[i];
     }
     // vertices
-    mesh->vertices = NEW_ARRAY(float, mesh->num_vertices * mesh->total_comps);
+    if (num_vertices)
+    {
+        mesh->vertices = NEW_ARRAY(mesh->num_vertices * mesh->total_comps, float);
+    }
     // indices
     if (num_indices)
     {
-        mesh->indices = NEW_ARRAY(uint16_t, num_indices);
+        mesh->indices = NEW_ARRAY(num_indices, uint16_t);
     }
     // draw
     mesh->draw_mode = GL_TRIANGLES;
@@ -843,6 +842,11 @@ void bcEndMeshDraw(BCMesh *mesh)
     s_CurrentMesh = NULL;
 }
 
+void bcDrawMeshPart(BCMeshPart part)
+{
+    bcDrawMeshEx(part.mesh, part.start, part.count);
+}
+
 void bcDrawMeshEx(BCMesh *mesh, int start, int count)
 {
     if (mesh == NULL)
@@ -869,4 +873,56 @@ void bcDrawMeshEx(BCMesh *mesh, int start, int count)
     {
         bcEndMeshDraw(mesh);
     }
+}
+
+BCMeshPart bcPartFromMesh(BCMesh *mesh)
+{
+    BCMeshPart part = { mesh, NULL, 0, mesh->draw_count };
+    return part;
+}
+
+BCMeshPart bcAttachMesh(BCMesh *mesh, BCMesh *src, bool destroy_src)
+{
+    BCMeshPart part = bcPartFromMesh(mesh);
+    if (mesh == NULL)
+    {
+        bcLogWarning("Mesh not locked!");
+        return part;
+    }
+    if (src == NULL)
+    {
+        bcLogError("Invalid meshe!");
+        return part;
+    }
+    // compare formats
+    if (src->format != mesh->format)
+    {
+        bcLogError("Meshes format does not match!");
+        return part;
+    }
+    // fill vertex data
+    mesh->vertices = EXTEND_ARRAY(mesh->vertices, (mesh->num_vertices + src->num_vertices) * mesh->total_comps, float);
+    float *vert_ptr = &(mesh->vertices[mesh->num_vertices * mesh->total_comps]);
+    memcpy(vert_ptr, src->vertices, src->num_vertices * src->total_comps * sizeof(float));
+    part.start = mesh->num_vertices;
+    // fill index data
+    if (src->num_indices > 0)
+    {
+        mesh->indices = EXTEND_ARRAY(mesh->indices, mesh->num_indices + src->num_indices, uint16_t);
+        uint16_t *indx_ptr = &(mesh->indices[mesh->num_indices]);
+        for (int i = 0; i < src->num_indices; i++)
+        {
+            indx_ptr[i] = src->indices[i] + mesh->num_vertices;
+        }
+        part.start = mesh->num_indices;
+        mesh->num_indices += src->num_indices;
+    }
+    mesh->num_vertices += src->num_vertices;
+    mesh->draw_count += src->draw_count;
+    part.count = src->draw_count;
+    if (destroy_src)
+    {
+        bcDestroyMesh(src);
+    }
+    return part;
 }

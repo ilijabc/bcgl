@@ -50,7 +50,7 @@ BCMesh * bcCreateMeshCube()
 
 BCMesh * bcCreateMeshBox(float x1, float y1, float z1, float x2, float y2, float z2)
 {
-    BCMesh *mesh = bcCreateMesh(24, 360, MESH_FLAGS_POS3 | MESH_FLAGS_NORM | MESH_FLAGS_TEX2);
+    BCMesh *mesh = bcCreateMesh(24, 36, MESH_FLAGS_POS3 | MESH_FLAGS_NORM | MESH_FLAGS_TEX2);
     if (bcBeginMeshEdit(mesh, BC_QUADS))
     {
         // TODO: generate tex coords
