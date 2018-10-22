@@ -89,6 +89,9 @@ void bcAppMain(BCConfig *config)
     float lastTime = bcGetTime();
     while (bcIsWindowOpened(window))
     {
+        float now = bcGetTime();
+        float dt = now - lastTime;
+        lastTime = now;
         // events
         bcPullWindowEvents(window);
         int n = bcPullEvents();
@@ -100,8 +103,7 @@ void bcAppMain(BCConfig *config)
         }
         // update
         if (callbacks.onUpdate)
-            callbacks.onUpdate(bcGetTime() - lastTime);
-        lastTime = bcGetTime();
+            callbacks.onUpdate(dt);
         bcUpdateWindow(window);
     }
 

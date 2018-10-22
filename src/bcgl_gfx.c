@@ -117,6 +117,7 @@ static const char s_DefaultShaderCode[] =
 ;
 
 // This must be alligned with @BCVertexAttributes
+#ifndef SUPPORT_GLSL
 static struct
 {
     enum BCVertexAttributes index;
@@ -129,6 +130,7 @@ static struct
     { VERTEX_ATTR_COLORS, GL_COLOR_ARRAY },
     { VERTEX_ATTR_MAX, -1 }
 };
+#endif
 
 // private
 

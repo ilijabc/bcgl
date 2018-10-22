@@ -64,7 +64,7 @@ void bcBeginModelDraw(BCModel *model)
     }
     s_CurrentModel = model;
     bcSetMaterial(model->material);
-    bcBeginMeshDraw(model->mesh);
+    bcBindMesh(model->mesh);
 }
 
 void bcEndModelDraw(BCModel *model)
@@ -74,7 +74,7 @@ void bcEndModelDraw(BCModel *model)
         bcLogError("Invalid model!");
         return;
     }
-    bcEndMeshDraw(model->mesh);
+    // bcBindMesh(NULL);
     bcResetMaterial();
     s_CurrentModel = NULL;
 }
