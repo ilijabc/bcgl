@@ -219,6 +219,11 @@ typedef struct
 #define HEX_COLOR(rgba) { (rgba & 0xff) / 255.0f, (rgba >> 8 & 0xff) / 255.0f, (rgba >> 16 & 0xff) / 255.0f, (rgba >> 24 & 0xff) / 255.0f }
 #endif
 
+static const BCColor COLOR_WHITE = {1,1,1,1};
+static const BCColor COLOR_RED = {1,0,0,1};
+static const BCColor COLOR_GREEN = {0,1,0,1};
+static const BCColor COLOR_BLUE = {0,0,1,1};
+
 //
 // !!! OVERRIDE THIS IN APP !!!
 //
@@ -285,8 +290,6 @@ unsigned char * bcLoadDataFile(const char *filename, int *out_size);
 //
 // bcgl_gfx module
 //
-
-BCColor bcHexToColor(uint32_t rgba);
 
 // Image
 BCImage * bcCreateImage(int width, int height, int format);
