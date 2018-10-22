@@ -54,16 +54,16 @@ bool bcBegin(enum BCDrawMode mode)
 {
     if (s_ReusableSolidMesh == NULL)
         s_ReusableSolidMesh = bcCreateMesh(1024, 1024, MESH_FLAGS_POS3 | MESH_FLAGS_NORM | MESH_FLAGS_TEX2 | MESH_FLAGS_COL4);
-    return bcBeginMeshEdit(s_ReusableSolidMesh, mode);
+    return bcBeginMesh(s_ReusableSolidMesh, mode);
 }
 
 void bcEnd()
 {
-    bcEndMeshEdit(s_ReusableSolidMesh);
+    bcEndMesh(s_ReusableSolidMesh);
     bcDrawMesh(s_ReusableSolidMesh);
 }
 
-bool bcBeginMeshEdit(BCMesh *mesh, enum BCDrawMode mode)
+bool bcBeginMesh(BCMesh *mesh, enum BCDrawMode mode)
 {
     if (s_TempMesh != NULL)
     {
@@ -88,7 +88,7 @@ bool bcBeginMeshEdit(BCMesh *mesh, enum BCDrawMode mode)
     return true;
 }
 
-void bcEndMeshEdit(BCMesh *mesh)
+void bcEndMesh(BCMesh *mesh)
 {
     if (mesh != s_TempMesh)
     {

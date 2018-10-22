@@ -51,7 +51,7 @@ BCMesh * bcCreateMeshCube()
 BCMesh * bcCreateMeshBox(float x1, float y1, float z1, float x2, float y2, float z2)
 {
     BCMesh *mesh = bcCreateMesh(24, 36, MESH_FLAGS_POS3 | MESH_FLAGS_NORM | MESH_FLAGS_TEX2);
-    if (bcBeginMeshEdit(mesh, BC_QUADS))
+    if (bcBeginMesh(mesh, BC_QUADS))
     {
         // TODO: generate tex coords
         bcNormal3f(0, 1, 0);
@@ -84,7 +84,7 @@ BCMesh * bcCreateMeshBox(float x1, float y1, float z1, float x2, float y2, float
         bcVertex3f(x2, y2, z2);
         bcVertex3f(x2, y1, z2);
         bcVertex3f(x2, y1, z1);
-        bcEndMeshEdit(mesh);
+        bcEndMesh(mesh);
     }
     return mesh;
 }
@@ -92,7 +92,7 @@ BCMesh * bcCreateMeshBox(float x1, float y1, float z1, float x2, float y2, float
 BCMesh * bcCreateCylinder(float radius, float height, int slices)
 {
     BCMesh *mesh = bcCreateMesh(240, 360, MESH_FLAGS_POS3 | MESH_FLAGS_NORM | MESH_FLAGS_TEX2);
-    if (bcBeginMeshEdit(mesh, BC_QUADS))
+    if (bcBeginMesh(mesh, BC_QUADS))
     {
         bcNormal3f(0, 0, -1);
         bcVertex3f(0, 0, 0);
@@ -140,7 +140,7 @@ BCMesh * bcCreateCylinder(float radius, float height, int slices)
             k3 = k1;
             k4 = k2;
         }
-        bcEndMeshEdit(mesh);
+        bcEndMesh(mesh);
     }
     return mesh;
 }

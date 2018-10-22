@@ -33,6 +33,7 @@ static BCMesh *s_CurrentMesh = NULL;
     "#version 120\n"
 #endif
 
+// This must be alligned with @BCVertexAttributes
 static struct
 {
     enum BCVertexAttributes index;
@@ -47,6 +48,7 @@ static struct
     { VERTEX_ATTR_MAX, NULL }
 };
 
+// This must be alligned with @BCShaderUniforms
 static struct
 {
     enum BCShaderUniforms index;
@@ -113,6 +115,20 @@ static const char s_DefaultShaderCode[] =
 "}\n" \
 "#endif\n" \
 ;
+
+// This must be alligned with @BCVertexAttributes
+static struct
+{
+    enum BCVertexAttributes index;
+    int type;
+} s_ClientStateType[] =
+{
+    { VERTEX_ATTR_POSITIONS, GL_VERTEX_ARRAY },
+    { VERTEX_ATTR_NORMALS, GL_NORMAL_ARRAY },
+    { VERTEX_ATTR_TEXCOORDS, GL_TEXTURE_COORD_ARRAY },
+    { VERTEX_ATTR_COLORS, GL_COLOR_ARRAY },
+    { VERTEX_ATTR_MAX, -1 }
+};
 
 // private
 
@@ -770,96 +786,82 @@ void bcDrawMesh(BCMesh *mesh)
     bcDrawMeshEx(mesh, 0, mesh->draw_count);
 }
 
-void bcBeginMeshDraw(BCMesh *mesh)
+void bcBindMesh(BCMesh *mesh)
 {
+    if (mesh == s_CurrentMesh)
+    {
+        bcLogWarning("Mesh already assigned!");
+        return;
+    }
     if (mesh == NULL)
     {
-        bcLogError("Invalid mesh!");
-        return;
-    }
-    if (s_CurrentMesh != NULL)
-    {
-        bcLogError("Mesh already assigned!");
-        return;
-    }
-    s_CurrentMesh = mesh;
-    if (mesh->vbo_vertices)
-        glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo_vertices);
-    if (mesh->vbo_indices)
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->vbo_indices);
-    float *vert_ptr = (mesh->vbo_vertices ? (float *) 0 : mesh->vertices);
+        // unbind mesh
 #ifdef SUPPORT_GLSL
-    for (int i = 0; i < VERTEX_ATTR_MAX; i++)
-    {
-        if (mesh->comps[i] > 0)
-        {
-            glEnableVertexAttribArray(s_CurrentShader->loc_attributes[i]);
-            glVertexAttribPointer(s_CurrentShader->loc_attributes[i], mesh->comps[i], GL_FLOAT, GL_FALSE, mesh->total_comps * sizeof(float), vert_ptr);
-            vert_ptr += mesh->comps[i];
-        }
-    }
-    glUniform1i(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_VERTEX_COLOR_ENABLED], mesh->comps[VERTEX_ATTR_COLORS]);
-#else
-    for (int i = 0; i < VERTEX_ATTR_MAX; i++)
-    {
-        if (mesh->comps[i] > 0)
-        {
-            switch (i)
-            {
-            case VERTEX_ATTR_POSITIONS:
-                glEnableClientState(GL_VERTEX_ARRAY);
-                glVertexPointer(mesh->comps[i], GL_FLOAT, mesh->total_comps * sizeof(float), vert_ptr);
-                break;
-            case VERTEX_ATTR_NORMALS:
-                glEnableClientState(GL_NORMAL_ARRAY);
-                glNormalPointer(GL_FLOAT, mesh->total_comps * sizeof(float), vert_ptr);
-                break;
-            case VERTEX_ATTR_TEXCOORDS:
-                glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-                glTexCoordPointer(mesh->comps[i], GL_FLOAT, mesh->total_comps * sizeof(float), vert_ptr);
-                break;
-            case VERTEX_ATTR_COLORS:
-                glEnableClientState(GL_COLOR_ARRAY);
-                glColorPointer(mesh->comps[i], GL_FLOAT, mesh->total_comps * sizeof(float), vert_ptr);
-                break;
-            }
-            vert_ptr += mesh->comps[i];
-        }
-    }
-#endif
-}
-
-void bcEndMeshDraw(BCMesh *mesh)
-{
-    if (mesh == NULL)
-    {
-        bcLogError("Invalid mesh!");
-        return;
-    }
-    if (mesh != s_CurrentMesh)
-    {
-        bcLogError("Mesh not assigned!");
-        return;
-    }
-#ifdef SUPPORT_GLSL
-    for (int i = 0; i < VERTEX_ATTR_MAX; i++)
-    {
-        if (mesh->comps[i] > 0)
+        for (int i = 0; i < VERTEX_ATTR_MAX; i++)
         {
             glDisableVertexAttribArray(s_CurrentShader->loc_attributes[i]);
         }
-    }
 #else
-    glDisableClientState(GL_VERTEX_ARRAY);
-    glDisableClientState(GL_NORMAL_ARRAY);
-    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    glDisableClientState(GL_COLOR_ARRAY);
+        glDisableClientState(GL_VERTEX_ARRAY);
+        glDisableClientState(GL_NORMAL_ARRAY);
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+        glDisableClientState(GL_COLOR_ARRAY);
 #endif
-    if (mesh->vbo_vertices)
         glBindBuffer(GL_ARRAY_BUFFER, 0);
-    if (mesh->vbo_indices)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    s_CurrentMesh = NULL;
+    }
+    else
+    {
+        // bind mesh
+        glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo_vertices);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->vbo_indices);
+        float *vert_ptr = (mesh->vbo_vertices ? (float *) 0 : mesh->vertices);
+#ifdef SUPPORT_GLSL
+        for (int i = 0; i < VERTEX_ATTR_MAX; i++)
+        {
+            if (mesh->comps[i] > 0)
+            {
+                glEnableVertexAttribArray(s_CurrentShader->loc_attributes[i]);
+                glVertexAttribPointer(s_CurrentShader->loc_attributes[i], mesh->comps[i], GL_FLOAT, GL_FALSE, mesh->total_comps * sizeof(float), vert_ptr);
+                vert_ptr += mesh->comps[i];
+            }
+            else
+            {
+                glDisableVertexAttribArray(s_CurrentShader->loc_attributes[i]);
+            }
+        }
+        glUniform1i(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_VERTEX_COLOR_ENABLED], mesh->comps[VERTEX_ATTR_COLORS]);
+#else
+        for (int i = 0; i < VERTEX_ATTR_MAX; i++)
+        {
+            if (mesh->comps[i] > 0)
+            {
+                glEnableClientState(s_ClientStateType[i]);
+                switch (i)
+                {
+                case VERTEX_ATTR_POSITIONS:
+                    glVertexPointer(mesh->comps[i], GL_FLOAT, mesh->total_comps * sizeof(float), vert_ptr);
+                    break;
+                case VERTEX_ATTR_NORMALS:
+                    glNormalPointer(GL_FLOAT, mesh->total_comps * sizeof(float), vert_ptr);
+                    break;
+                case VERTEX_ATTR_TEXCOORDS:
+                    glTexCoordPointer(mesh->comps[i], GL_FLOAT, mesh->total_comps * sizeof(float), vert_ptr);
+                    break;
+                case VERTEX_ATTR_COLORS:
+                    glColorPointer(mesh->comps[i], GL_FLOAT, mesh->total_comps * sizeof(float), vert_ptr);
+                    break;
+                }
+                vert_ptr += mesh->comps[i];
+            }
+            else
+            {
+                glDisableClientState(s_ClientStateType[i]);
+            }
+        }
+#endif
+    }
+    s_CurrentMesh = mesh;
 }
 
 void bcDrawMeshPart(BCMeshPart part)
@@ -874,11 +876,9 @@ void bcDrawMeshEx(BCMesh *mesh, int start, int count)
         bcLogError("Invalid mesh!");
         return;
     }
-    bool autoEnd = false;
-    if (s_CurrentMesh == NULL)
+    if (s_CurrentMesh != mesh)
     {
-        bcBeginMeshDraw(mesh);
-        autoEnd = true;
+        bcBindMesh(mesh);
     }
     uint16_t *elem_start = (mesh->vbo_indices ? (uint16_t *) 0 : mesh->indices) + start;
     if (mesh->indices)
@@ -888,10 +888,6 @@ void bcDrawMeshEx(BCMesh *mesh, int start, int count)
     else
     {
         glDrawArrays(mesh->draw_mode, start, count);
-    }
-    if (autoEnd)
-    {
-        bcEndMeshDraw(mesh);
     }
 }
 
