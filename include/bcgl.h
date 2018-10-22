@@ -83,6 +83,13 @@ enum BCFileMode
     FILE_APPEND
 };
 
+enum BCVboStatus
+{
+    VBO_EMPTY,
+    VBO_STATIC,
+    VBO_DYNAMIC
+};
+
 typedef struct
 {
     void *handle;
@@ -146,10 +153,11 @@ typedef struct
     int total_comps;
     float *vertices;
     uint16_t *indices;
-    unsigned int vert_vbo;
-    unsigned int indx_vbo;
     int draw_mode;
     int draw_count;
+    enum BCVboStatus vbo_status;
+    unsigned int vbo_vertices;
+    unsigned int vbo_indices;
 } BCMesh;
 
 typedef struct
@@ -316,7 +324,7 @@ float * bcGetModelViewMatrix();
 
 // Mesh
 BCMesh * bcCreateMesh(int num_vertices, int num_indices, int flags);
-BCMesh * bcCompileMesh(BCMesh *mesh);
+BCMesh * bcCompileMesh(BCMesh *mesh, enum BCVboStatus status);
 void bcDestroyMesh(BCMesh *mesh);
 void bcDrawMesh(BCMesh *mesh);
 void bcBeginMeshDraw(BCMesh *mesh);

@@ -681,46 +681,69 @@ BCMesh * bcCreateMesh(int num_vertices, int num_indices, int flags)
     return mesh;
 }
 
-BCMesh * bcCompileMesh(BCMesh *mesh)
+static void freeVBOs(BCMesh *mesh)
+{
+    if (mesh->vbo_vertices)
+    {
+        glDeleteBuffers(1, &(mesh->vbo_vertices));
+        mesh->vbo_vertices = 0;
+    }
+    if (mesh->vbo_indices)
+    {
+        glDeleteBuffers(1, &(mesh->vbo_indices));
+        mesh->vbo_indices = 0;
+    }
+}
+
+BCMesh * bcCompileMesh(BCMesh *mesh, enum BCVboStatus status)
 {
     if (mesh == NULL)
     {
         bcLogError("Invalid mesh!");
         return NULL;
     }
-    // bind vertex data
-    if (mesh->vert_vbo == 0)
+    if (mesh->vbo_status == VBO_DYNAMIC && status == VBO_DYNAMIC)
     {
-        glGenBuffers(1, &(mesh->vert_vbo));
-        glBindBuffer(GL_ARRAY_BUFFER, mesh->vert_vbo);
-        glBufferData(GL_ARRAY_BUFFER, mesh->num_vertices * mesh->total_comps * sizeof(float), mesh->vertices, GL_STATIC_DRAW);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        if (mesh->vbo_vertices)
+        {
+            glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo_vertices);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, mesh->num_vertices * mesh->total_comps * sizeof(float), mesh->vertices);
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+        }
+        if (mesh->vbo_indices)
+        {
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->vbo_indices);
+            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, mesh->num_indices * sizeof(uint16_t), mesh->indices);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        }
     }
     else
     {
-        // TODO: GL_DYNAMIC_DRAW
-        glBindBuffer(GL_ARRAY_BUFFER, mesh->vert_vbo);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, mesh->num_vertices * mesh->total_comps * sizeof(float), mesh->vertices);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-    }
-    // bind index data
-    if (mesh->num_indices > 0) {
-        int indxSize = mesh->num_indices * sizeof(uint16_t);
-        if (mesh->indx_vbo == 0)
+        if (mesh->vbo_status != VBO_EMPTY)
         {
-            glGenBuffers(1, &(mesh->indx_vbo));
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indx_vbo);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, indxSize, mesh->indices, GL_STATIC_DRAW);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+            freeVBOs(mesh);
         }
-        else
+        if (status != VBO_EMPTY)
         {
-            // TODO: GL_DYNAMIC_DRAW
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indx_vbo);
-            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indxSize, mesh->indices);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+            if (mesh->num_vertices)
+            {
+                glGenBuffers(1, &(mesh->vbo_vertices));
+                glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo_vertices);
+                glBufferData(GL_ARRAY_BUFFER, mesh->num_vertices * mesh->total_comps * sizeof(float), mesh->vertices,
+                        status == VBO_STATIC ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+            }
+            if (mesh->num_indices)
+            {
+                glGenBuffers(1, &(mesh->vbo_indices));
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->vbo_indices);
+                glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->num_indices * sizeof(uint16_t), mesh->indices,
+                        status == VBO_STATIC ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+            }
         }
     }
+    mesh->vbo_status = status;
     return mesh;
 }
 
@@ -731,12 +754,9 @@ void bcDestroyMesh(BCMesh *mesh)
         bcLogError("Invalid mesh!");
         return;
     }
+    freeVBOs(mesh);
     free(mesh->vertices);
     free(mesh->indices);
-    if (mesh->vert_vbo)
-        glDeleteBuffers(1, &(mesh->vert_vbo));
-    if (mesh->indx_vbo)
-        glDeleteBuffers(1, &(mesh->indx_vbo));
     free(mesh);
 }
 
@@ -763,11 +783,11 @@ void bcBeginMeshDraw(BCMesh *mesh)
         return;
     }
     s_CurrentMesh = mesh;
-    if (mesh->vert_vbo)
-        glBindBuffer(GL_ARRAY_BUFFER, mesh->vert_vbo);
-    if (mesh->indx_vbo)
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indx_vbo);
-    float *vert_ptr = (mesh->vert_vbo ? (float *) 0 : mesh->vertices);
+    if (mesh->vbo_vertices)
+        glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo_vertices);
+    if (mesh->vbo_indices)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->vbo_indices);
+    float *vert_ptr = (mesh->vbo_vertices ? (float *) 0 : mesh->vertices);
 #ifdef SUPPORT_GLSL
     for (int i = 0; i < VERTEX_ATTR_MAX; i++)
     {
@@ -835,9 +855,9 @@ void bcEndMeshDraw(BCMesh *mesh)
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glDisableClientState(GL_COLOR_ARRAY);
 #endif
-    if (mesh->vert_vbo)
+    if (mesh->vbo_vertices)
         glBindBuffer(GL_ARRAY_BUFFER, 0);
-    if (mesh->indx_vbo)
+    if (mesh->vbo_indices)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     s_CurrentMesh = NULL;
 }
@@ -860,7 +880,7 @@ void bcDrawMeshEx(BCMesh *mesh, int start, int count)
         bcBeginMeshDraw(mesh);
         autoEnd = true;
     }
-    uint16_t *elem_start = (mesh->indx_vbo ? (uint16_t *) 0 : mesh->indices) + start;
+    uint16_t *elem_start = (mesh->vbo_indices ? (uint16_t *) 0 : mesh->indices) + start;
     if (mesh->indices)
     {
         glDrawElements(mesh->draw_mode, count, GL_UNSIGNED_SHORT, elem_start);
