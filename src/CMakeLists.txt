@@ -7,7 +7,7 @@ if(ANDROID)
     list(APPEND SRCS bcgl_app_android.c)
 else()
     list(APPEND SRCS bcgl_app_glfw.c)
-    list(APPEND SRCS external/glad/src/glad.c)
+    list(APPEND SRCS ../external/glad/src/glad.c)
 endif()
 list(APPEND SRCS bcgl_app_common.c)
 list(APPEND SRCS bcgl_file.c)
@@ -24,7 +24,7 @@ add_definitions("-D SUPPORT_GLAD")
 
 add_library(bcgl ${SRCS})
 
-target_include_directories(bcgl PUBLIC include external external/glad/include)
+target_include_directories(bcgl PUBLIC ../include ../external ../external/glad/include)
 
 if(ANDROID)
     include_directories(${ANDROID_SYSROOT}/usr/include/arm-linux-androideabi)
