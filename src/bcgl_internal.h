@@ -34,6 +34,7 @@ void bcSetWindow(BCWindow *window);
 BCEvent * bcSendEvent(int type, int x, int y);
 int bcPullEvents();
 BCEvent * bcGetEvent(int index);
+void bcFlushEvents();
 
 //
 // bcgl_files module

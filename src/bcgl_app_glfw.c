@@ -180,6 +180,7 @@ static void glfw_ScrollCallback(GLFWwindow *nativeWindow, double dx, double dy)
 
 static void glfw_WindowSizeCallback(GLFWwindow *nativeWindow, int width, int height)
 {
+    bcFlushEvents();
     bcSendEvent(BC_EVENT_WINDOWSIZE, width, height);
 }
 
@@ -191,6 +192,11 @@ static void glfw_WindowFocusCallback(GLFWwindow *nativeWindow, int focused)
 static void glfw_WindowIconifyCallback(GLFWwindow *nativeWindow, int iconified)
 {
     bcSendEvent(BC_EVENT_WINDOWICONIFY, iconified, 0);
+}
+
+static void glfw_WindowRefreshCallback(GLFWwindow* window)
+{
+    glfwSwapBuffers(window);
 }
 
 //
@@ -258,6 +264,7 @@ BCWindow * bcCreateWindow(BCConfig *config)
     glfwSetWindowSizeCallback(nativeWindow, glfw_WindowSizeCallback);
     glfwSetWindowFocusCallback(nativeWindow, glfw_WindowFocusCallback);
     glfwSetWindowIconifyCallback(nativeWindow, glfw_WindowIconifyCallback);
+    glfwSetWindowRefreshCallback(nativeWindow, glfw_WindowRefreshCallback);
 
     // Center our window
     if (config->mode == 0)

@@ -177,6 +177,13 @@ BCEvent * bcGetEvent(int index)
     return &(s_EventQueue[s_PulledQueue][index]);
 }
 
+void bcFlushEvents()
+{
+    pthread_mutex_lock(&s_Mutex);
+    s_CurrentIndex = 0;
+    pthread_mutex_unlock(&s_Mutex);
+}
+
 void bcQuit(int code)
 {
     bcCloseWindow(s_Window);
