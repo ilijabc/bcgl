@@ -315,6 +315,8 @@ BCWindow * bcCreateWindow(BCConfig *inconfig)
         EGL_RED_SIZE, 8,
         EGL_ALPHA_SIZE, 8,
         EGL_DEPTH_SIZE, 16,
+        EGL_SAMPLE_BUFFERS, (inconfig->msaa ? 1 : 0),
+        EGL_SAMPLES, inconfig->msaa,
         EGL_NONE
     };
 

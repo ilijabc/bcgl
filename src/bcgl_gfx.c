@@ -16,13 +16,12 @@ static BCMaterial s_DefaultMaterial =
 };
 static mat4_t s_ProjectionMatrix;
 static mat4_t s_ModelViewMatrix;
+static BCMesh *s_CurrentMesh = NULL;
 
 #ifdef SUPPORT_GLSL
+
 static BCShader *s_DefaultShader = NULL;
 static BCShader *s_CurrentShader = NULL;
-#endif
-
-static BCMesh *s_CurrentMesh = NULL;
 
 #ifdef __ANDROID__
     #define GLSL_CODE_HEADER \
@@ -116,8 +115,9 @@ static const char s_DefaultShaderCode[] =
 "#endif\n" \
 ;
 
+#else // SUPPORT_GLSL
+
 // This must be alligned with @BCVertexAttributes
-#ifndef SUPPORT_GLSL
 static struct
 {
     enum BCVertexAttributes index;
@@ -130,7 +130,8 @@ static struct
     { VERTEX_ATTR_COLORS, GL_COLOR_ARRAY },
     { VERTEX_ATTR_MAX, -1 }
 };
-#endif
+
+#endif // SUPPORT_GLSL
 
 // private
 
@@ -340,6 +341,8 @@ void bcBindTexture(BCTexture *texture)
 
 // Shader
 
+#ifdef SUPPORT_GLSL
+
 static void bindShaderVariables(BCShader *shader)
 {
     for (int i = 0; i < VERTEX_ATTR_MAX; i++)
@@ -415,6 +418,8 @@ static GLuint loadShader(const char *code, GLenum shaderType)
     return shaderId;
 }
 
+#endif // SUPPORT_GLSL
+
 BCShader * bcCreateShaderFromFile(const char *filename)
 {
     char *code = bcLoadTextFile(filename, NULL);
@@ -427,6 +432,7 @@ BCShader * bcCreateShaderFromFile(const char *filename)
 
 BCShader * bcCreateShaderFromCode(const char *vsCode, const char *fsCode)
 {
+#ifdef SUPPORT_GLSL
     BCShader *shader = NEW_OBJECT(BCShader);
     // create program
     shader->programId = glCreateProgram();
@@ -470,25 +476,23 @@ BCShader * bcCreateShaderFromCode(const char *vsCode, const char *fsCode)
     // variables
     bindShaderVariables(shader);
     return shader;
-
+    // error
 shader_create_error:
     bcDestroyShader(shader);
+#endif // SUPPORT_GLSL
     return NULL;
 }
 
 void bcDestroyShader(BCShader *shader)
 {
+#ifdef SUPPORT_GLSL
     if (shader == NULL)
         return;
     glDeleteShader(shader->vertexShader);
     glDeleteShader(shader->fragmentShader);
     glDeleteProgram(shader->programId);
     free(shader);
-}
-
-void dumpColor(const char *tag, BCColor color)
-{
-    bcLog("%s => [ %.2f %.2f %.2f %.2f ]", tag, color.r, color.g, color.b, color.a);
+#endif
 }
 
 void bcBindShader(BCShader *shader)
@@ -696,7 +700,7 @@ static void freeVBOs(BCMesh *mesh)
     }
 }
 
-BCMesh * bcCompileMesh(BCMesh *mesh, enum BCVboStatus status)
+BCMesh * bcUploadMesh(BCMesh *mesh, enum BCVboStatus status)
 {
     if (mesh == NULL)
     {
@@ -745,6 +749,25 @@ BCMesh * bcCompileMesh(BCMesh *mesh, enum BCVboStatus status)
         }
     }
     mesh->vbo_status = status;
+    return mesh;
+}
+
+BCMesh * bcCopyMesh(BCMesh *src)
+{
+    if (src == NULL)
+    {
+        bcLogError("Invalid mesh!");
+        return NULL;
+    }
+    BCMesh *mesh = bcCreateMesh(src->num_vertices, src->num_indices, src->format);
+    if (src->num_vertices)
+    {
+        memcpy(mesh->vertices, src->vertices, src->num_vertices * src->total_comps * sizeof(float));
+    }
+    if (src->num_indices)
+    {
+        memcpy(mesh->indices, src->indices, src->num_indices * sizeof(uint16_t));
+    }
     return mesh;
 }
 
@@ -821,7 +844,7 @@ void bcBindMesh(BCMesh *mesh)
         {
             if (mesh->comps[i] > 0)
             {
-                glEnableClientState(s_ClientStateType[i]);
+                glEnableClientState(s_ClientStateType[i].type);
                 switch (i)
                 {
                 case VERTEX_ATTR_POSITIONS:
@@ -841,7 +864,7 @@ void bcBindMesh(BCMesh *mesh)
             }
             else
             {
-                glDisableClientState(s_ClientStateType[i]);
+                glDisableClientState(s_ClientStateType[i].type);
             }
         }
 #endif

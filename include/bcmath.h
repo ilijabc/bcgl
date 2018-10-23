@@ -66,10 +66,11 @@ typedef struct mat4 {
     };
 } mat4_t;
 
-#define to_radians(degrees) (degrees * M_PI / 180.0f)
-#define to_degrees(radians) (radians * 180.0f / M_PI)
+#define to_radians(degrees) ((degrees) * M_PI / 180.0f)
+#define to_degrees(radians) ((radians) * 180.0f / M_PI)
 #define signf(f) ((f < 0) ? -1 : ((f > 0) ? 1 : 0))
 #define randomf() ((float) rand() / (float) RAND_MAX)
+#define randomi(X) (rand() % (X))
 
 #ifndef M_PI
 #define M_PI 3.1415926536f

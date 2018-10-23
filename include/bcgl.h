@@ -248,6 +248,7 @@ float bcGetTime();
 void bcShowKeyboard(bool show);
 int bcGetDisplayWidth();
 int bcGetDisplayHeight();
+float bcGetDisplayAspectRatio();
 float bcGetDisplayDensity();
 
 //
@@ -327,7 +328,8 @@ float * bcGetModelViewMatrix();
 
 // Mesh
 BCMesh * bcCreateMesh(int num_vertices, int num_indices, int flags);
-BCMesh * bcCompileMesh(BCMesh *mesh, enum BCVboStatus status);
+BCMesh * bcUploadMesh(BCMesh *mesh, enum BCVboStatus status);
+BCMesh * bcCopyMesh(BCMesh *mesh);
 void bcDestroyMesh(BCMesh *mesh);
 void bcDrawMesh(BCMesh *mesh);
 void bcBindMesh(BCMesh *mesh);

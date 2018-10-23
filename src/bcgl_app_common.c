@@ -126,6 +126,11 @@ int bcGetDisplayHeight()
     return bcGetWindow()->height;
 }
 
+float bcGetDisplayAspectRatio()
+{
+    return (float) bcGetWindow()->width / (float) bcGetWindow()->height;
+}
+
 BCCallbacks bcGetCallbacks()
 {
     return s_Callbacks;
