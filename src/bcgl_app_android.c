@@ -505,15 +505,15 @@ void bcAndroidSurfaceDestroyed()
 
 void bcAndroidSurfaceChanged(int format, int width, int height)
 {
-    bcSendEvent(BC_EVENT_WINDOWSIZE, width, height);
+    bcSendEvent(BC_EVENT_WINDOWSIZE, format, width, height);
 }
 
 void bcAndroidAppChengeState(int state)
 {
     if (state == EVENT_APP_PAUSE)
-        bcSendEvent(BC_EVENT_WINDOWFOCUS, 0, 0);
+        bcSendEvent(BC_EVENT_WINDOWFOCUS, 0, 0, 0);
     else if (state == EVENT_APP_RESUME)
-        bcSendEvent(BC_EVENT_WINDOWFOCUS, 1, 0);
+        bcSendEvent(BC_EVENT_WINDOWFOCUS, 1, 0, 0);
 }
 
 void bcAndroidTouchEvent(int event, int id, float x, float y)
@@ -521,14 +521,13 @@ void bcAndroidTouchEvent(int event, int id, float x, float y)
     switch (event)
     {
     case EVENT_TOUCH_DOWN:
-        bcSendEvent(BC_EVENT_MOUSEMOVE, x, y);
-        bcSendEvent(BC_EVENT_MOUSEPRESS, id, 0);
+        bcSendEvent(BC_EVENT_TOUCH_DOWN, id, x, y);
         break;
     case EVENT_TOUCH_UP:
-        bcSendEvent(BC_EVENT_MOUSERELEASE, id, 0);
+        bcSendEvent(BC_EVENT_TOUCH_UP, id, x, y);
         break;
     case EVENT_TOUCH_MOVE:
-        bcSendEvent(BC_EVENT_MOUSEMOVE, x, y);
+        bcSendEvent(BC_EVENT_TOUCH_MOVE, id, x, y);
         break;
     default:
         bcLogWarning("Unhandled event: %d", event);
@@ -541,10 +540,10 @@ void bcAndroidKeyEvent(int event, int key, int code)
     switch (event)
     {
     case EVENT_KEY_DOWN:
-        bcSendEvent(BC_EVENT_KEYPRESS, appKey, key);
+        bcSendEvent(BC_EVENT_KEYPRESS, appKey, key, code);
         break;
     case EVENT_KEY_UP:
-        bcSendEvent(BC_EVENT_KEYRELEASE, appKey, key);
+        bcSendEvent(BC_EVENT_KEYRELEASE, appKey, key, code);
         break;
     default:
         bcLogWarning("Unhandled event: %d", event);

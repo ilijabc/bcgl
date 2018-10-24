@@ -31,7 +31,7 @@ BCWindow * bcGetWindow();
 void bcSetWindow(BCWindow *window);
 
 // Events
-BCEvent * bcSendEvent(int type, int x, int y);
+BCEvent * bcSendEvent(int type, int id, int x, int y);
 int bcPullEvents();
 BCEvent * bcGetEvent(int index);
 void bcFlushEvents();

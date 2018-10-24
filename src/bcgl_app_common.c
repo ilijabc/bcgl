@@ -25,6 +25,13 @@ static struct
 
 static bool s_KeyState[BC_KEY_COUNT] = { false };
 
+static struct
+{
+    bool down;
+    float x;
+    float y;
+} s_TouchState[10] = { 0 };
+
 static void processEvent(BCEvent *event)
 {
     switch (event->type)
@@ -37,14 +44,14 @@ static void processEvent(BCEvent *event)
         break;
     case BC_EVENT_MOUSEPRESS:
     case BC_EVENT_MOUSERELEASE:
-        s_MouseState.button[event->x] = (event->type == BC_EVENT_MOUSEPRESS);
+        s_MouseState.button[event->id] = (event->type == BC_EVENT_MOUSEPRESS);
         break;
     case BC_EVENT_MOUSEWHEEL:
         s_MouseState.wheel = event->y;
         break;
     case BC_EVENT_KEYPRESS:
     case BC_EVENT_KEYRELEASE:
-        s_KeyState[event->x] = (event->type == BC_EVENT_KEYPRESS);
+        s_KeyState[event->id] = (event->type == BC_EVENT_KEYPRESS);
         break;
     case BC_EVENT_WINDOWSIZE:
         {
@@ -53,6 +60,16 @@ static void processEvent(BCEvent *event)
             win->height = event->y;
         }
         glViewport(0, 0, event->x, event->y);
+        break;
+    case BC_EVENT_TOUCH_DOWN:
+        s_TouchState[event->id].down = true;
+        break;
+    case BC_EVENT_TOUCH_UP:
+        s_TouchState[event->id].down = false;
+        break;
+    case BC_EVENT_TOUCH_MOVE:
+        s_TouchState[event->id].x = event->x;
+        s_TouchState[event->id].y = event->y;
         break;
     }
 }
@@ -99,7 +116,7 @@ void bcAppMain(BCConfig *config)
         {
             BCEvent *e = bcGetEvent(i);
             if (callbacks.onEvent)
-                callbacks.onEvent(e->type, e->x, e->y);
+                callbacks.onEvent(*e);
         }
         // update
         if (callbacks.onUpdate)
@@ -136,7 +153,7 @@ BCCallbacks bcGetCallbacks()
     return s_Callbacks;
 }
 
-BCEvent * bcSendEvent(int type, int x, int y)
+BCEvent * bcSendEvent(int type, int id, int x, int y)
 {
     pthread_mutex_lock(&s_Mutex);
     if (s_CurrentIndex == MAX_EVENTS)
@@ -147,6 +164,7 @@ BCEvent * bcSendEvent(int type, int x, int y)
     }
     BCEvent *event = &(s_EventQueue[s_CurrentQueue][s_CurrentIndex]);
     event->type = type;
+    event->id = id;
     event->x = x;
     event->y = y;
     s_CurrentIndex++;
@@ -249,4 +267,19 @@ float bcGetMouseDeltaX()
 float bcGetMouseDeltaY()
 {
     return s_MouseState.deltaY;
+}
+
+bool bcIsTouchDown(int index)
+{
+    return s_TouchState[index].down;
+}
+
+float bcGetTouchX(int index)
+{
+    return s_TouchState[index].x;
+}
+
+float bcGetTouchY(int index)
+{
+    return s_TouchState[index].y;
 }

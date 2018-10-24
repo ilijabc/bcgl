@@ -115,6 +115,7 @@ typedef struct
 typedef struct
 {
     int type;
+    int id;
     int x;
     int y;
 } BCEvent;
@@ -235,7 +236,7 @@ typedef struct
     void (*onStart)();
     void (*onStop)();
     void (*onUpdate)(float dt);
-    void (*onEvent)(int event, int x, int y);
+    void (*onEvent)(BCEvent event);
 } BCCallbacks;
 
 //
@@ -264,6 +265,9 @@ bool bcIsMouseDown(int button);
 float bcGetMouseWheel();
 float bcGetMouseDeltaX();
 float bcGetMouseDeltaY();
+bool bcIsTouchDown(int index);
+float bcGetTouchX(int index);
+float bcGetTouchY(int index);
 
 //
 // bcgl_file module
@@ -434,6 +438,9 @@ enum BCEventType
     BC_EVENT_WINDOWSIZE,
     BC_EVENT_WINDOWFOCUS,
     BC_EVENT_WINDOWICONIFY,
+    BC_EVENT_TOUCH_DOWN,
+    BC_EVENT_TOUCH_UP,
+    BC_EVENT_TOUCH_MOVE,
 };
 
 // Key Codes
