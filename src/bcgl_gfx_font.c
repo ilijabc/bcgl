@@ -92,7 +92,7 @@ BCFont * bcCreateFontBMP(const char *filename, int char_first, int char_count, i
     return font;
 }
 
-void bcDestroyFont(BCFont * font)
+void bcDestroyFont(BCFont *font)
 {
     if (font == NULL)
         return;
@@ -101,9 +101,9 @@ void bcDestroyFont(BCFont * font)
     free(font);
 }
 
-void bcDrawText(BCFont * font, float x, float y, const char *text)
+void bcDrawText(BCFont *font, float x, float y, const char *text)
 {
-    if (font == NULL)
+    if (font == NULL || text == NULL)
         return;
     bcBindTexture(font->texture);
     bcBegin(BC_TRIANGLES);
@@ -129,4 +129,30 @@ void bcDrawText(BCFont * font, float x, float y, const char *text)
     }
     bcEnd();
     bcBindTexture(NULL);
+}
+
+void bcGetTextSize(BCFont *font, const char *text, float *px, float *py)
+{
+    if (font == NULL || text == NULL)
+        return;
+    float x = 0;
+    float y = 0;
+    float my = 0;
+    while (*text)
+    {
+        stbtt_aligned_quad q;
+        if (getFontQuad(font, *text, &x, &y, &q))
+        {
+            bcLog("qy: %f %f", q.y0, q.y1);
+            float qy = -q.y0 + q.y1;
+            if (my < qy)
+                my = qy;
+        }
+        ++text;
+    }
+    y += my;
+    if (px)
+        *px = x;
+    if (py)
+        *py = y;
 }

@@ -215,9 +215,13 @@ typedef struct
 #endif
 
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-#define HEX_COLOR(rgba) { (rgba >> 24 & 0xff) / 255.0f, (rgba >> 16 & 0xff) / 255.0f, (rgba >> 8 & 0xff) / 255.0f, (rgba & 0xff) / 255.0f }
+#define RGB_COLOR(C)  (BCColor) { (C >> 16 & 0xff) / 255.0f, (C >> 8 & 0xff) / 255.0f, (C & 0xff) / 255.0f, 1.0f }
+#define RGBA_COLOR(C) (BCColor) { (C >> 24 & 0xff) / 255.0f, (C >> 16 & 0xff) / 255.0f, (C >> 8 & 0xff) / 255.0f, (C & 0xff) / 255.0f }
+#define ARGB_COLOR(C) (BCColor) { (C >> 16 & 0xff) / 255.0f, (C >> 8 & 0xff) / 255.0f, (C & 0xff) / 255.0f, (C >> 24 & 0xff) / 255.0f }
 #else
-#define HEX_COLOR(rgba) { (rgba & 0xff) / 255.0f, (rgba >> 8 & 0xff) / 255.0f, (rgba >> 16 & 0xff) / 255.0f, (rgba >> 24 & 0xff) / 255.0f }
+#define RGB_COLOR(C)  (BCColor) { (C >> 8 & 0xff) / 255.0f, (C >> 16 & 0xff) / 255.0f, (C >> 24 & 0xff) / 255.0f, 1.0f }
+#define RGBA_COLOR(C) (BCColor) { (C & 0xff) / 255.0f, (C >> 8 & 0xff) / 255.0f, (C >> 16 & 0xff) / 255.0f, (C >> 24& 0xff) / 255.0f }
+#define ARGB_COLOR(C) (BCColor) { (C >> 8 & 0xff) / 255.0f, (C >> 16 & 0xff) / 255.0f, (C >> 24 & 0xff) / 255.0f, (C & 0xff) / 255.0f }
 #endif
 
 static const BCColor COLOR_WHITE = {1,1,1,1};
@@ -395,6 +399,7 @@ BCFont * bcCreateFontFNT(const char *filename);
 BCFont * bcCreateFontBMP(const char *filename, int char_first, int char_count, int cols);
 void bcDestroyFont(BCFont *font);
 void bcDrawText(BCFont *font, float x, float y, const char *text);
+void bcGetTextSize(BCFont *font, const char *text, float *px, float *py);
 
 //
 // bcgl_gfx_geometry module
