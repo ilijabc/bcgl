@@ -1,17 +1,23 @@
-rem @echo off
+@echo off
 
-rem %1 - gradle app path
-rem %2 - package name
+rem pass gradle path as %1
+rem pass app package name as %2
 
 set ROOT="%cd%"
 
 cd %1
 
-adb shell am force-stop %2
-
 call gradlew.bat installDebug
+if not %ERRORLEVEL% == 0 (
+    exit /B 1
+)
 
-adb shell am start %2/.MainActivity
+if "%BCGL_OUTPUT%" == "" (
+    set BCGL_OUTPUT="_output\win32"
+)
+
+adb shell am force-stop %1
+adb shell am start %1/.MainActivity
 
 cd %ROOT%
 

@@ -1,5 +1,7 @@
 @echo off
 
+rem pass gradle path as %1
+
 set ROOT="%cd%"
 
 cd %1

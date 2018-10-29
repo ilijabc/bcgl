@@ -1,14 +1,7 @@
 @echo off
 
-set ROOT="%cd%"
-
-cd %1
-
-call gradlew.bat clean
-if not %ERRORLEVEL% == 0 (
-    exit /B 1
+if "%BCGL_OUTPUT%" == "" (
+    set BCGL_OUTPUT="_output\android"
 )
 
-cd %ROOT%
-
-exit /B 0
+rmdir /S /Q %BCGL_OUTPUT%
