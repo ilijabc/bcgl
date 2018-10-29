@@ -11,6 +11,15 @@ static const char * s_ModeStr[] = { "r", "w", "a" };
 static AAssetManager *s_Manager = NULL;
 #endif
 
+static char * __strdup(const char *str)
+{
+    int len = strlen(str);
+    char *result = malloc(len + 1);
+    memcpy(result, str, len);
+    result[len] = 0;
+    return result;
+}
+
 void bcInitFiles(void *ctx)
 {
 #ifdef __ANDROID__
@@ -42,7 +51,7 @@ BCFile * bcOpenFile(const char *filename, enum BCFileMode mode)
             return NULL;
         BCFile *file = NEW_OBJECT(BCFile);
         file->handle = aas;
-        file->name = strdup(filename);
+        file->name = __strdup(filename);
         file->isDir = false;
         file->isAsset = true;
         file->length = AAsset_getLength(aas);
@@ -54,7 +63,7 @@ BCFile * bcOpenFile(const char *filename, enum BCFileMode mode)
         return NULL;
     BCFile *file = NEW_OBJECT(BCFile);
     file->handle = fp;
-    file->name = strdup(filename);
+    file->name = __strdup(filename);
     file->isDir = false;
     file->isAsset = isAsset;
     fseek(fp, 0, SEEK_END);
@@ -167,7 +176,7 @@ BCFile * bcOpenDir(const char *filename)
             return NULL;
         BCFile *file = NEW_OBJECT(BCFile);
         file->handle = aas;
-        file->name = strdup(filename);
+        file->name = __strdup(filename);
         file->isDir = true;
         file->isAsset = true;
         file->length = 0;
@@ -179,7 +188,7 @@ BCFile * bcOpenDir(const char *filename)
         return NULL;
     BCFile *file = NEW_OBJECT(BCFile);
     file->handle = d;
-    file->name = strdup(filename);
+    file->name = __strdup(filename);
     file->isDir = true;
     file->isAsset = false;
     file->length = 0;

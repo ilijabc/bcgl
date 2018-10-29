@@ -23,7 +23,7 @@ static BCMesh *s_CurrentMesh = NULL;
 static BCShader *s_DefaultShader = NULL;
 static BCShader *s_CurrentShader = NULL;
 
-#ifdef __ANDROID__
+#ifdef SUPPORT_GLES
     #define GLSL_CODE_HEADER \
     "#version 100\n" \
     "precision mediump float;\n"
@@ -533,7 +533,7 @@ void bcSetDepthTest(bool enabled)
 
 void bcSetWireframe(bool enabled)
 {
-#ifndef __ANDROID__
+#ifndef SUPPORT_GLES
     if (enabled)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     else

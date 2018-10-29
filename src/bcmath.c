@@ -18,7 +18,7 @@ vec2_t vec2_from_array(float *v)
 
 bool vec2_is_zero(vec2_t v0)
 {
-    return v0.v[0] < FLT_EPSILON && v0.v[1] < FLT_EPSILON;
+    return fabsf(v0.v[0]) < FLT_EPSILON && fabsf(v0.v[1]) < FLT_EPSILON;
 }
 
 bool vec2_is_equal(vec2_t v0, vec2_t v1)

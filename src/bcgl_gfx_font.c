@@ -143,7 +143,6 @@ void bcGetTextSize(BCFont *font, const char *text, float *px, float *py)
         stbtt_aligned_quad q;
         if (getFontQuad(font, *text, &x, &y, &q))
         {
-            bcLog("qy: %f %f", q.y0, q.y1);
             float qy = -q.y0 + q.y1;
             if (my < qy)
                 my = qy;
