@@ -1,5 +1,4 @@
 #include <bcgl.h>
-#include <bcgl_desktop.h>
 
 static void BC_onConfig(BCConfig *config)
 {
@@ -59,7 +58,7 @@ static void BC_onEvent(BCEvent event)
     }
 }
 
-int main(int argc, char **argv)
+BCCallbacks get_example_box()
 {
     BCCallbacks callbacks = {
         BC_onConfig,
@@ -70,6 +69,5 @@ int main(int argc, char **argv)
         BC_onUpdate,
         BC_onEvent,
     };
-    bcInit(callbacks);
-    return bcDesktopMain(argc, argv);
+    return callbacks;
 }

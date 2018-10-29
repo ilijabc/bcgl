@@ -73,7 +73,7 @@ GameObject * createGameObject(float x, float y, const char *type)
     }
     else if (strcmp(type, "rock") == 0)
     {
-        objShape = par_shapes_create_rock(bcGetRandom() * 100, 2);
+        objShape = par_shapes_create_rock(randomi(100), 2);
     }
     else if (strcmp(type, "box") == 0)
     {
@@ -163,6 +163,16 @@ static void BC_onConfig(BCConfig *config)
     config->width = aspect * config->height;
     // config->vsync = true;
 // #endif
+}
+
+static void BC_onCreate()
+{
+    bcLog("");
+}
+
+static void BC_onDestroy()
+{
+    bcLog("");
 }
 
 static void BC_onStart()
@@ -302,13 +312,12 @@ static const char *s_EventNames[] = {
     "BC_EVENT_WINDOWICONIFY",
 };
 
-static void BC_onEvent(int event, int x, int y)
+static void BC_onEvent(BCEvent event)
 {
     static bool wire = false;
-    // bcLog("%s: [ %d, %d ]", s_EventNames[event], x, y);
-    if (event == BC_EVENT_KEYPRESS)
+    if (event.type == BC_EVENT_KEYPRESS)
     {
-        switch (x)
+        switch (event.id)
         {
         case BC_KEY_ESCAPE:
             bcQuit(0);
@@ -329,20 +338,18 @@ static void BC_onEvent(int event, int x, int y)
             break;
         }
     }
-    else if (event == BC_EVENT_WINDOWFOCUS)
-    {
-        bcLog("BC_EVENT_WINDOWFOCUS: %d", x);
-    }
 }
 
-extern "C" void initGame()
+BCCallbacks get_example_lighting()
 {
     BCCallbacks callbacks = {
         BC_onConfig,
+        BC_onCreate,
+        BC_onDestroy,
         BC_onStart,
         BC_onStop,
         BC_onUpdate,
         BC_onEvent,
     };
-    bcInit(callbacks);
+    return callbacks;
 }
