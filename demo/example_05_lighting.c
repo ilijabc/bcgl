@@ -340,16 +340,12 @@ static void BC_onEvent(BCEvent event)
     }
 }
 
-BCCallbacks get_example_lighting()
-{
-    BCCallbacks callbacks = {
-        BC_onConfig,
-        BC_onCreate,
-        BC_onDestroy,
-        BC_onStart,
-        BC_onStop,
-        BC_onUpdate,
-        BC_onEvent,
-    };
-    return callbacks;
-}
+BCCallbacks example_05_lighting = {
+    BC_onConfig,
+    BC_onCreate,
+    BC_onDestroy,
+    BC_onStart,
+    BC_onStop,
+    BC_onUpdate,
+    BC_onEvent,
+};
