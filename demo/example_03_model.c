@@ -17,7 +17,7 @@ static void BC_onDestroy()
 
 static void BC_onStart()
 {
-    BCMesh *msh = bcCreateMeshCube();
+    BCMesh *msh = bcUploadMesh(bcCreateMeshCube(), VBO_STATIC);
     BCMaterial mtl = {
         RGBA_COLOR(0xffffffff),
         RGBA_COLOR(0xffffffff),

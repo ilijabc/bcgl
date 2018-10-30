@@ -28,6 +28,7 @@ static void BC_onStart()
     // p1 = bcPartFromMesh(mesh);
     p2 = bcAttachMesh(mesh, m2, true);
     p3 = bcAttachMesh(mesh, m3, true);
+    bcUploadMesh(mesh, VBO_STATIC);
 }
 
 static void BC_onStop()

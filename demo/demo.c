@@ -36,12 +36,17 @@ void demo_finish_scene()
 
 void demo_event(BCEvent event)
 {
+    static bool wire = false;
     if (event.type == BC_EVENT_KEYRELEASE)
     {
         switch (event.id)
         {
         case BC_KEY_ESCAPE:
             bcQuit(0);
+            break;
+        case BC_KEY_W:
+            wire = !wire;
+            bcSetWireframe(wire);
             break;
         }
     }
