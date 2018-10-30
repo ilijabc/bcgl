@@ -713,13 +713,13 @@ BCMesh * bcUploadMesh(BCMesh *mesh, enum BCVboStatus status)
         {
             glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo_vertices);
             glBufferSubData(GL_ARRAY_BUFFER, 0, mesh->num_vertices * mesh->total_comps * sizeof(float), mesh->vertices);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
+            // glBindBuffer(GL_ARRAY_BUFFER, 0);
         }
         if (mesh->vbo_indices)
         {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->vbo_indices);
             glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, mesh->num_indices * sizeof(uint16_t), mesh->indices);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+            // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         }
     }
     else
@@ -736,7 +736,7 @@ BCMesh * bcUploadMesh(BCMesh *mesh, enum BCVboStatus status)
                 glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo_vertices);
                 glBufferData(GL_ARRAY_BUFFER, mesh->num_vertices * mesh->total_comps * sizeof(float), mesh->vertices,
                         status == VBO_STATIC ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
-                glBindBuffer(GL_ARRAY_BUFFER, 0);
+                // glBindBuffer(GL_ARRAY_BUFFER, 0);
             }
             if (mesh->num_indices)
             {
@@ -744,11 +744,16 @@ BCMesh * bcUploadMesh(BCMesh *mesh, enum BCVboStatus status)
                 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->vbo_indices);
                 glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->num_indices * sizeof(uint16_t), mesh->indices,
                         status == VBO_STATIC ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+                // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
             }
         }
     }
     mesh->vbo_status = status;
+    // reset state machine
+    if (s_CurrentMesh)
+    {
+        bcBindMesh(NULL);
+    }
     return mesh;
 }
 
@@ -796,7 +801,7 @@ void bcDrawMesh(BCMesh *mesh)
 
 void bcBindMesh(BCMesh *mesh)
 {
-    if (mesh == s_CurrentMesh)
+    if (s_CurrentMesh == mesh)
     {
         bcLogWarning("Mesh already assigned!");
         return;
