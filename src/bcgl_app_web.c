@@ -150,6 +150,10 @@ float bcGetTime()
     return (tv.tv_sec - s_StartTimeSec) + (0.000001f * tv.tv_usec);
 }
 
+void bcShowKeyboard(bool show)
+{
+}
+
 bool bcIsWindowOpened(BCWindow *window)
 {
     return true;

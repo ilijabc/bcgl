@@ -22,9 +22,15 @@ void bcInitGfxDraw()
 void bcTermGfxDraw()
 {
     if (s_ReusableSolidMesh)
+    {
         bcDestroyMesh(s_ReusableSolidMesh);
+        s_ReusableSolidMesh = NULL;
+    }
     if (s_ReusableCubeMesh)
+    {
         bcDestroyMesh(s_ReusableCubeMesh);
+        s_ReusableCubeMesh = NULL;
+    }
 }
 
 static int convertDrawMode(enum BCDrawMode mode)
@@ -53,13 +59,16 @@ static int convertDrawMode(enum BCDrawMode mode)
 bool bcBegin(enum BCDrawMode mode)
 {
     if (s_ReusableSolidMesh == NULL)
+    {
         s_ReusableSolidMesh = bcCreateMesh(1024, 1024, MESH_FLAGS_POS3 | MESH_FLAGS_NORM | MESH_FLAGS_TEX2 | MESH_FLAGS_COL4);
+    }
     return bcBeginMesh(s_ReusableSolidMesh, mode);
 }
 
 void bcEnd()
 {
     bcEndMesh(s_ReusableSolidMesh);
+    bcUploadMesh(s_ReusableSolidMesh, VBO_DYNAMIC);
     bcDrawMesh(s_ReusableSolidMesh);
 }
 

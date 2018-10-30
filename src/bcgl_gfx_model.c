@@ -95,7 +95,7 @@ void bcDrawModelPart(BCModel *model, int part)
     if (part == ALL_PARTS)
         bcDrawMesh(model->mesh);
     else if (part >= 0 && part < model->parts_count)
-        bcDrawMeshEx(model->mesh, model->parts_list[part].start, model->parts_list[part].count);
+        bcDrawMeshRange(model->mesh, model->parts_list[part].start, model->parts_list[part].count);
     if (autoEnd)
     {
         bcEndModelDraw(model);

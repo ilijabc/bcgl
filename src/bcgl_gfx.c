@@ -791,7 +791,7 @@ void bcDrawMesh(BCMesh *mesh)
         bcLogError("Invalid mesh!");
         return;
     }
-    bcDrawMeshEx(mesh, 0, mesh->draw_count);
+    bcDrawMeshRange(mesh, 0, mesh->draw_count);
 }
 
 void bcBindMesh(BCMesh *mesh)
@@ -874,10 +874,10 @@ void bcBindMesh(BCMesh *mesh)
 
 void bcDrawMeshPart(BCMeshPart part)
 {
-    bcDrawMeshEx(part.mesh, part.start, part.count);
+    bcDrawMeshRange(part.mesh, part.start, part.count);
 }
 
-void bcDrawMeshEx(BCMesh *mesh, int start, int count)
+void bcDrawMeshRange(BCMesh *mesh, int start, int count)
 {
     if (mesh == NULL)
     {

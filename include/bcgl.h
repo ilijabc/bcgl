@@ -342,7 +342,7 @@ void bcDestroyMesh(BCMesh *mesh);
 void bcDrawMesh(BCMesh *mesh);
 void bcBindMesh(BCMesh *mesh);
 void bcDrawMeshPart(BCMeshPart part);
-void bcDrawMeshEx(BCMesh *mesh, int start, int count);
+void bcDrawMeshRange(BCMesh *mesh, int start, int count);
 BCMeshPart bcPartFromMesh(BCMesh *mesh);
 BCMeshPart bcAttachMesh(BCMesh *mesh, BCMesh *src, bool destroy_src);
 
