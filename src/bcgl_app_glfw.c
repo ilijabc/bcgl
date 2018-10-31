@@ -369,9 +369,11 @@ int bcDesktopMain(int argc, char **argv)
     config.msaa = 0;
     config.orientation = 0;
 
-    bcAppMain(&config);
+    int result = bcAppMain(&config);
 
     bcTermFiles();
 
     glfwTerminate();
+
+    return result;
 }

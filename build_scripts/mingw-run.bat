@@ -8,4 +8,4 @@ if "%BCGL_OUTPUT%" == "" (
     set BCGL_OUTPUT="_output\win32"
 )
 
-%BCGL_OUTPUT%\%1
+%BCGL_OUTPUT%\%1 %2

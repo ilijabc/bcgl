@@ -4,6 +4,7 @@
 
 static BCCallbacks s_Callbacks;
 static BCWindow *s_Window = NULL;
+static int s_ExitCode = 0;
 
 // event queues
 #define MAX_EVENTS 32
@@ -79,7 +80,7 @@ void bcInit(BCCallbacks callbacks)
     s_Callbacks = callbacks;
 }
 
-void bcAppMain(BCConfig *config)
+int bcAppMain(BCConfig *config)
 {
     BCCallbacks callbacks = bcGetCallbacks();
 
@@ -95,7 +96,7 @@ void bcAppMain(BCConfig *config)
     if (window == NULL)
     {
         bcLogError("Unable to create window!");
-        return;
+        return -99;
     }
     bcSetWindow(window);
 
@@ -131,6 +132,8 @@ void bcAppMain(BCConfig *config)
 
     if (callbacks.onDestroy)
         callbacks.onDestroy();
+
+    return s_ExitCode;
 }
 
 int bcGetDisplayWidth()
@@ -204,6 +207,7 @@ void bcFlushEvents()
 
 void bcQuit(int code)
 {
+    s_ExitCode = code;
     bcCloseWindow(s_Window);
 }
 

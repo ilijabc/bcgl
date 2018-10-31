@@ -1,15 +1,5 @@
-#include <stdio.h>
-
-#include <bcgl.h>
-#include <bcgl_opengl.h>
-#include <bcmath.h>
+#include "demo.h"
 #include <par/par_shapes.h>
-
-#ifdef __ANDROID__
-#define PREFIX "/sdcard/bcgl/"
-#else
-#define PREFIX ""
-#endif
 
 typedef struct
 {
@@ -121,7 +111,7 @@ static void DrawTiles(BCTexture *texture, float w, float h, float tx, float ty)
     float ww = w / 2;
     float hh = h / 2;
     bcBindTexture(texture);
-    bcBegin(0);
+    bcBegin(BC_TRIANGLES);
     // bcColor4f(0.5f, 1, 1, 0.5f);
     bcTexCoord2f(0, 0);
     bcVertex2f(-ww, -hh);
@@ -180,8 +170,8 @@ static void BC_onStart()
     bcLog("");
     // defaultShader = bcCreateShaderFromFile(PREFIX"assets/default.glsl");
     // bcBindShader(defaultShader);
-    texGrass = bcCreateTextureFromFile(PREFIX"assets/grass.png", 0);
-    texCursor = bcCreateTextureFromFile(PREFIX"assets/cursor.png", 0);
+    texGrass = bcCreateTextureFromFile("assets/grass.png", 0);
+    texCursor = bcCreateTextureFromFile("assets/cursor.png", 0);
     camera.pos.z = -6;
     // light
     par_shapes_mesh *sphere = par_shapes_create_parametric_sphere(10, 10);
@@ -190,7 +180,7 @@ static void BC_onStart()
     light.pos = vec3(0, 0, 1);
     light.followCamera = true;
     // font
-    myFont = bcCreateFontTTF(PREFIX"assets/vera.ttf", 20);
+    myFont = bcCreateFontTTF("assets/vera.ttf", 20);
     // init objects
     objects[0] = player = createGameObject(0, 0, "player");
     player->pos.z = 1;
@@ -314,17 +304,14 @@ static const char *s_EventNames[] = {
 
 static void BC_onEvent(BCEvent event)
 {
-    static bool wire = false;
+    if (demo_event(event))
+        return;
     if (event.type == BC_EVENT_KEYPRESS)
     {
         switch (event.id)
         {
-        case BC_KEY_ESCAPE:
-            bcQuit(0);
-            break;
-        case BC_KEY_F1:
-            wire = !wire;
-            bcSetWireframe(wire);
+        case BC_KEY_1:
+            bcShowKeyboard(true);
             break;
         case BC_KEY_F2:
             light.followCamera = !light.followCamera;
@@ -332,9 +319,6 @@ static void BC_onEvent(BCEvent event)
                 light.stored_pos = light.pos;
             else
                 light.pos = light.stored_pos;
-            break;
-        case BC_KEY_1:
-            bcShowKeyboard(true);
             break;
         }
     }

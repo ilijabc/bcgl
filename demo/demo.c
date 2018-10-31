@@ -1,5 +1,17 @@
 #include "demo.h"
 
+static struct
+{
+    vec3_t pos;
+    vec3_t rot;
+    bool auto_rotate;
+} camera =
+{
+    { 0, 0, -6 },
+    { -60, 0, 0},
+    false
+};
+
 void demo_config(BCConfig *config)
 {
     float aspect = (float) config->width / (float) config->height;
@@ -14,15 +26,30 @@ void demo_config(BCConfig *config)
 
 void demo_prepare_scene(float dt)
 {
-    static float r = 0;
-    r += dt * 50;
+    // camera control
+    if (bcIsMouseDown(0))
+    {
+        camera.rot.z += bcGetMouseDeltaX();
+        camera.rot.x += bcGetMouseDeltaY();
+    }
+    camera.pos.z += bcGetMouseWheel() * 0.1f;
+    if (camera.auto_rotate)
+    {
+        camera.rot.z += dt * 50;
+    }
+
+    // scene 3D
     bcClear();
     bcPrepareScene3D(60);
     bcSetObjectColorf(1, 1, 1, 1);
+
     // camera
-    bcTranslatef(0, 0, -10);
-    bcRotatef(-45, 1, 0, 0);
-    bcRotatef(r, 0, 0, 1);
+    bcTranslatef(0, 0, camera.pos.z);
+    bcRotatef(camera.rot.x, 1, 0, 0);
+    bcRotatef(camera.rot.y, 0, 1, 0);
+    bcRotatef(camera.rot.z, 0, 0, 1);
+    bcTranslatef(camera.pos.x, camera.pos.y, 0);
+
     // grid
     bcPushMatrix();
     bcTranslatef(-5, -5, 0);
@@ -34,7 +61,7 @@ void demo_finish_scene()
 {
 }
 
-void demo_event(BCEvent event)
+bool demo_event(BCEvent event)
 {
     static bool wire = false;
     if (event.type == BC_EVENT_KEYRELEASE)
@@ -43,11 +70,18 @@ void demo_event(BCEvent event)
         {
         case BC_KEY_ESCAPE:
             bcQuit(0);
-            break;
+            return true;
+        case BC_KEY_SPACE:
+            bcQuit(1);
+            return true;
         case BC_KEY_W:
             wire = !wire;
             bcSetWireframe(wire);
-            break;
+            return true;
+        case BC_KEY_R:
+            camera.auto_rotate = !camera.auto_rotate;
+            return true;
         }
     }
+    return false;
 }

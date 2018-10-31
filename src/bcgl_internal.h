@@ -18,7 +18,7 @@ typedef struct
 BCCallbacks bcGetCallbacks();
 
 // App
-void bcAppMain(BCConfig *config);
+int bcAppMain(BCConfig *config);
 
 // Window
 BCWindow * bcCreateWindow(BCConfig *config);
