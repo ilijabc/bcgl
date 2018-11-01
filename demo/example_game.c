@@ -48,6 +48,17 @@ static struct
 
 static BCFont *myFont = NULL;
 
+static struct
+{
+    vec3_t pos;
+    vec2_t offset;
+    BCMesh *mesh;
+} myCursor = {
+    { 0, 0, 0 },
+    { 0, 0 },
+    NULL
+};
+
 GameObject * createGameObject(float x, float y, const char *type)
 {
     GameObject *obj = NEW_OBJECT(GameObject);
@@ -188,6 +199,7 @@ static void BC_onStart()
     {
         objects[i] = createGameObject((i/6)*2+4-4, (i%6)*2+4-4, "ball");
     }
+    myCursor.mesh = bcCreateMeshSphere(1, 10, 10);
 }
 
 static void BC_onStop()
@@ -262,16 +274,27 @@ static void BC_onUpdate(float dt)
     bcSetModelViewMatrix(cm.v);
     DrawTiles(texGrass, 20, 20, 20, 20);
     bcBindTexture(texGrass);
+    bcPushMatrix();
     for (int i = 0; i < MAX_OBJECTS; i++)
     {
         drawGameObject(cm, objects[i]);
     }
+    bcPopMatrix();
     bcBindTexture(NULL);
+    if (bcIsMouseDown(1))
+    {
+        bcScreenToWorldCoords(bcGetMouseX(), bcGetMouseY(), myCursor.pos.v);
+    }
+    bcPushMatrix();
+    bcTranslatef(myCursor.pos.x, myCursor.pos.y, myCursor.pos.z);
+    bcWorldToScreenCoords(0, 0, 0, myCursor.offset.v);
+    bcDrawMesh(myCursor.mesh);
+    bcPopMatrix();
     // gui
     bcPrepareSceneGUI();
     bcSetObjectColor(ColorWhite);
     if (texCursor)
-        bcDrawTexture2D(texCursor, bcGetMouseX(), bcGetMouseY(), texCursor->width, texCursor->height, 0, 0, 1, 1);
+        bcDrawTexture2D(texCursor, myCursor.offset.x, myCursor.offset.y, texCursor->width, texCursor->height, 0, 0, 1, 1);
     // fps
     static char s_fps[50] = "BCGL";
     if (bcGetTime() > fpsCounter.stored_time + 1)

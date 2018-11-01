@@ -38,7 +38,7 @@ void printInfo()
 int main(int argc, char **argv)
 {
     int num_examples = sizeof(s_Examples) / sizeof(struct Example) - 1;
-    int example = 0;
+    int example = 1;
     if (argc > 1)
     {
         example = atoi(argv[1]);
