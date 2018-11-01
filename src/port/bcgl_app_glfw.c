@@ -1,4 +1,4 @@
-#include "bcgl_internal.h"
+#include "../bcgl_internal.h"
 #include <bcgl_desktop.h>
 #include <GLFW/glfw3.h>
 

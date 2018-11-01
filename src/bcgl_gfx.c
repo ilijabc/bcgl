@@ -516,6 +516,7 @@ void bcBindShader(BCShader *shader)
 void bcClear()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glViewport(0, 0, bcGetDisplayWidth(), bcGetDisplayHeight());
 }
 
 void bcSetBlend(bool enabled)

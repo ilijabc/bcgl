@@ -4,7 +4,7 @@
 #include <pthread.h>
 #include <emscripten/emscripten.h>
 
-#include "bcgl_internal.h"
+#include "../bcgl_internal.h"
 
 typedef struct
 {
@@ -92,8 +92,6 @@ BCWindow * bcCreateWindow(BCConfig *inconfig)
         bcLogError("eglQuerySurface() returned error %d", eglGetError());
         goto window_create_error;
     }
-
-    glViewport(0, 0, width, height);
 
     BCGLESWindow *nativeWindow = NEW_OBJECT(BCGLESWindow);
     // nativeWindow->_window = display;

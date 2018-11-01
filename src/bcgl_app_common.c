@@ -60,7 +60,6 @@ static void processEvent(BCEvent *event)
             win->width = event->x;
             win->height = event->y;
         }
-        glViewport(0, 0, event->x, event->y);
         break;
     case BC_EVENT_TOUCH_DOWN:
         s_TouchState[event->id].down = true;

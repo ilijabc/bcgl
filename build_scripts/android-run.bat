@@ -16,8 +16,8 @@ if "%BCGL_OUTPUT%" == "" (
     set BCGL_OUTPUT="_output\win32"
 )
 
-adb shell am force-stop %1
-adb shell am start %1/.MainActivity
+adb shell am force-stop %2
+adb shell am start %2/.MainActivity
 
 cd %ROOT%
 

@@ -5,7 +5,7 @@
 #include <android/keycodes.h>
 #include <android/native_window.h>
 
-#include "bcgl_internal.h"
+#include "../bcgl_internal.h"
 #include <bcgl_android.h>
 
 typedef struct
@@ -377,8 +377,6 @@ BCWindow * bcCreateWindow(BCConfig *inconfig)
         bcLogError("eglQuerySurface() returned error %d", eglGetError());
         goto window_create_error;
     }
-
-    glViewport(0, 0, width, height);
 
     BCAndroidWindow *nativeWindow = NEW_OBJECT(BCAndroidWindow);
     // nativeWindow->_window = display;
