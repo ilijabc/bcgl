@@ -57,10 +57,10 @@ typedef struct mat3 {
 typedef struct mat4 {
     union {
         struct {
-            float m11, m21, m31, m41;
-            float m12, m22, m32, m42;
-            float m13, m23, m33, m43;
-            float m14, m24, m34, m44;
+            float m00, m10, m20, m30;
+            float m01, m11, m21, m31;
+            float m02, m12, m22, m32;
+            float m03, m13, m23, m33;
         };
         float v[16];
     };
@@ -173,6 +173,8 @@ float vec3_distance_squared(vec3_t v0, vec3_t v1);
 vec4_t vec4(float x, float y, float z, float w);
 vec4_t vec4_from_vec3(vec3_t v, float w);
 vec4_t vec4_multiply_mat4(mat4_t m, vec4_t v);
+vec4_t vec4_divide(vec4_t v0, vec4_t v1);
+vec4_t vec4_divide_f(vec4_t v0, float f);
 
 // mat4
 mat4_t mat4_from_array(float *v);
@@ -195,6 +197,10 @@ mat4_t mat4_rotate_axis(mat4_t m1, float rad, float x, float y, float z);
 mat4_t mat4_rotate_quat(mat4_t m1, quat_t q);
 mat4_t mat4_scale(mat4_t m1, float x, float y, float z);
 mat4_t mat4_transpose(mat4_t m);
+mat4_t mat4_inverse(mat4_t m);
+vec4_t mat4_project(mat4_t m, float x, float y, float z, int viewport[4]);
+vec4_t mat4_unproject(mat4_t m, float x, float y, float z, int viewport[4]);
+vec4_t mat4_unproject_inv(mat4_t m, float x, float y, float z, int viewport[4]);
 void mat4_dump(mat4_t m);
 
 // quat

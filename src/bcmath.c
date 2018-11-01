@@ -481,6 +481,28 @@ vec4_t vec4_multiply_mat4(mat4_t m, vec4_t v)
     return result;
 }
 
+vec4_t vec4_divide(vec4_t v0, vec4_t v1)
+{
+    vec4_t result = {
+        v0.x / v1.x,
+        v0.y / v1.y,
+        v0.z / v1.z,
+        v0.w / v1.w,
+    };
+    return result;
+}
+
+vec4_t vec4_divide_f(vec4_t v0, float f)
+{
+    vec4_t result = {
+        v0.x / f,
+        v0.y / f,
+        v0.z / f,
+        v0.w / f,
+    };
+    return result;
+}
+
 //
 // mat4
 //
@@ -752,6 +774,79 @@ mat4_t mat4_transpose(mat4_t m)
         m.v[2], m.v[6], m.v[10],m.v[14],
         m.v[3], m.v[7], m.v[11],m.v[15],
     };
+    return result;
+}
+
+mat4_t mat4_inverse(mat4_t m)
+{
+    float a = m.m00 * m.m11 - m.m01 * m.m10;
+    float b = m.m00 * m.m12 - m.m02 * m.m10;
+    float c = m.m00 * m.m13 - m.m03 * m.m10;
+    float d = m.m01 * m.m12 - m.m02 * m.m11;
+    float e = m.m01 * m.m13 - m.m03 * m.m11;
+    float f = m.m02 * m.m13 - m.m03 * m.m12;
+    float g = m.m20 * m.m31 - m.m21 * m.m30;
+    float h = m.m20 * m.m32 - m.m22 * m.m30;
+    float i = m.m20 * m.m33 - m.m23 * m.m30;
+    float j = m.m21 * m.m32 - m.m22 * m.m31;
+    float k = m.m21 * m.m33 - m.m23 * m.m31;
+    float l = m.m22 * m.m33 - m.m23 * m.m32;
+    float det = 1.0f / (a * l - b * k + c * j + d * i - e * h + f * g);
+    mat4_t result = {
+        ( m.m11 * l - m.m12 * k + m.m13 * j) * det,
+        (-m.m01 * l + m.m02 * k - m.m03 * j) * det,
+        ( m.m31 * f - m.m32 * e + m.m33 * d) * det,
+        (-m.m21 * f + m.m22 * e - m.m23 * d) * det,
+        (-m.m10 * l + m.m12 * i - m.m13 * h) * det,
+        ( m.m00 * l - m.m02 * i + m.m03 * h) * det,
+        (-m.m30 * f + m.m32 * c - m.m33 * b) * det,
+        ( m.m20 * f - m.m22 * c + m.m23 * b) * det,
+        ( m.m10 * k - m.m11 * i + m.m13 * g) * det,
+        (-m.m00 * k + m.m01 * i - m.m03 * g) * det,
+        ( m.m30 * e - m.m31 * c + m.m33 * a) * det,
+        (-m.m20 * e + m.m21 * c - m.m23 * a) * det,
+        (-m.m10 * j + m.m11 * h - m.m12 * g) * det,
+        ( m.m00 * j - m.m01 * h + m.m02 * g) * det,
+        (-m.m30 * d + m.m31 * b - m.m32 * a) * det,
+        ( m.m20 * d - m.m21 * b + m.m22 * a) * det,
+    };
+    return result;
+}
+
+vec4_t mat4_project(mat4_t m, float x, float y, float z, int viewport[4])
+{
+    // multiply
+    vec4_t result = {
+        m.m00 * x + m.m01 * y + m.m02 * z + m.m03,
+        m.m10 * x + m.m11 * y + m.m12 * z + m.m13,
+        m.m20 * x + m.m21 * y + m.m22 * z + m.m23,
+        m.m30 * x + m.m31 * y + m.m32 * z + m.m33,
+    };
+    result = vec4_divide_f(result, result.w);
+    result.x = (result.x * 0.5f + 0.5f) * viewport[2] + viewport[0];
+    result.y = (result.y * 0.5f + 0.5f) * viewport[3] + viewport[1];
+    result.z = (1.0f + result.z) * 0.5f;
+    return result;
+}
+
+vec4_t mat4_unproject(mat4_t m, float x, float y, float z, int viewport[4])
+{
+    return mat4_unproject_inv(mat4_inverse(m), x, y, z, viewport);
+}
+
+vec4_t mat4_unproject_inv(mat4_t m, float x, float y, float z, int viewport[4])
+{
+    float ndcX = (x - viewport[0]) / viewport[2] * 2.0f - 1.0f;
+    float ndcY = (y - viewport[1]) / viewport[3] * 2.0f - 1.0f;
+    float ndcZ = z * 2 - 1.0f;
+    // transpose multiply
+    vec4_t result = {
+        m.m00 * ndcX + m.m10 * ndcY + m.m20 * ndcZ + m.m30,
+        m.m01 * ndcX + m.m11 * ndcY + m.m21 * ndcZ + m.m31,
+        m.m02 * ndcX + m.m12 * ndcY + m.m22 * ndcZ + m.m32,
+        m.m03 * ndcX + m.m13 * ndcY + m.m23 * ndcZ + m.m33,
+    };
+    result = vec4_divide_f(result, result.w);
     return result;
 }
 
