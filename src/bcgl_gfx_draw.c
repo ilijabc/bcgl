@@ -1,38 +1,5 @@
 #include "bcgl_internal.h"
 
-#define MATRIX_STACK_SIZE 32
-
-static BCMesh * s_TempMesh = NULL;
-static vec4_t s_TempVertexData[VERTEX_ATTR_MAX];
-static int s_VertexCounter = -1;
-static int s_IndexCounter = -1;
-static enum BCDrawMode s_DrawMode;
-
-static mat4_t s_MatrixStack[MATRIX_STACK_SIZE];
-static int s_MatrixCounter = 0;
-
-static BCMesh *s_ReusableSolidMesh = NULL;
-static BCMesh *s_ReusableCubeMesh = NULL;
-
-void bcInitGfxDraw()
-{
-    s_MatrixCounter = 0;
-}
-
-void bcTermGfxDraw()
-{
-    if (s_ReusableSolidMesh)
-    {
-        bcDestroyMesh(s_ReusableSolidMesh);
-        s_ReusableSolidMesh = NULL;
-    }
-    if (s_ReusableCubeMesh)
-    {
-        bcDestroyMesh(s_ReusableCubeMesh);
-        s_ReusableCubeMesh = NULL;
-    }
-}
-
 static int convertDrawMode(enum BCDrawMode mode)
 {
     switch (mode)
@@ -58,23 +25,23 @@ static int convertDrawMode(enum BCDrawMode mode)
 
 bool bcBegin(enum BCDrawMode mode)
 {
-    if (s_ReusableSolidMesh == NULL)
+    if (g_Context->ReusableSolidMesh == NULL)
     {
-        s_ReusableSolidMesh = bcCreateMesh(1024, 1024, MESH_FLAGS_POS3 | MESH_FLAGS_NORM | MESH_FLAGS_TEX2 | MESH_FLAGS_COL4);
+        g_Context->ReusableSolidMesh = bcCreateMesh(1024, 1024, MESH_FLAGS_POS3 | MESH_FLAGS_NORM | MESH_FLAGS_TEX2 | MESH_FLAGS_COL4);
     }
-    return bcBeginMesh(s_ReusableSolidMesh, mode);
+    return bcBeginMesh(g_Context->ReusableSolidMesh, mode);
 }
 
 void bcEnd()
 {
-    bcEndMesh(s_ReusableSolidMesh);
-    bcUploadMesh(s_ReusableSolidMesh, VBO_DYNAMIC);
-    bcDrawMesh(s_ReusableSolidMesh);
+    bcEndMesh(g_Context->ReusableSolidMesh);
+    bcUploadMesh(g_Context->ReusableSolidMesh, VBO_DYNAMIC);
+    bcDrawMesh(g_Context->ReusableSolidMesh);
 }
 
 bool bcBeginMesh(BCMesh *mesh, enum BCDrawMode mode)
 {
-    if (s_TempMesh != NULL)
+    if (g_Context->TempMesh != NULL)
     {
         bcLogWarning("Mesh already locked!");
         return false;
@@ -84,31 +51,31 @@ bool bcBeginMesh(BCMesh *mesh, enum BCDrawMode mode)
         bcLogWarning("Mesh not provided!");
         return false;
     }
-    s_TempMesh = mesh;
-    s_TempMesh->draw_count = 0;
-    s_TempMesh->draw_mode = convertDrawMode(mode);
-    s_TempVertexData[VERTEX_ATTR_POSITIONS] = vec4(0, 0, 0, 0);
-    s_TempVertexData[VERTEX_ATTR_NORMALS] = vec4(0, 0, 1, 0);
-    s_TempVertexData[VERTEX_ATTR_TEXCOORDS] = vec4(0, 0, 0, 0);
-    s_TempVertexData[VERTEX_ATTR_COLORS] = vec4(1, 1, 1, 1);
-    s_VertexCounter = 0;
-    s_IndexCounter = 0;
-    s_DrawMode = mode;
+    g_Context->TempMesh = mesh;
+    g_Context->TempMesh->draw_count = 0;
+    g_Context->TempMesh->draw_mode = convertDrawMode(mode);
+    g_Context->TempVertexData[VERTEX_ATTR_POSITIONS] = vec4(0, 0, 0, 0);
+    g_Context->TempVertexData[VERTEX_ATTR_NORMALS] = vec4(0, 0, 1, 0);
+    g_Context->TempVertexData[VERTEX_ATTR_TEXCOORDS] = vec4(0, 0, 0, 0);
+    g_Context->TempVertexData[VERTEX_ATTR_COLORS] = vec4(1, 1, 1, 1);
+    g_Context->VertexCounter = 0;
+    g_Context->IndexCounter = 0;
+    g_Context->DrawMode = mode;
     return true;
 }
 
 void bcEndMesh(BCMesh *mesh)
 {
-    if (mesh != s_TempMesh)
+    if (mesh != g_Context->TempMesh)
     {
         bcLogError("Wrong mesh!");
     }
     // generate indices
-    if (s_TempMesh->num_indices > 0 && s_IndexCounter == 0)
+    if (g_Context->TempMesh->num_indices > 0 && g_Context->IndexCounter == 0)
     {
-        for (int i = 0; i < s_VertexCounter; i++)
+        for (int i = 0; i < g_Context->VertexCounter; i++)
         {
-            if (s_DrawMode == BC_QUADS && i % 4 == 3)
+            if (g_Context->DrawMode == BC_QUADS && i % 4 == 3)
             {
                 bcIndexi(i - 3);
                 bcIndexi(i - 1);
@@ -121,33 +88,33 @@ void bcEndMesh(BCMesh *mesh)
         }
     }
     // assign counter
-    s_TempMesh->draw_count = (s_TempMesh->num_indices > 0) ? s_IndexCounter : s_VertexCounter;
-    s_TempMesh = NULL;
+    g_Context->TempMesh->draw_count = (g_Context->TempMesh->num_indices > 0) ? g_Context->IndexCounter : g_Context->VertexCounter;
+    g_Context->TempMesh = NULL;
 }
 
 int bcVertex3f(float x, float y, float z)
 {
-    if (s_TempMesh == NULL)
+    if (g_Context->TempMesh == NULL)
     {
         bcLogWarning("Mesh not locked!");
         return -1;
     }
-    if (s_VertexCounter == s_TempMesh->num_vertices)
+    if (g_Context->VertexCounter == g_Context->TempMesh->num_vertices)
     {
         bcLogWarning("Mesh limit reached!");
         return -1;
     }
-    s_TempVertexData[VERTEX_ATTR_POSITIONS] = vec4(x, y, z, 0);
-    float *vert_ptr = &(s_TempMesh->vertices[s_VertexCounter * s_TempMesh->total_comps]);
+    g_Context->TempVertexData[VERTEX_ATTR_POSITIONS] = vec4(x, y, z, 0);
+    float *vert_ptr = &(g_Context->TempMesh->vertices[g_Context->VertexCounter * g_Context->TempMesh->total_comps]);
     for (int i = 0; i < VERTEX_ATTR_MAX; i++)
     {
-        if (s_TempMesh->comps[i] > 0)
+        if (g_Context->TempMesh->comps[i] > 0)
         {
-            memcpy(vert_ptr, s_TempVertexData[i].v, s_TempMesh->comps[i] * sizeof(float));
-            vert_ptr += s_TempMesh->comps[i];
+            memcpy(vert_ptr, g_Context->TempVertexData[i].v, g_Context->TempMesh->comps[i] * sizeof(float));
+            vert_ptr += g_Context->TempMesh->comps[i];
         }
     }
-    return s_VertexCounter++;
+    return g_Context->VertexCounter++;
 }
 
 int bcVertex2f(float x, float y)
@@ -157,32 +124,32 @@ int bcVertex2f(float x, float y)
 
 void bcIndexi(int i)
 {
-    if (s_TempMesh == NULL)
+    if (g_Context->TempMesh == NULL)
     {
         bcLogWarning("Mesh not locked!");
         return;
     }
-    if (s_IndexCounter == s_TempMesh->num_indices)
+    if (g_Context->IndexCounter == g_Context->TempMesh->num_indices)
     {
         bcLogWarning("Mesh limit reached!");
         return;
     }
-    s_TempMesh->indices[s_IndexCounter++] = i;
+    g_Context->TempMesh->indices[g_Context->IndexCounter++] = i;
 }
 
 void bcTexCoord2f(float u, float v)
 {
-    s_TempVertexData[VERTEX_ATTR_TEXCOORDS] = vec4(u, v, 0, 0);
+    g_Context->TempVertexData[VERTEX_ATTR_TEXCOORDS] = vec4(u, v, 0, 0);
 }
 
 void bcNormal3f(float x, float y, float z)
 {
-    s_TempVertexData[VERTEX_ATTR_NORMALS] = vec4(x, y, z, 0);
+    g_Context->TempVertexData[VERTEX_ATTR_NORMALS] = vec4(x, y, z, 0);
 }
 
 void bcColor4f(float r, float g, float b, float a)
 {
-    s_TempVertexData[VERTEX_ATTR_COLORS] = vec4(r, g, b, a);
+    g_Context->TempVertexData[VERTEX_ATTR_COLORS] = vec4(r, g, b, a);
 }
 
 void bcColor3f(float r, float g, float b)
@@ -209,24 +176,24 @@ static mat4_t getCurrentMatrix()
 
 void bcPushMatrix()
 {
-    if (s_MatrixCounter == MATRIX_STACK_SIZE - 1)
+    if (g_Context->MatrixCounter == MATRIX_STACK_SIZE - 1)
     {
         bcLogWarning("Max matrix stack reached!");
         return;
     }
-    s_MatrixStack[s_MatrixCounter] = getCurrentMatrix();
-    s_MatrixCounter++;
+    g_Context->MatrixStack[g_Context->MatrixCounter] = getCurrentMatrix();
+    g_Context->MatrixCounter++;
 }
 
 void bcPopMatrix()
 {
-    if (s_MatrixCounter == 0)
+    if (g_Context->MatrixCounter == 0)
     {
         bcLogWarning("Min matrix stack reached!");
         return;
     }
-    s_MatrixCounter--;
-    bcSetModelViewMatrix(s_MatrixStack[s_MatrixCounter].v);
+    g_Context->MatrixCounter--;
+    bcSetModelViewMatrix(g_Context->MatrixStack[g_Context->MatrixCounter].v);
 }
 
 void bcIdentity()
@@ -252,6 +219,36 @@ void bcScalef(float x, float y, float z)
 void bcMultMatrixf(float *m)
 {
     bcSetModelViewMatrix(mat4_multiply(getCurrentMatrix(), mat4_from_array(m)).v);
+}
+
+bool bcScreenToWorldCoords(int winX, int winY, float out[3])
+{
+    int viewport[4] = { 0, 0, bcGetDisplayWidth(), bcGetDisplayHeight() };
+    winY = bcGetDisplayHeight() - winY;
+    float winZ = 0;
+    glReadPixels(winX, winY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ);
+    mat4_t mvp = mat4_from_array(bcGetModelViewProjectionMatrix());
+    vec4_t v = mat4_unproject(mvp, winX, winY, winZ, viewport);
+    if (out)
+    {
+        out[0] = v.x;
+        out[1] = v.y;
+        out[2] = v.z;
+    }
+    return true;
+}
+
+bool bcWorldToScreenCoords(float x, float y, float z, float out[2])
+{
+    int viewport[4] = { 0, 0, bcGetDisplayWidth(), bcGetDisplayHeight() };
+    mat4_t mvp = mat4_from_array(bcGetModelViewProjectionMatrix());
+    vec4_t v = mat4_project(mvp, x, y, z, viewport);
+    if (out)
+    {
+        out[0] = v.x;
+        out[1] = bcGetDisplayHeight() - v.y;
+    }
+    return true;
 }
 
 // Camera
@@ -340,12 +337,12 @@ void bcDrawLines2D(int count, float vertices[]);
 // Draw 3D
 void bcDrawCube(float x, float y, float z, float size_x, float size_y, float size_z)
 {
-    if (s_ReusableCubeMesh == NULL)
-        s_ReusableCubeMesh = bcUploadMesh(bcCreateMeshCube(), VBO_STATIC);
+    if (g_Context->ReusableCubeMesh == NULL)
+        g_Context->ReusableCubeMesh = bcUploadMesh(bcCreateMeshCube(), VBO_STATIC);
     bcPushMatrix();
     bcTranslatef(x, y, z);
     bcScalef(size_x, size_y, size_z);
-    bcDrawMesh(s_ReusableCubeMesh);
+    bcDrawMesh(g_Context->ReusableCubeMesh);
     bcPopMatrix();
 }
 

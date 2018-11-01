@@ -3,8 +3,6 @@
 #define INVALID_PART    -1
 #define ALL_PARTS       -2
 
-static BCModel *s_CurrentModel = NULL;
-
 BCModel * bcCreateModel(BCMesh *mesh, BCMaterial material, int parts)
 {
     BCModel *model = NEW_OBJECT(BCModel);
@@ -62,7 +60,7 @@ void bcBeginModelDraw(BCModel *model)
         bcLogError("Invalid model!");
         return;
     }
-    s_CurrentModel = model;
+    g_Context->CurrentModel = model;
     bcSetMaterial(model->material);
     bcBindMesh(model->mesh);
 }
@@ -76,7 +74,7 @@ void bcEndModelDraw(BCModel *model)
     }
     // bcBindMesh(NULL);
     bcResetMaterial();
-    s_CurrentModel = NULL;
+    g_Context->CurrentModel = NULL;
 }
 
 void bcDrawModelPart(BCModel *model, int part)
@@ -87,7 +85,7 @@ void bcDrawModelPart(BCModel *model, int part)
         return;
     }
     bool autoEnd = false;
-    if (s_CurrentModel == NULL)
+    if (g_Context->CurrentModel == NULL)
     {
         bcBeginModelDraw(model);
         autoEnd = true;

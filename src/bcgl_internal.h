@@ -4,12 +4,42 @@
 #include <bcgl_opengl.h>
 #include <bcmath.h>
 
+#define MATRIX_STACK_SIZE 32
+
 typedef struct
 {
     int width;
     int height;
     void *nativeWindow;
 } BCWindow;
+
+typedef struct
+{
+    BCColor BackgroundColor;
+    BCMaterial DefaultMaterial;
+    mat4_t ProjectionMatrix;
+    mat4_t ModelViewMatrix;
+    mat4_t ModelViewProjectionMatrix;
+    BCMesh *CurrentMesh;
+#ifdef SUPPORT_GLSL
+    BCShader *DefaultShader;
+    BCShader *CurrentShader;
+#endif
+    // draw
+    BCMesh *TempMesh;
+    vec4_t TempVertexData[VERTEX_ATTR_MAX];
+    int VertexCounter;
+    int IndexCounter;
+    enum BCDrawMode DrawMode;
+    mat4_t MatrixStack[MATRIX_STACK_SIZE];
+    int MatrixCounter;
+    BCMesh *ReusableSolidMesh;
+    BCMesh *ReusableCubeMesh;
+    BCModel *CurrentModel;
+} BCContext;
+
+// Global GFX context
+extern BCContext *g_Context;
 
 //
 // bcgl_app module
@@ -49,6 +79,3 @@ void bcTermFiles();
 
 void bcInitGfx();
 void bcTermGfx();
-
-void bcInitGfxDraw();
-void bcTermGfxDraw();

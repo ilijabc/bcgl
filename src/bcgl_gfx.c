@@ -6,22 +6,9 @@
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include <stb/stb_image_resize.h>
 
-static float s_BackgroundColor[4] = { 0.3f, 0.3f, 0.3f, 1.0f };
-static BCMaterial s_DefaultMaterial =
-{
-    /*objectColor*/ { 1, 1, 1, 1 },
-    /*diffuseColor*/ { 1, 1, 1, 1 },
-    /*ambientColor*/ { 0.2f, 0.2f, 0.2f, 1 },
-    /*texture*/ NULL
-};
-static mat4_t s_ProjectionMatrix;
-static mat4_t s_ModelViewMatrix;
-static BCMesh *s_CurrentMesh = NULL;
+BCContext *g_Context = NULL;
 
 #ifdef SUPPORT_GLSL
-
-static BCShader *s_DefaultShader = NULL;
-static BCShader *s_CurrentShader = NULL;
 
 #ifdef SUPPORT_GLES
     #define GLSL_CODE_HEADER \
@@ -38,7 +25,7 @@ static struct
     enum BCVertexAttributes index;
     const char * type;
     const char * name;
-} s_ShaderAttributes[] =
+} const s_ShaderAttributes[] =
 {
     { VERTEX_ATTR_POSITIONS, "vec3", "a_Position" },
     { VERTEX_ATTR_NORMALS, "vec3", "a_Normal" },
@@ -53,7 +40,7 @@ static struct
     enum BCShaderUniforms index;
     const char * type;
     const char * name;
-} s_ShaderUniforms[] =
+} const s_ShaderUniforms[] =
 {
     { SHADER_UNIFORM_PROJECTION, "mat4", "u_ProjectionMatrix" },
     { SHADER_UNIFORM_MODELVIEW, "mat4", "u_ModelViewMatrix" },
@@ -122,7 +109,7 @@ static struct
 {
     enum BCVertexAttributes index;
     int type;
-} s_ClientStateType[] =
+} const s_ClientStateType[] =
 {
     { VERTEX_ATTR_POSITIONS, GL_VERTEX_ARRAY },
     { VERTEX_ATTR_NORMALS, GL_NORMAL_ARRAY },
@@ -137,8 +124,16 @@ static struct
 
 void bcInitGfx()
 {
+    g_Context = NEW_OBJECT(BCContext);
+    g_Context->BackgroundColor = SET_COLOR(0.3f, 0.3f, 0.3f, 1.0f);
+    g_Context->DefaultMaterial.objectColor = SET_COLOR(1, 1, 1, 1);
+    g_Context->DefaultMaterial.diffuseColor = SET_COLOR(1, 1, 1, 1);
+    g_Context->DefaultMaterial.ambientColor = SET_COLOR(0.2f, 0.2f, 0.2f, 1);
+    g_Context->DefaultMaterial.texture = NULL;
+    g_Context->VertexCounter = -1;
+    g_Context->IndexCounter = -1;
 #ifdef SUPPORT_GLSL
-    s_DefaultShader = bcCreateShaderFromCode(s_DefaultShaderCode, s_DefaultShaderCode);
+    g_Context->DefaultShader = bcCreateShaderFromCode(s_DefaultShaderCode, s_DefaultShaderCode);
     bcBindShader(NULL);
 #else
     glAlphaFunc(GL_GREATER, 0.1f);
@@ -149,7 +144,11 @@ void bcInitGfx()
 #endif
     // glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
     // default state
-    glClearColor(s_BackgroundColor[0], s_BackgroundColor[1], s_BackgroundColor[2], s_BackgroundColor[3]);
+    glClearColor(
+        g_Context->BackgroundColor.r,
+        g_Context->BackgroundColor.g,
+        g_Context->BackgroundColor.b,
+        g_Context->BackgroundColor.a);
     // gl default
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
@@ -157,15 +156,19 @@ void bcInitGfx()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthFunc(GL_LEQUAL);
     glFrontFace(GL_CCW);
-    bcInitGfxDraw();
 }
 
 void bcTermGfx()
 {
-    bcTermGfxDraw();
+    if (g_Context->ReusableSolidMesh)
+        bcDestroyMesh(g_Context->ReusableSolidMesh);
+    if (g_Context->ReusableCubeMesh)
+        bcDestroyMesh(g_Context->ReusableCubeMesh);
 #ifdef SUPPORT_GLSL
-    bcDestroyShader(s_DefaultShader);
+    bcDestroyShader(g_Context->DefaultShader);
 #endif
+    free(g_Context);
+    g_Context = NULL;
 }
 
 //
@@ -324,11 +327,11 @@ void bcBindTexture(BCTexture *texture)
         glBindTexture(GL_TEXTURE_2D, texture->id);
     }
 #ifdef SUPPORT_GLSL
-    glUniform1i(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_USETEXTURE], texture ? 1 : 0);
+    glUniform1i(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_USETEXTURE], texture ? 1 : 0);
     if (texture)
     {
-        glUniform1i(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_TEXTURE], 0);
-        glUniform1i(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_ALPHAONLYTEXTURE], texture->format == GL_ALPHA ? 1 : 0);
+        glUniform1i(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_TEXTURE], 0);
+        glUniform1i(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_ALPHAONLYTEXTURE], texture->format == GL_ALPHA ? 1 : 0);
     }
 #else
     glActiveTexture(GL_TEXTURE0);
@@ -499,12 +502,12 @@ void bcBindShader(BCShader *shader)
 {
 #ifdef SUPPORT_GLSL
     if (shader == NULL)
-        shader = s_DefaultShader;
-    s_CurrentShader = shader;
+        shader = g_Context->DefaultShader;
+    g_Context->CurrentShader = shader;
     glUseProgram(shader->programId);
     // applyProjectionMatrix();
     // applyCurrentMatrix();
-    bcSetMaterial(s_DefaultMaterial);
+    bcSetMaterial(g_Context->DefaultMaterial);
 #endif
 }
 
@@ -544,10 +547,10 @@ void bcSetWireframe(bool enabled)
 void bcSetLighting(bool enabled)
 {
 #ifdef SUPPORT_GLSL
-    glUniform1i(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_LIGHT_ENABLED], enabled);
+    glUniform1i(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_LIGHT_ENABLED], enabled);
     if (enabled)
     {
-        glUniform4f(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_LIGHT_COLOR], 1, 1, 1, 1);
+        glUniform4f(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_LIGHT_COLOR], 1, 1, 1, 1);
     }
 #else
     if (enabled)
@@ -565,7 +568,7 @@ void bcSetLighting(bool enabled)
 void bcLightPosition(float x, float y, float z)
 {
 #ifdef SUPPORT_GLSL
-    glUniform3f(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_LIGHT_POSITION], x, y, z);
+    glUniform3f(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_LIGHT_POSITION], x, y, z);
 #else
     float lightPos[] = { x, y, z, 1 };
     glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
@@ -575,9 +578,9 @@ void bcLightPosition(float x, float y, float z)
 void bcSetMaterial(BCMaterial material)
 {
 #ifdef SUPPORT_GLSL
-    glUniform4fv(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_OBJECT_COLOR], 1, (float *) &(material.objectColor));
-    glUniform4fv(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_DIFFUSE_COLOR], 1, (float *) &(material.diffuseColor));
-    glUniform4fv(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_AMBIENT_COLOR], 1, (float *) &(material.ambientColor));
+    glUniform4fv(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_OBJECT_COLOR], 1, (float *) &(material.objectColor));
+    glUniform4fv(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_DIFFUSE_COLOR], 1, (float *) &(material.diffuseColor));
+    glUniform4fv(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_AMBIENT_COLOR], 1, (float *) &(material.ambientColor));
 #else
    glColor4fv((float *) &(material.objectColor));
    glMaterialfv(GL_FRONT, GL_DIFFUSE, (float *) &(material.diffuseColor));
@@ -588,13 +591,13 @@ void bcSetMaterial(BCMaterial material)
 
 void bcResetMaterial()
 {
-    bcSetMaterial(s_DefaultMaterial);
+    bcSetMaterial(g_Context->DefaultMaterial);
 }
 
 void bcSetObjectColor(BCColor color)
 {
 #ifdef SUPPORT_GLSL
-    glUniform4fv(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_OBJECT_COLOR], 1, (float *) &(color));
+    glUniform4fv(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_OBJECT_COLOR], 1, (float *) &(color));
 #else
     glColor4fv((float *) &(color));
 #endif
@@ -603,7 +606,7 @@ void bcSetObjectColor(BCColor color)
 void bcSetObjectColorf(float r, float g, float b, float a)
 {
 #ifdef SUPPORT_GLSL
-    glUniform4f(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_OBJECT_COLOR], r, g, b, a);
+    glUniform4f(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_OBJECT_COLOR], r, g, b, a);
 #else
     glColor4f(r, g, b, a);
 #endif
@@ -611,9 +614,9 @@ void bcSetObjectColorf(float r, float g, float b, float a)
 
 void bcSetProjectionMatrix(float *m)
 {
-    s_ProjectionMatrix = mat4_from_array(m);
+    g_Context->ProjectionMatrix = mat4_from_array(m);
 #ifdef SUPPORT_GLSL
-    glUniformMatrix4fv(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_PROJECTION], 1, GL_FALSE, m);
+    glUniformMatrix4fv(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_PROJECTION], 1, GL_FALSE, m);
 #else
     glMatrixMode(GL_PROJECTION);
     glLoadMatrixf(m);
@@ -623,9 +626,9 @@ void bcSetProjectionMatrix(float *m)
 
 void bcSetModelViewMatrix(float *m)
 {
-    s_ModelViewMatrix = mat4_from_array(m);
+    g_Context->ModelViewMatrix = mat4_from_array(m);
 #ifdef SUPPORT_GLSL
-    glUniformMatrix4fv(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_MODELVIEW], 1, GL_FALSE, m);
+    glUniformMatrix4fv(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_MODELVIEW], 1, GL_FALSE, m);
 #else
     glLoadMatrixf(m);
 #endif
@@ -633,12 +636,19 @@ void bcSetModelViewMatrix(float *m)
 
 float * bcGetProjectionMatrix()
 {
-    return s_ProjectionMatrix.v;
+    return g_Context->ProjectionMatrix.v;
 }
 
 float * bcGetModelViewMatrix()
 {
-    return s_ModelViewMatrix.v;
+    return g_Context->ModelViewMatrix.v;
+}
+
+float * bcGetModelViewProjectionMatrix()
+{
+    // TODO: if we want MVP to be available to chader we have to precalculate it on P and MV set
+    g_Context->ModelViewProjectionMatrix = mat4_multiply(g_Context->ProjectionMatrix, g_Context->ModelViewMatrix);
+    return g_Context->ModelViewProjectionMatrix.v;
 }
 
 // Mesh
@@ -750,7 +760,7 @@ BCMesh * bcUploadMesh(BCMesh *mesh, enum BCVboStatus status)
     }
     mesh->vbo_status = status;
     // reset state machine
-    if (s_CurrentMesh)
+    if (g_Context->CurrentMesh)
     {
         bcBindMesh(NULL);
     }
@@ -801,7 +811,7 @@ void bcDrawMesh(BCMesh *mesh)
 
 void bcBindMesh(BCMesh *mesh)
 {
-    if (s_CurrentMesh == mesh)
+    if (g_Context->CurrentMesh == mesh)
     {
         bcLogWarning("Mesh already assigned!");
         return;
@@ -812,7 +822,7 @@ void bcBindMesh(BCMesh *mesh)
 #ifdef SUPPORT_GLSL
         for (int i = 0; i < VERTEX_ATTR_MAX; i++)
         {
-            glDisableVertexAttribArray(s_CurrentShader->loc_attributes[i]);
+            glDisableVertexAttribArray(g_Context->CurrentShader->loc_attributes[i]);
         }
 #else
         glDisableClientState(GL_VERTEX_ARRAY);
@@ -834,16 +844,16 @@ void bcBindMesh(BCMesh *mesh)
         {
             if (mesh->comps[i] > 0)
             {
-                glEnableVertexAttribArray(s_CurrentShader->loc_attributes[i]);
-                glVertexAttribPointer(s_CurrentShader->loc_attributes[i], mesh->comps[i], GL_FLOAT, GL_FALSE, mesh->total_comps * sizeof(float), vert_ptr);
+                glEnableVertexAttribArray(g_Context->CurrentShader->loc_attributes[i]);
+                glVertexAttribPointer(g_Context->CurrentShader->loc_attributes[i], mesh->comps[i], GL_FLOAT, GL_FALSE, mesh->total_comps * sizeof(float), vert_ptr);
                 vert_ptr += mesh->comps[i];
             }
             else
             {
-                glDisableVertexAttribArray(s_CurrentShader->loc_attributes[i]);
+                glDisableVertexAttribArray(g_Context->CurrentShader->loc_attributes[i]);
             }
         }
-        glUniform1i(s_CurrentShader->loc_uniforms[SHADER_UNIFORM_VERTEX_COLOR_ENABLED], mesh->comps[VERTEX_ATTR_COLORS]);
+        glUniform1i(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_VERTEX_COLOR_ENABLED], mesh->comps[VERTEX_ATTR_COLORS]);
 #else
         for (int i = 0; i < VERTEX_ATTR_MAX; i++)
         {
@@ -874,7 +884,7 @@ void bcBindMesh(BCMesh *mesh)
         }
 #endif
     }
-    s_CurrentMesh = mesh;
+    g_Context->CurrentMesh = mesh;
 }
 
 void bcDrawMeshPart(BCMeshPart part)
@@ -889,7 +899,7 @@ void bcDrawMeshRange(BCMesh *mesh, int start, int count)
         bcLogError("Invalid mesh!");
         return;
     }
-    if (s_CurrentMesh != mesh)
+    if (g_Context->CurrentMesh != mesh)
     {
         bcBindMesh(mesh);
     }

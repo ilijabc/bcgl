@@ -223,6 +223,7 @@ typedef struct
 #define RGBA_COLOR(C) (BCColor) { (C & 0xff) / 255.0f, (C >> 8 & 0xff) / 255.0f, (C >> 16 & 0xff) / 255.0f, (C >> 24& 0xff) / 255.0f }
 #define ARGB_COLOR(C) (BCColor) { (C >> 8 & 0xff) / 255.0f, (C >> 16 & 0xff) / 255.0f, (C >> 24 & 0xff) / 255.0f, (C & 0xff) / 255.0f }
 #endif
+#define SET_COLOR(r,g,b,a) (BCColor) { r, g, b, a }
 
 static const BCColor COLOR_WHITE = {1,1,1,1};
 static const BCColor COLOR_RED = {1,0,0,1};
@@ -333,6 +334,7 @@ void bcSetProjectionMatrix(float *m);
 void bcSetModelViewMatrix(float *m);
 float * bcGetProjectionMatrix();
 float * bcGetModelViewMatrix();
+float * bcGetModelViewProjectionMatrix();
 
 // Mesh
 BCMesh * bcCreateMesh(int num_vertices, int num_indices, int flags);
@@ -373,6 +375,8 @@ void bcTranslatef(float x, float y, float z);
 void bcRotatef(float deg, float x, float y, float z);
 void bcScalef(float x, float y, float z);
 void bcMultMatrixf(float *m);
+bool bcScreenToWorldCoords(int winX, int winY, float out[3]);
+bool bcWorldToScreenCoords(float x, float y, float z, float out[2]);
 
 // Camera
 void bcPrepareScene3D(float fov);
