@@ -22,6 +22,10 @@ void demo_config(BCConfig *config)
 #endif
     config->msaa = 4;
     config->title = "BCGL Demo";
+
+#ifdef __EMSCRIPTEN__
+    camera.auto_rotate = true;
+#endif
 }
 
 void demo_prepare_scene(float dt)
