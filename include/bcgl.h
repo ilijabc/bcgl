@@ -249,6 +249,7 @@ typedef struct
 //
 
 void bcInit(BCCallbacks callbacks);
+int bcRunMain();
 void bcQuit(int code);
 float bcGetTime();
 void bcShowKeyboard(bool show);

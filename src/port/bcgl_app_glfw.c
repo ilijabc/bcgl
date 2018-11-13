@@ -1,5 +1,4 @@
 #include "../bcgl_internal.h"
-#include <bcgl_desktop.h>
 #include <GLFW/glfw3.h>
 
 static struct
@@ -338,7 +337,7 @@ void bcPullWindowEvents(BCWindow *window)
     glfwPollEvents();
 }
 
-int bcDesktopMain(int argc, char **argv)
+int bcRunMain()
 {
 #ifdef __MINGW32__
     setvbuf(stdout, NULL, _IONBF, 0);
@@ -369,7 +368,7 @@ int bcDesktopMain(int argc, char **argv)
     config.msaa = 0;
     config.orientation = 0;
 
-    int result = bcAppMain(&config);
+    int result = bcAppWrapperRun(&config);
 
     bcTermFiles();
 

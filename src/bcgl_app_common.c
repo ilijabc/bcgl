@@ -5,6 +5,7 @@
 static BCCallbacks s_Callbacks;
 static BCWindow *s_Window = NULL;
 static int s_ExitCode = 0;
+static float s_StartTime;
 
 // event queues
 #define MAX_EVENTS 32
@@ -79,7 +80,7 @@ void bcInit(BCCallbacks callbacks)
     s_Callbacks = callbacks;
 }
 
-int bcAppMain(BCConfig *config)
+bool bcAppWrapperStart(BCConfig *config)
 {
     BCCallbacks callbacks = bcGetCallbacks();
 
@@ -95,44 +96,76 @@ int bcAppMain(BCConfig *config)
     if (window == NULL)
     {
         bcLogError("Unable to create window!");
-        return -99;
+        return false;
     }
     bcSetWindow(window);
 
     if (callbacks.onStart)
         callbacks.onStart();
 
-    // Main loop
-    float lastTime = bcGetTime();
-    while (bcIsWindowOpened(window))
-    {
-        float now = bcGetTime();
-        float dt = now - lastTime;
-        lastTime = now;
-        // events
-        bcPullWindowEvents(window);
-        int n = bcPullEvents();
-        for (int i = 0; i < n; i++)
-        {
-            BCEvent *e = bcGetEvent(i);
-            if (callbacks.onEvent)
-                callbacks.onEvent(*e);
-        }
-        // update
-        if (callbacks.onUpdate)
-            callbacks.onUpdate(dt);
-        bcUpdateWindow(window);
-    }
+    s_StartTime = bcGetTime();
+
+    return true;
+}
+
+int bcAppWrapperStop()
+{
+    BCCallbacks callbacks = bcGetCallbacks();
 
     if (callbacks.onStop)
         callbacks.onStop();
 
-    bcDestroyWindow(window);
+    bcDestroyWindow(s_Window);
 
     if (callbacks.onDestroy)
         callbacks.onDestroy();
 
     return s_ExitCode;
+}
+
+bool bcAppWrapperIsRunning()
+{
+    return bcIsWindowOpened(s_Window);
+}
+
+void bcAppWrapperUpdate()
+{
+    BCCallbacks callbacks = bcGetCallbacks();
+
+    float now = bcGetTime();
+    float dt = now - s_StartTime;
+    s_StartTime = now;
+
+    // events
+    bcPullWindowEvents(s_Window);
+    int n = bcPullEvents();
+    for (int i = 0; i < n; i++)
+    {
+        BCEvent *e = bcGetEvent(i);
+        if (callbacks.onEvent)
+            callbacks.onEvent(*e);
+    }
+
+    // update
+    if (callbacks.onUpdate)
+        callbacks.onUpdate(dt);
+
+    bcUpdateWindow(s_Window);
+}
+
+int bcAppWrapperRun(BCConfig *config)
+{
+    if (!bcAppWrapperStart(config))
+    {
+        return -99;
+    }
+
+    while (bcAppWrapperIsRunning())
+    {
+        bcAppWrapperUpdate();
+    }
+
+    return bcAppWrapperStop();
 }
 
 int bcGetDisplayWidth()

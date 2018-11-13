@@ -69,10 +69,7 @@ BCWindow * bcCreateWindow(BCConfig *inconfig)
         goto window_create_error;
     }
 
-    // ANativeWindow_setBuffersGeometry(s_Surface, 0, 0, format);
-    EGLNativeWindowType s_Surface = 0;
-
-    if (!(surface = eglCreateWindowSurface(display, config, s_Surface, 0))) {
+    if (!(surface = eglCreateWindowSurface(display, config, 0, 0))) {
         bcLogError("eglCreateWindowSurface() returned error %d", eglGetError());
         goto window_create_error;
     }
@@ -94,7 +91,6 @@ BCWindow * bcCreateWindow(BCConfig *inconfig)
     }
 
     BCGLESWindow *nativeWindow = NEW_OBJECT(BCGLESWindow);
-    // nativeWindow->_window = display;
     nativeWindow->_display = display;
     nativeWindow->_surface = surface;
     nativeWindow->_context = context;
@@ -171,68 +167,13 @@ void bcUpdateWindow(BCWindow *window)
     }
     bcResetStates();
 }
-BCWindow *window = NULL;
 
-// static void * rendererThread(void *arg)
 static void rendererThread()
 {
-    static float lastTime = 0;
-    float now = bcGetTime();
-    float dt = now - lastTime;
-    lastTime = now;
-
-    BCCallbacks callbacks = bcGetCallbacks();
-
-    // events
-    // bcPullWindowEvents(window);
-    // int n = bcPullEvents();
-    // for (int i = 0; i < n; i++)
-    // {
-    //     BCEvent *e = bcGetEvent(i);
-    //     if (callbacks.onEvent)
-    //         callbacks.onEvent(*e);
-    // }
-    // update
-    if (callbacks.onUpdate)
-        callbacks.onUpdate(dt);
-    bcUpdateWindow(window);
+    bcAppWrapperUpdate();
 }
 
-void _bcAppMain(BCConfig *config)
-{
-    BCCallbacks callbacks = bcGetCallbacks();
-
-    if (callbacks.onConfig)
-        callbacks.onConfig(config);
-    else
-        bcLogWarning("Missing onConfig callback!");
-
-    if (callbacks.onCreate)
-        callbacks.onCreate();
-
-    window = bcCreateWindow(config);
-    if (window == NULL)
-    {
-        bcLogError("Unable to create window!");
-        return;
-    }
-    bcSetWindow(window);
-
-    if (callbacks.onStart)
-        callbacks.onStart();
-
-    emscripten_set_main_loop(rendererThread, 0, 1);
-
-    // if (callbacks.onStop)
-    //     callbacks.onStop();
-
-    // bcDestroyWindow(window);
-
-    // if (callbacks.onDestroy)
-    //     callbacks.onDestroy();
-}
-
-int bcDesktopMain(int argc, char **argv)
+int bcRunMain()
 {
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -251,7 +192,14 @@ int bcDesktopMain(int argc, char **argv)
     config.msaa = 0;
     config.orientation = 0;
 
-    _bcAppMain(&config);
+    if (!bcAppWrapperStart(&config))
+    {
+        return -99;
+    }
+
+    emscripten_set_main_loop(rendererThread, 0, 1);
+
+    // bcAppWrapperStop();
 
     bcTermFiles();
 

@@ -1,7 +1,6 @@
 #include <string.h>
 
 #include <bcgl.h>
-#include <bcgl_desktop.h>
 
 struct Example
 {
@@ -59,7 +58,7 @@ int main(int argc, char **argv)
     {
         printf("Running example_%02d_%s\n", example, s_Examples[example].name);
         bcInit(*s_Examples[example].callbacks);
-        int result = bcDesktopMain(argc, argv);
+        int result = bcRunMain();
         printf("Example result: %d\n", result);
         if (result == 1)
         {

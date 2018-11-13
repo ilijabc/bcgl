@@ -470,7 +470,7 @@ static void * rendererThread(void *arg)
     gettimeofday(&tv, NULL);
     s_StartTimeSec = tv.tv_sec;
 
-    bcAppMain((BCConfig *)arg);
+    bcAppWrapperRun((BCConfig *)arg);
 
     return NULL;
 }

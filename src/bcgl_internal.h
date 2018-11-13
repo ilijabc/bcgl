@@ -48,7 +48,11 @@ extern BCContext *g_Context;
 BCCallbacks bcGetCallbacks();
 
 // App
-int bcAppMain(BCConfig *config);
+bool bcAppWrapperStart(BCConfig *config);
+int bcAppWrapperStop();
+bool bcAppWrapperIsRunning();
+void bcAppWrapperUpdate();
+int bcAppWrapperRun(BCConfig *config);
 
 // Window
 BCWindow * bcCreateWindow(BCConfig *config);
