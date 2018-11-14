@@ -110,6 +110,7 @@ typedef struct
     bool vsync;
     int msaa;
     int orientation;
+    void *surface;
 } BCConfig;
 
 typedef struct

@@ -367,6 +367,7 @@ int bcRunMain()
     config.vsync = true;
     config.msaa = 0;
     config.orientation = 0;
+    config.surface = NULL;
 
     int result = bcAppWrapperRun(&config);
 
