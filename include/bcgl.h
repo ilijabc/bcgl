@@ -457,6 +457,7 @@ enum BCEventType
 // Key Codes
 enum BCKeyCode
 {
+    BC_KEY_UNKNOWN = -1,
     BC_KEY_SPACE,
     BC_KEY_APOSTROPHE,
     BC_KEY_COMMA,

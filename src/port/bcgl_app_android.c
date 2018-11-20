@@ -8,8 +8,6 @@
 #include "../bcgl_internal.h"
 #include <bcgl_android.h>
 
-#define BC_KEY_UNKNOWN -1
-
 static struct
 {
     int android_code;

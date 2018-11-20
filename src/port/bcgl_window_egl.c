@@ -86,7 +86,7 @@ BCWindow * bcCreateWindow(BCConfig *inconfig)
     ANativeWindow_setBuffersGeometry(inconfig->surface, 0, 0, format);
 #endif
 
-    if (!(surface = eglCreateWindowSurface(display, config, inconfig->surface, 0))) {
+    if (!(surface = eglCreateWindowSurface(display, config, (EGLNativeWindowType) inconfig->surface, 0))) {
         bcLogError("eglCreateWindowSurface() returned error %d", eglGetError());
         goto window_create_error;
     }
