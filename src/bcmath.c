@@ -38,8 +38,19 @@ vec2_t vec2_one()
 }
 
 // vec2_t vec2_sign(vec2_t v0);
-// vec2_t vec2_add(vec2_t v0, vec2_t v1);
-// vec2_t vec2_add_f(vec2_t v0, float f);
+
+vec2_t vec2_add(vec2_t v0, vec2_t v1)
+{
+    vec2_t result = { v0.x + v1.x, v0.y + v1.y };
+    return result;
+}
+
+vec2_t vec2_add_f(vec2_t v0, float f)
+{
+    vec2_t result = { v0.x + f, v0.y + f };
+    return result;
+}
+
 vec2_t vec2_subtract(vec2_t v0, vec2_t v1)
 {
     vec2_t result = { v0.x - v1.x, v0.y - v1.y };
@@ -52,11 +63,32 @@ vec2_t vec2_subtract_f(vec2_t v0, float f)
     return result;
 }
 
-// vec2_t vec2_multiply(vec2_t v0, vec2_t v1);
-// vec2_t vec2_multiply_f(vec2_t v0, float f);
+vec2_t vec2_multiply(vec2_t v0, vec2_t v1)
+{
+    vec2_t result = { v0.x * v1.x, v0.y * v1.y };
+    return result;
+}
+
+vec2_t vec2_multiply_f(vec2_t v0, float f)
+{
+    vec2_t result = { v0.x * f, v0.y * f };
+    return result;
+}
+
 // vec2_t vec2_multiply_mat2(vec2_t v0, vec2_t m0);
-// vec2_t vec2_divide(vec2_t v0, vec2_t v1);
-// vec2_t vec2_divide_f(vec2_t v0, float f);
+
+vec2_t vec2_divide(vec2_t v0, vec2_t v1)
+{
+    vec2_t result = { v0.x / v1.x, v0.y / v1.y };
+    return result;
+}
+
+vec2_t vec2_divide_f(vec2_t v0, float f)
+{
+    vec2_t result = { v0.x / f, v0.y / f };
+    return result;
+}
+
 // vec2_t vec2_snap(vec2_t v0, vec2_t v1);
 // vec2_t vec2_snap_f(vec2_t v0, float f);
 // vec2_t vec2_negative(vec2_t v0);
