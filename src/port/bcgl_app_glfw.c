@@ -377,3 +377,9 @@ int bcRunMain()
 
     return result;
 }
+
+int main(int argc, char **argv)
+{
+    BC_main();
+    return bcRunMain();
+}

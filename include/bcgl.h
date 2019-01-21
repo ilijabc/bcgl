@@ -245,6 +245,8 @@ typedef struct
     void (*onEvent)(BCEvent event);
 } BCCallbacks;
 
+void BC_main();
+
 //
 // bcgl_app module
 //

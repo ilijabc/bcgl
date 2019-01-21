@@ -421,3 +421,104 @@ float bcAndroidGetNumber(int key)
         return s_NumCallback(key);
     return 0.0f;
 }
+
+//
+// JNI
+//
+
+#include <jni.h>
+#include <android/asset_manager_jni.h>
+#include <android/native_window_jni.h>
+
+// Java virtual machine
+static JavaVM *g_JVM = 0;
+static JNIEnv *g_Env = 0;
+static jclass g_Class = 0;
+static jmethodID g_Method_onNativeMessage = 0;
+static jmethodID g_Method_onNativeGetNumber = 0;
+static ANativeWindow *g_NativeWindow = NULL;
+
+void BC_MsgCallback(int type, int x, int y)
+{
+    if (g_Env && g_Class && g_Method_onNativeMessage) {
+        if ((*g_JVM)->AttachCurrentThread(g_JVM, &g_Env, 0) == JNI_OK) {
+            (*g_Env)->CallStaticVoidMethod(g_Env, g_Class, g_Method_onNativeMessage, type, x, y);
+        }
+    }
+}
+
+float BC_NumCallback(int key)
+{
+    if (g_Env && g_Class && g_Method_onNativeGetNumber) {
+        if ((*g_JVM)->AttachCurrentThread(g_JVM, &g_Env, 0) == JNI_OK) {
+            return (*g_Env)->CallStaticFloatMethod(g_Env, g_Class, g_Method_onNativeGetNumber, key);
+        }
+    }
+    return 0.0f;
+}
+
+jint JNI_OnLoad(JavaVM* vm, void* reserved)
+{
+    g_JVM = vm;
+    (*g_JVM)->GetEnv(g_JVM, (void **)&g_Env, JNI_VERSION_1_6);
+
+    jclass localClass = (*g_Env)->FindClass(g_Env, "info/djukic/bcgl/BCGLLib");
+    if (localClass) {
+        g_Class = (*g_Env)->NewGlobalRef(g_Env, localClass);
+        g_Method_onNativeMessage = (*g_Env)->GetStaticMethodID(g_Env, g_Class, "onNativeMessage", "(III)V");
+        g_Method_onNativeGetNumber = (*g_Env)->GetStaticMethodID(g_Env, g_Class, "onNativeGetNumber", "(I)F");
+    }
+
+    BC_main();
+
+    bcAndroidSetCallbacks(BC_MsgCallback, BC_NumCallback);
+
+    return JNI_VERSION_1_6;
+}
+
+JNIEXPORT void JNICALL
+Java_info_djukic_bcgl_BCGLLib_nativeSetAssetsManager(JNIEnv *env, jclass type,
+                                                                     jobject manager) {
+    AAssetManager *aam = AAssetManager_fromJava(env, manager);
+    bcAndroidSetAssetManager(aam);
+}
+
+JNIEXPORT void JNICALL
+Java_info_djukic_bcgl_BCGLLib_nativeSurfaceCreated(JNIEnv *env, jclass type, jint id,
+                                                                   jobject surface) {
+    g_NativeWindow = ANativeWindow_fromSurface(env, surface);
+    bcAndroidSurfaceCreated(g_NativeWindow);
+}
+
+JNIEXPORT void JNICALL
+Java_info_djukic_bcgl_BCGLLib_nativeSurfaceChanged(JNIEnv *env, jclass type, jint id,
+                                                                   jobject surface, jint format, jint width,
+                                                                   jint height) {
+    bcAndroidSurfaceChanged(format, width, height);
+}
+
+JNIEXPORT void JNICALL
+Java_info_djukic_bcgl_BCGLLib_nativeSurfaceDestroyed(JNIEnv *env, jclass type, jint id,
+                                                                     jobject surface) {
+    bcAndroidSurfaceDestroyed();
+    ANativeWindow_release(g_NativeWindow);
+    g_NativeWindow = NULL;
+}
+
+JNIEXPORT void JNICALL
+Java_info_djukic_bcgl_BCGLLib_nativeAppChangeState(JNIEnv *env, jclass type,
+                                                                   jint state) {
+    bcAndroidAppChengeState(state);
+}
+
+JNIEXPORT void JNICALL
+Java_info_djukic_bcgl_BCGLLib_nativeTouchEvent(JNIEnv *env, jclass type, jint event,
+                                                               jint id, jfloat x, jfloat y) {
+    bcAndroidTouchEvent(event, id, x, y);
+}
+
+JNIEXPORT void JNICALL
+Java_info_djukic_bcgl_BCGLLib_nativeKeyEvent(JNIEnv *env, jclass type, jint event,
+                                                             jint key, jint code) {
+    bcAndroidKeyEvent(event, key, code);
+}
