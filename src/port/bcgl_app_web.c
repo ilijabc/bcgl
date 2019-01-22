@@ -262,3 +262,9 @@ int bcRunMain()
 
     return 0;
 }
+
+int main(int argc, char **argv)
+{
+    BC_main();
+    return bcRunMain();
+}
