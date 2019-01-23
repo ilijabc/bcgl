@@ -27,6 +27,8 @@ extern "C" {
 #define MESH_FLAGS_COL3         0x40
 #define MESH_FLAGS_COL4         0x80
 
+#define MESH_FLAGS_DEFAULT      (MESH_FLAGS_POS3 | MESH_FLAGS_NORM | MESH_FLAGS_TEX2 | MESH_FLAGS_COL4)
+
 #define ASSETS_DIR "assets/"
 
 // enums
@@ -384,7 +386,7 @@ bool bcWorldToScreenCoords(float x, float y, float z, float out[2]);
 
 // Camera
 void bcPrepareScene3D(float fov);
-void bcPrepareScene2D();
+void bcPrepareScene2D(float height, bool center);
 void bcPrepareSceneGUI();
 
 // Draw 2D

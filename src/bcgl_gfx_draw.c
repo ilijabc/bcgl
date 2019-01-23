@@ -266,8 +266,17 @@ void bcPrepareScene3D(float fov)
     bcSetLighting(true);
 }
 
-void bcPrepareScene2D()
+void bcPrepareScene2D(float height, bool center)
 {
+    float width = bcGetDisplayAspectRatio() * height;
+    if (center)
+        bcSetOrtho(-width / 2, width / 2, -height / 2, height / 2, -1, 1);
+    else
+        bcSetOrtho(0, width, 0, height, -1, 1);
+    bcIdentity();
+    bcSetBlend(true);
+    bcSetDepthTest(false);
+    bcSetLighting(false);
 }
 
 void bcPrepareSceneGUI()

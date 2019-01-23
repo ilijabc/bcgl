@@ -198,7 +198,7 @@ static EM_BOOL s_mouse_callback_func(int eventType, const EmscriptenMouseEvent *
 
 static EM_BOOL s_wheel_callback_func(int eventType, const EmscriptenWheelEvent *wheelEvent, void *userData)
 {
-    bcSendEvent(BC_EVENT_MOUSEWHEEL, 0, wheelEvent->deltaX, wheelEvent->deltaY);
+    bcSendEvent(BC_EVENT_MOUSEWHEEL, 0, -wheelEvent->deltaX / 100, -wheelEvent->deltaY / 100);
     return true;
 }
 
