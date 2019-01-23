@@ -1,0 +1,55 @@
+{
+    "build_systems":
+    [
+        {
+            "cmd": "cmake_run.bat",
+            "env":
+            {
+                "EMSDK": "C:\\emsdk",
+                "HTDOCS": "C:\\xampp\\htdocs\\{{bcapp:name}}"
+            },
+            "file_regex": "^(..[^:]*):([0-9]+):?([0-9]+)?:? (.*)$",
+            "name": "{{bcapp:name}}",
+            "syntax": "CMakeOutput.sublime-syntax",
+            "variants":
+            [
+                {
+                    "cmd": "$project_path\\projects\\desktop\\run.bat",
+                    "name": "mingw-run"
+                },
+                {
+                    "cmd": "$project_path\\projects\\desktop\\build.bat",
+                    "name": "mingw-build"
+                },
+                {
+                    "cmd": "$project_path\\projects\\android\\run.bat",
+                    "name": "android-run"
+                },
+                {
+                    "cmd": "$project_path\\projects\\android\\build.bat",
+                    "name": "android-build"
+                },
+                {
+                    "cmd": [ "$project_path\\projects\\web\\deploy.bat", "%HTDOCS%" ],
+                    "name": "web-deploy"
+                },
+                {
+                    "cmd": "$project_path\\projects\\web\\build.bat",
+                    "name": "web-build"
+                }
+            ],
+            "working_dir": "$project_path"
+        }
+    ],
+    "folders":
+    [
+        {
+            "path": "."
+        }
+    ],
+    "settings":
+    {
+        "sublimegdb_commandline": "C:\\mingw-w64\\mingw32\\bin\\gdb.exe --interpreter=mi projects\\desktop\\{{bcapp:name}}.exe",
+        "sublimegdb_workingdir": "${folder:${project_path:./}}"
+    }
+}
