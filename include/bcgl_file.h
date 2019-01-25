@@ -1,0 +1,54 @@
+#pragma once
+
+#include "bcgl_common.h"
+
+enum BCFileMode
+{
+    FILE_READ,
+    FILE_WRITE,
+    FILE_APPEND
+};
+
+typedef struct
+{
+    void *handle;
+    char *name;
+    bool isDir;
+    bool isAsset;
+    size_t length;
+    void *aux;
+} BCFile;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+//
+// bcgl_file module
+//
+
+void bcInitFiles(void *ctx);
+void bcTermFiles();
+
+// File
+BCFile * bcOpenFile(const char *filename, enum BCFileMode mode);
+void bcCloseFile(BCFile *file);
+size_t bcReadFile(BCFile *file, void* buf, size_t count);
+size_t bcWriteFile(BCFile *file, void* buf, size_t count);
+size_t bcSeekFile(BCFile *file, size_t offset);
+size_t bcGetFilePosition(BCFile *file);
+const char * bcReadFileLine(BCFile *file);
+
+// Dir
+BCFile * bcOpenDir(const char *filename);
+void bcCloseDir(BCFile *file);
+void bcRewindDir(BCFile *file);
+const char * bcGetNextFileName(BCFile *file);
+
+// Data
+char * bcLoadTextFile(const char *filename, int *out_size);
+unsigned char * bcLoadDataFile(const char *filename, int *out_size);
+
+#ifdef __cplusplus
+}
+#endif

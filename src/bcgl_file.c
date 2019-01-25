@@ -20,6 +20,10 @@ static char * __strdup(const char *str)
     return result;
 }
 
+//
+// Init
+//
+
 void bcInitFiles(void *ctx)
 {
 #ifdef __ANDROID__

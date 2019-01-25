@@ -2,11 +2,30 @@
 #include <GLES2/gl2.h>
 #include <pthread.h>
 
+#include <android/asset_manager.h>
 #include <android/keycodes.h>
 #include <android/native_window.h>
 
 #include "../bcgl_internal.h"
-#include <bcgl_android.h>
+
+#define EVENT_APP_CREATE    1
+#define EVENT_APP_DESTROY   2
+#define EVENT_APP_START     3
+#define EVENT_APP_STOP      4
+#define EVENT_APP_RESUME    5
+#define EVENT_APP_PAUSE     6
+
+#define EVENT_TOUCH_DOWN    1
+#define EVENT_TOUCH_MOVE    2
+#define EVENT_TOUCH_UP      3
+
+#define EVENT_KEY_DOWN      1
+#define EVENT_KEY_UP        2
+
+#define MSG_FINISH_ACTIVITY 1
+#define MSG_SHOW_KEYBOARD   2
+
+#define GET_NUMBER_DENSITY  1
 
 static struct
 {
@@ -292,6 +311,19 @@ static int convertAndroidKeyCode(int keyCode)
     return BC_KEY_UNKNOWN;
 }
 
+void bcAndroidSendMessage(int type, int x, int y)
+{
+    if (s_MsgCallback)
+        s_MsgCallback(type, x, y);
+}
+
+float bcAndroidGetNumber(int key)
+{
+    if (s_NumCallback)
+        return s_NumCallback(key);
+    return 0.0f;
+}
+
 // Window
 
 void bcCloseWindow(BCWindow *window)
@@ -407,19 +439,6 @@ void bcAndroidSetCallbacks(void (*msg_callback)(int type, int x, int y), float (
 {
     s_MsgCallback = msg_callback;
     s_NumCallback = num_callback;
-}
-
-void bcAndroidSendMessage(int type, int x, int y)
-{
-    if (s_MsgCallback)
-        s_MsgCallback(type, x, y);
-}
-
-float bcAndroidGetNumber(int key)
-{
-    if (s_NumCallback)
-        return s_NumCallback(key);
-    return 0.0f;
 }
 
 //
