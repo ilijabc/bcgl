@@ -1144,3 +1144,97 @@ float quat_angle(quat_t q0, quat_t q1)
     s = 1.0f / s;
     return acosf(quat_dot(q0, q1) * s);
 }
+
+//
+// mat4_stack
+//
+
+#include <stdlib.h>
+
+mat4_stack_t mat4_stack_init(int size)
+{
+    mat4_stack_t ms = malloc(sizeof(struct mat4_stack));
+    ms->array = malloc(sizeof(mat4_t) * size);
+    ms->size = size;
+    ms->current = 0;
+    ms->array[0] = mat4_identity();
+    return ms;
+}
+
+void mat4_stack_free(mat4_stack_t ms)
+{
+    free(ms->array);
+    free(ms);
+}
+
+bool mat4_stack_push(mat4_stack_t ms)
+{
+    if (ms->current == ms->size - 1)
+        return false;
+    ms->array[ms->current + 1] = ms->array[ms->current];
+    ms->current++;
+    return true;
+}
+
+bool mat4_stack_pop(mat4_stack_t ms)
+{
+    if (ms->current == 0)
+        return false;
+    ms->current--;
+    return true;
+}
+
+void mat4_stack_set(mat4_stack_t ms, mat4_t m)
+{
+    ms->array[ms->current] = m;
+}
+
+mat4_t mat4_stack_get(mat4_stack_t ms)
+{
+    return ms->array[ms->current];
+}
+
+float * mat4_stack_getp(mat4_stack_t ms)
+{
+    return ms->array[ms->current].v;
+}
+
+void mat4_stack_identity(mat4_stack_t ms)
+{
+    ms->array[ms->current] = mat4_identity();
+}
+
+void mat4_stack_translate(mat4_stack_t ms, float x, float y, float z)
+{
+    ms->array[ms->current] = mat4_translate(ms->array[ms->current], x, y, z);
+}
+
+void mat4_stack_rotate_x(mat4_stack_t ms, float rad)
+{
+    ms->array[ms->current] = mat4_rotate_x(ms->array[ms->current], rad);
+}
+
+void mat4_stack_rotate_y(mat4_stack_t ms, float rad)
+{
+    ms->array[ms->current] = mat4_rotate_y(ms->array[ms->current], rad);
+}
+
+void mat4_stack_rotate_z(mat4_stack_t ms, float rad)
+{
+    ms->array[ms->current] = mat4_rotate_z(ms->array[ms->current], rad);
+}
+
+void mat4_stack_rotate_axis(mat4_stack_t ms, float rad, float x, float y, float z)
+{
+    ms->array[ms->current] = mat4_rotate_axis(ms->array[ms->current], rad, x, y, z);
+}
+
+void mat4_stack_scale(mat4_stack_t ms, float x, float y, float z)
+{
+    ms->array[ms->current] = mat4_scale(ms->array[ms->current], x, y, z);
+}
+
+void mat4_stack_multiply(mat4_stack_t ms, mat4_t m)
+{
+    ms->array[ms->current] = mat4_multiply(ms->array[ms->current], m);
+}

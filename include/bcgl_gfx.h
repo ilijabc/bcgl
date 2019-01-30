@@ -175,10 +175,13 @@ void bcInitGfx();
 void bcTermGfx();
 
 // Shader
-BCShader * bcCreateShaderFromFile(const char *filename);
+BCShader * bcCreateShaderFromSingleFile(const char *filename);
+BCShader * bcCreateShaderFromFile(const char *vsFilename, const char *fsFilename);
 BCShader * bcCreateShaderFromCode(const char *vsCode, const char *fsCode);
 void bcDestroyShader(BCShader *shader);
 void bcBindShader(BCShader *shader);
+unsigned int bcLoadShader(const char *code, unsigned int shaderType);
+bool bcLinkShaderProgram(unsigned int programId);
 
 // Image
 BCImage * bcCreateImage(int width, int height, int format);
@@ -207,7 +210,6 @@ void bcSetProjectionMatrix(float *m);
 void bcSetModelViewMatrix(float *m);
 float * bcGetProjectionMatrix();
 float * bcGetModelViewMatrix();
-float * bcGetModelViewProjectionMatrix();
 
 // Mesh
 BCMesh * bcCreateMesh(int num_vertices, int num_indices, int flags);
@@ -248,7 +250,7 @@ bool bcScreenToWorldCoords(int winX, int winY, float out[3]);
 bool bcWorldToScreenCoords(float x, float y, float z, float out[2]);
 
 // Camera
-void bcPrepareScene3D(float fov);
+void bcPrepareScene3D(float fovy);
 void bcPrepareScene2D(float height, bool center);
 void bcPrepareSceneGUI();
 

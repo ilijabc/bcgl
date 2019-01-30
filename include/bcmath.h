@@ -66,6 +66,12 @@ typedef struct mat4 {
     };
 } mat4_t;
 
+typedef struct mat4_stack {
+    mat4_t *array;
+    int size;
+    int current;
+} * mat4_stack_t;
+
 #define to_radians(degrees) ((degrees) * M_PI / 180.0f)
 #define to_degrees(radians) ((radians) * 180.0f / M_PI)
 #define signf(f) ((f < 0) ? -1 : ((f > 0) ? 1 : 0))
@@ -228,6 +234,23 @@ quat_t quat_slerp(quat_t q0, quat_t q1, float f);
 float quat_length(quat_t q0);
 float quat_length_squared(quat_t q0);
 float quat_angle(quat_t q0, quat_t q1);
+
+// mat4_stack
+mat4_stack_t mat4_stack_init(int size);
+void mat4_stack_free(mat4_stack_t ms);
+bool mat4_stack_push(mat4_stack_t ms);
+bool mat4_stack_pop(mat4_stack_t ms);
+void mat4_stack_set(mat4_stack_t ms, mat4_t m);
+mat4_t mat4_stack_get(mat4_stack_t ms);
+float * mat4_stack_getp(mat4_stack_t ms);
+void mat4_stack_identity(mat4_stack_t ms);
+void mat4_stack_translate(mat4_stack_t ms, float x, float y, float z);
+void mat4_stack_rotate_x(mat4_stack_t ms, float rad);
+void mat4_stack_rotate_y(mat4_stack_t ms, float rad);
+void mat4_stack_rotate_z(mat4_stack_t ms, float rad);
+void mat4_stack_rotate_axis(mat4_stack_t ms, float rad, float x, float y, float z);
+void mat4_stack_scale(mat4_stack_t ms, float x, float y, float z);
+void mat4_stack_multiply(mat4_stack_t ms, mat4_t m);
 
 #ifdef __cplusplus
 }

@@ -25,7 +25,6 @@ typedef struct
     BCMaterial DefaultMaterial;
     mat4_t ProjectionMatrix;
     mat4_t ModelViewMatrix;
-    mat4_t ModelViewProjectionMatrix;
     BCMesh *CurrentMesh;
 #ifdef SUPPORT_GLSL
     BCShader *DefaultShader;
@@ -236,11 +235,114 @@ void bcTermGfx()
 
 #ifdef SUPPORT_GLSL
 
-static GLuint loadShader(const char *code, GLenum shaderType)
+BCShader * bcCreateShaderFromSingleFile(const char *filename)
+{
+    char *code = bcLoadTextFile(filename, NULL);
+    if (code == NULL)
+        return NULL;
+    BCShader *shader = bcCreateShaderFromCode(code, code);
+    free(code);
+    return shader;
+}
+
+BCShader * bcCreateShaderFromFile(const char *vsFilename, const char *fsFilename)
+{
+    char *vsCode = bcLoadTextFile(vsFilename, NULL);
+    if (vsCode == NULL)
+    {
+        return NULL;
+    }
+    char *fsCode = bcLoadTextFile(fsFilename, NULL);
+    if (fsCode == NULL)
+    {
+        free(vsCode);
+        return NULL;
+    }
+    BCShader *shader = bcCreateShaderFromCode(vsCode, fsCode);
+    free(vsCode);
+    free(fsCode);
+    return shader;
+}
+
+BCShader * bcCreateShaderFromCode(const char *vsCode, const char *fsCode)
+{
+    // vertex shaders
+    GLuint vertexShader = bcLoadShader(vsCode, GL_VERTEX_SHADER);
+    if (vertexShader == 0)
+    {
+        return NULL;
+    }
+    // fragment shader
+    GLuint fragmentShader = bcLoadShader(fsCode, GL_FRAGMENT_SHADER);
+    if (fragmentShader == 0)
+    {
+        glDeleteShader(vertexShader);
+        return NULL;
+    }
+    // create shader
+    BCShader *shader = NEW_OBJECT(BCShader);
+    // create program
+    shader->programId = glCreateProgram();
+    if (shader->programId == 0)
+    {
+        bcLogError("Error creating shader program!");
+        free(shader);
+        return NULL;
+    }
+    glAttachShader(shader->programId, vertexShader);
+    glAttachShader(shader->programId, fragmentShader);
+    // vertex attributes
+    for (int i = 0; i < VERTEX_ATTR_MAX; i++)
+    {
+        glBindAttribLocation(shader->programId, i, s_ShaderAttributes[i].name);
+    }
+    if (!bcLinkShaderProgram(shader->programId))
+    {
+        glDeleteShader(vertexShader);
+        glDeleteShader(fragmentShader);
+        bcDestroyShader(shader);
+        return NULL;
+    }
+    // get uniforms
+    for (int i = 0; i < SHADER_UNIFORM_MAX; i++)
+    {
+        shader->loc_uniforms[i] = glGetUniformLocation(shader->programId, s_ShaderUniforms[i].name);
+        if (shader->loc_uniforms[i] == -1)
+            bcLogWarning("Shader uniform '%s' not found!", s_ShaderUniforms[i].name);
+    }
+    // detach shaders
+    glDetachShader(shader->programId, vertexShader);
+    glDetachShader(shader->programId, fragmentShader);
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+    return shader;
+}
+
+void bcDestroyShader(BCShader *shader)
+{
+    if (shader == NULL)
+        return;
+    glDeleteProgram(shader->programId);
+    free(shader);
+}
+
+void bcBindShader(BCShader *shader)
+{
+    if (shader == NULL)
+        shader = g_Context->DefaultShader;
+    g_Context->CurrentShader = shader;
+    glUseProgram(shader->programId);
+    // applyProjectionMatrix();
+    // applyCurrentMatrix();
+    bcSetMaterial(g_Context->DefaultMaterial);
+}
+
+unsigned int bcLoadShader(const char *code, unsigned int shaderType)
 {
     // init shader source
-    const char *strings[2] = { GLSL_VERSION, code };
-    int lengths[2] = { (int) strlen(GLSL_VERSION), (int) strlen(code) };
+    const char *def_str = (shaderType == GL_VERTEX_SHADER) ? "#define VERTEX_SHADER\n" : "#define FERTEX_SHADER\n";
+    const char *strings[3] = { GLSL_VERSION,  def_str, code };
+    int lengths[3] = { (int) strlen(GLSL_VERSION), (int) strlen(def_str), (int) strlen(code) };
     // create and compile
     GLuint shaderId = glCreateShader(shaderType);
     if (shaderId == 0)
@@ -248,7 +350,7 @@ static GLuint loadShader(const char *code, GLenum shaderType)
         bcLogError("glCreateShader failed!");
         return 0;
     }
-    glShaderSource(shaderId, 2, strings, lengths);
+    glShaderSource(shaderId, 3, strings, lengths);
     glCompileShader(shaderId);
     GLint compileError = 0;
     glGetShaderiv(shaderId, GL_COMPILE_STATUS, &compileError);
@@ -276,99 +378,31 @@ static GLuint loadShader(const char *code, GLenum shaderType)
     return shaderId;
 }
 
-BCShader * bcCreateShaderFromFile(const char *filename)
+bool bcLinkShaderProgram(unsigned int programId)
 {
-    char *code = bcLoadTextFile(filename, NULL);
-    if (code == NULL)
-        return NULL;
-    BCShader *shader = bcCreateShaderFromCode(code, code);
-    free(code);
-    return shader;
-}
-
-BCShader * bcCreateShaderFromCode(const char *vsCode, const char *fsCode)
-{
-    BCShader *shader = NEW_OBJECT(BCShader);
-    // create program
-    shader->programId = glCreateProgram();
-    if (shader->programId == 0)
-    {
-        bcLogError("Error creating shader program!");
-        goto shader_create_error;
-    }
-    // vertex shaders
-    GLuint vertexShader = loadShader(vsCode, GL_VERTEX_SHADER);
-    if (vertexShader == 0)
-        goto shader_create_error;
-    glAttachShader(shader->programId, vertexShader);
-    // fragment shader
-    GLuint fragmentShader = loadShader(fsCode, GL_FRAGMENT_SHADER);
-    if (fragmentShader == 0)
-        goto shader_create_error;
-    glAttachShader(shader->programId, fragmentShader);
-    // vertex attributes
-    for (int i = 0; i < VERTEX_ATTR_MAX; i++)
-    {
-        glBindAttribLocation(shader->programId, i, s_ShaderAttributes[i].name);
-    }
     // link program
-    glLinkProgram(shader->programId);
+    glLinkProgram(programId);
     GLint linkError = 0;
-    glGetProgramiv(shader->programId, GL_LINK_STATUS, &linkError);
+    glGetProgramiv(programId, GL_LINK_STATUS, &linkError);
     if (linkError == GL_FALSE) {
         char errorLog[2000];
         GLsizei errorLen = 0;
-        glGetProgramInfoLog(shader->programId, 2000, &errorLen, errorLog);
+        glGetProgramInfoLog(programId, 2000, &errorLen, errorLog);
         bcLogError("Link program:\n%s", errorLog);
-        goto shader_create_error;
+        return false;
     }
     // validate program
-    glValidateProgram(shader->programId);
+    glValidateProgram(programId);
     GLint validateError = 0;
-    glGetProgramiv(shader->programId, GL_VALIDATE_STATUS, &validateError);
+    glGetProgramiv(programId, GL_VALIDATE_STATUS, &validateError);
     if (validateError == GL_FALSE) {
         char errorLog[2000];
         GLsizei errorLen = 0;
-        glGetProgramInfoLog(shader->programId, 2000, &errorLen, errorLog);
+        glGetProgramInfoLog(programId, 2000, &errorLen, errorLog);
         bcLogError("Validate program:\n%s", errorLog);
-        goto shader_create_error;
+        return false;
     }
-    // get uniforms
-    for (int i = 0; i < SHADER_UNIFORM_MAX; i++)
-    {
-        shader->loc_uniforms[i] = glGetUniformLocation(shader->programId, s_ShaderUniforms[i].name);
-        if (shader->loc_uniforms[i] == -1)
-            bcLogWarning("Shader uniform '%s' not found!", s_ShaderUniforms[i].name);
-    }
-    // detach shaders
-    glDetachShader(shader->programId, vertexShader);
-    glDetachShader(shader->programId, fragmentShader);
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-    return shader;
-    // error
-shader_create_error:
-    bcDestroyShader(shader);
-    return NULL;
-}
-
-void bcDestroyShader(BCShader *shader)
-{
-    if (shader == NULL)
-        return;
-    glDeleteProgram(shader->programId);
-    free(shader);
-}
-
-void bcBindShader(BCShader *shader)
-{
-    if (shader == NULL)
-        shader = g_Context->DefaultShader;
-    g_Context->CurrentShader = shader;
-    glUseProgram(shader->programId);
-    // applyProjectionMatrix();
-    // applyCurrentMatrix();
-    bcSetMaterial(g_Context->DefaultMaterial);
+    return true;
 }
 
 #else // SUPPORT_GLSL
@@ -377,6 +411,8 @@ BCShader * bcCreateShaderFromFile(const char *filename) { return NULL; }
 BCShader * bcCreateShaderFromCode(const char *vsCode, const char *fsCode) { return NULL; }
 void bcDestroyShader(BCShader *shader) { }
 void bcBindShader(BCShader *shader) { }
+unsigned int bcLoadShader(const char *code, unsigned int shaderType) { }
+bool bcLinkShaderProgram(unsigned int programId) { }
 
 #endif // SUPPORT_GLSL
 
@@ -685,13 +721,6 @@ float * bcGetProjectionMatrix()
 float * bcGetModelViewMatrix()
 {
     return g_Context->ModelViewMatrix.v;
-}
-
-float * bcGetModelViewProjectionMatrix()
-{
-    // TODO: if we want MVP to be available to chader we have to precalculate it on P and MV set
-    g_Context->ModelViewProjectionMatrix = mat4_multiply(g_Context->ProjectionMatrix, g_Context->ModelViewMatrix);
-    return g_Context->ModelViewProjectionMatrix.v;
 }
 
 //
@@ -1236,7 +1265,7 @@ bool bcScreenToWorldCoords(int winX, int winY, float out[3])
     winY = bcGetDisplayHeight() - winY;
     float winZ = 0;
     glReadPixels(winX, winY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ);
-    mat4_t mvp = mat4_from_array(bcGetModelViewProjectionMatrix());
+    mat4_t mvp = mat4_multiply(g_Context->ProjectionMatrix, g_Context->ModelViewMatrix);
     vec4_t v = mat4_unproject(mvp, winX, winY, winZ, viewport);
     if (out)
     {
@@ -1250,7 +1279,7 @@ bool bcScreenToWorldCoords(int winX, int winY, float out[3])
 bool bcWorldToScreenCoords(float x, float y, float z, float out[2])
 {
     int viewport[4] = { 0, 0, bcGetDisplayWidth(), bcGetDisplayHeight() };
-    mat4_t mvp = mat4_from_array(bcGetModelViewProjectionMatrix());
+    mat4_t mvp = mat4_multiply(g_Context->ProjectionMatrix, g_Context->ModelViewMatrix);
     vec4_t v = mat4_project(mvp, x, y, z, viewport);
     if (out)
     {
@@ -1264,13 +1293,13 @@ bool bcWorldToScreenCoords(float x, float y, float z, float out[2])
 // Camera
 //
 
-void bcPrepareScene3D(float fov)
+void bcPrepareScene3D(float fovy)
 {
     BCWindow *win = bcGetWindow();
     float aspect = (float) win->height / (float) win->width;
     float znear = 0.1f;
     float zfar = 10000.0f;
-    bcSetPerspective(to_radians(fov), aspect, znear, zfar);
+    bcSetPerspective(to_radians(fovy), aspect, znear, zfar);
     bcIdentity();
     bcSetBlend(false);
     bcSetDepthTest(true);
