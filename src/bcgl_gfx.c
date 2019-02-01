@@ -52,7 +52,9 @@ static BCContext *g_Context = NULL;
 #ifdef SUPPORT_GLSL
 
 #ifdef __ANDROID__
-#define GLSL_VERSION "#version 300 es\n"
+#define GLSL_VERSION \
+    "#version 300 es\n" \
+    "precision mediump float;\n"
 #else
 #define GLSL_VERSION "#version 330 core\n"
 #endif
@@ -131,17 +133,18 @@ static const char s_DefaultFragmentShaderCode[] =
 "uniform bool u_LightEnabled;\n" \
 "uniform vec3 u_LightPosition;\n" \
 "uniform vec4 u_LightColor;\n" \
+"out vec4 outColor;\n" \
 "void main()\n" \
 "{\n" \
-"    gl_FragColor = u_ObjectColor;\n" \
+"    outColor = u_ObjectColor;\n" \
 "    if (u_UseTexture)\n" \
 "    {\n" \
-"        vec4 tex = texture2D(u_Texture, v_texCoord);\n" \
+"        vec4 tex = texture(u_Texture, v_texCoord);\n" \
 "        if (u_AlphaTest && tex.a < 0.1)\n" \
 "            discard;\n" \
 "        if (u_AlphaOnlyTexture)\n" \
 "            tex = vec4(1, 1, 1, tex.a);\n" \
-"        gl_FragColor *= tex;\n" \
+"        outColor *= tex;\n" \
 "    }\n" \
 "    if (u_LightEnabled)\n" \
 "    {\n" \
@@ -149,11 +152,11 @@ static const char s_DefaultFragmentShaderCode[] =
 "        vec3 lightDir = normalize(u_LightPosition - v_position);\n" \
 "        float diff = max(dot(norm, lightDir), 0.0);\n" \
 "        vec4 diffuse = diff * u_LightColor * u_DiffuseColor;\n" \
-"        gl_FragColor *= (u_AmbientColor + diffuse);\n" \
+"        outColor *= (u_AmbientColor + diffuse);\n" \
 "    }\n" \
 "    if (u_VertexColorEnabled)\n" \
 "    {\n" \
-"        gl_FragColor *= v_color;\n" \
+"        outColor *= v_color;\n" \
 "    }\n" \
 "}\n" \
 ;
@@ -1629,6 +1632,11 @@ BCMesh * bcCreateMeshBox(float x1, float y1, float z1, float x2, float y2, float
     if (bcBeginMesh(mesh, BC_QUADS))
     {
         // TODO: generate tex coords
+        bcNormal3f(0, 0, -1);
+        bcVertex3f(x2, y1, z1);
+        bcVertex3f(x1, y1, z1);
+        bcVertex3f(x1, y2, z1);
+        bcVertex3f(x2, y2, z1);
         bcNormal3f(0, 1, 0);
         bcVertex3f(x2, y2, z1);
         bcVertex3f(x1, y2, z1);
@@ -1639,16 +1647,6 @@ BCMesh * bcCreateMeshBox(float x1, float y1, float z1, float x2, float y2, float
         bcVertex3f(x1, y1, z2);
         bcVertex3f(x1, y1, z1);
         bcVertex3f(x2, y1, z1);
-        bcNormal3f(0, 0, 1);
-        bcVertex3f(x2, y2,z2);
-        bcVertex3f(x1, y2,z2);
-        bcVertex3f(x1, y1,z2);
-        bcVertex3f(x2, y1,z2);
-        bcNormal3f(0, 0, -1);
-        bcVertex3f(x2, y1, z1);
-        bcVertex3f(x1, y1, z1);
-        bcVertex3f(x1, y2, z1);
-        bcVertex3f(x2, y2, z1);
         bcNormal3f(-1, 0, 0);
         bcVertex3f(x1, y2, z2);
         bcVertex3f(x1, y2, z1);
@@ -1659,6 +1657,11 @@ BCMesh * bcCreateMeshBox(float x1, float y1, float z1, float x2, float y2, float
         bcVertex3f(x2, y2, z2);
         bcVertex3f(x2, y1, z2);
         bcVertex3f(x2, y1, z1);
+        bcNormal3f(0, 0, 1);
+        bcVertex3f(x2, y2, z2);
+        bcVertex3f(x1, y2, z2);
+        bcVertex3f(x1, y1, z2);
+        bcVertex3f(x2, y1, z2);
         bcEndMesh(mesh);
     }
     return mesh;
