@@ -51,13 +51,9 @@ static BCContext *g_Context = NULL;
 
 #ifdef SUPPORT_GLSL
 
-#ifdef __ANDROID__
 #define GLSL_VERSION \
     "#version 300 es\n" \
     "precision mediump float;\n"
-#else
-#define GLSL_VERSION "#version 330 core\n"
-#endif
 
 // This must be alligned with @BCVertexAttributes
 static struct

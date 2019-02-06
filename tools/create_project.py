@@ -42,6 +42,7 @@ def generate_file(f, out):
             pass
         with open(out, "w") as file_out:
             file_out.write(data)
+            if out.endswith('.sh'): os.chmod(out, 0775)
 
 def create_project(root):
     # copy files
