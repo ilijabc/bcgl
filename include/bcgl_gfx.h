@@ -162,6 +162,8 @@ typedef struct
 #endif
 #define SET_COLOR(r,g,b,a) (BCColor) { r, g, b, a }
 
+static const BCColor COLOR_TRANSPARENT = {0,0,0,0};
+static const BCColor COLOR_BLACK = {0,0,0,1};
 static const BCColor COLOR_WHITE = {1,1,1,1};
 static const BCColor COLOR_RED = {1,0,0,1};
 static const BCColor COLOR_GREEN = {0,1,0,1};
