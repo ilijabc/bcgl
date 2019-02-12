@@ -284,8 +284,6 @@ BCWindow * bcCreateWindow(BCConfig *config)
         bcLogError("Failed to initialize OpenGL context");
         return NULL;
     }
-    bcLog("OpenGL: %s", glGetString(GL_VERSION));
-    bcLog("Device: %s", glGetString(GL_RENDERER));
 #endif
     bcInitGfx();
 

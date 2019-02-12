@@ -99,6 +99,12 @@ typedef struct
 
 typedef struct
 {
+    const char *type;
+    const char *name;
+} BCShaderVar;
+
+typedef struct
+{
     int num_vertices;
     int num_indices;
     int format;
@@ -177,12 +183,12 @@ void bcInitGfx();
 void bcTermGfx();
 
 // Shader
+BCShader * bcCreateShader(const char *vs_code, const char *fs_code, BCShaderVar *attributes, BCShaderVar *uniforms, BCShaderVar *vars);
 BCShader * bcCreateShaderFromSingleFile(const char *filename);
 BCShader * bcCreateShaderFromFile(const char *vsFilename, const char *fsFilename);
-BCShader * bcCreateShaderFromCode(const char *vsCode, const char *fsCode);
 void bcDestroyShader(BCShader *shader);
 void bcBindShader(BCShader *shader);
-unsigned int bcLoadShader(const char *code, unsigned int shaderType);
+unsigned int bcLoadShader(const char *code, unsigned int shaderType, BCShaderVar *attributes, BCShaderVar *uniforms, BCShaderVar *vars);
 bool bcLinkShaderProgram(unsigned int programId);
 
 // Image
