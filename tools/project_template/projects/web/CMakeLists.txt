@@ -10,6 +10,6 @@ add_executable({{bcapp:name}} ${SRCS})
 
 target_link_libraries({{bcapp:name}} bcgl)
 
-set_target_properties({{bcapp:name}} PROPERTIES SUFFIX ".html" LINK_FLAGS " --bind -s  NO_EXIT_RUNTIME=1 -g4 --preload-file ${ASSETS_DIR}@assets -O2")
+set_target_properties({{bcapp:name}} PROPERTIES SUFFIX ".js" LINK_FLAGS " --bind -s  NO_EXIT_RUNTIME=1 -g4 --preload-file ${ASSETS_DIR}@assets -O2")
 em_link_js_library({{bcapp:name}} ${libraryJsFiles})
 # add -O2 to minify

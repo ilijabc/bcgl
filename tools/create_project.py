@@ -34,7 +34,7 @@ def generate_file(f, out):
         for k in bcvars:
             v = bcvars[k]
             if k.endswith('_dir'):
-                v = os.path.relpath(bcvars[k], out_dir)
+                v = os.path.relpath(bcvars[k], out_dir).replace('\\', '/')
             data = data.replace('{{bcapp:' + k + '}}', v)
         try:
             os.makedirs(out_dir)
@@ -42,7 +42,7 @@ def generate_file(f, out):
             pass
         with open(out, "w") as file_out:
             file_out.write(data)
-            if out.endswith('.sh'): os.chmod(out, 0775)
+            if out.endswith('.sh') or out.endswith('.bat'): os.chmod(out, 0775)
 
 def create_project(root):
     # copy files
@@ -57,7 +57,7 @@ def create_project(root):
         generate_file(f, out)
     # create dirs
     try:
-        os.makedirs(bcvars['assets_dir'])
+        os.rename('assets/', bcvars['assets_dir'])
         os.rename('src/', bcvars['src_dir'])
     except Exception as e:
         raise e
