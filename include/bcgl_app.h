@@ -147,6 +147,14 @@ enum BCKeyCode
     BC_KEY_COUNT,
 };
 
+enum BCDisplayMode
+{
+    BC_DISPLAY_NORMAL,
+    BC_DISPLAY_FULLSCREEN,
+    BC_DISPLAY_DESKTOP,
+    BC_DISPLAY_RESIZABLE
+};
+
 typedef struct
 {
     int type;

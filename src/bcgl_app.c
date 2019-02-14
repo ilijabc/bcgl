@@ -80,7 +80,7 @@ void bcInit(BCCallbacks callbacks)
     s_Callbacks = callbacks;
 }
 
-bool bcAppWrapperStart(BCConfig *config)
+void bcAppWrapperConfigure(BCConfig *config)
 {
     BCCallbacks callbacks = bcGetCallbacks();
 
@@ -88,6 +88,11 @@ bool bcAppWrapperStart(BCConfig *config)
         callbacks.onConfig(config);
     else
         bcLogWarning("Missing onConfig callback!");
+}
+
+bool bcAppWrapperStart(BCConfig *config)
+{
+    BCCallbacks callbacks = bcGetCallbacks();
 
     if (callbacks.onCreate)
         callbacks.onCreate();
@@ -155,6 +160,8 @@ void bcAppWrapperUpdate()
 
 int bcAppWrapperRun(BCConfig *config)
 {
+    bcAppWrapperConfigure(config);
+
     if (!bcAppWrapperStart(config))
     {
         return -99;

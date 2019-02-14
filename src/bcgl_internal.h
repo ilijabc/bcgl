@@ -19,6 +19,7 @@ typedef struct
 BCCallbacks bcGetCallbacks();
 
 // App
+void bcAppWrapperConfigure(BCConfig *config);
 bool bcAppWrapperStart(BCConfig *config);
 int bcAppWrapperStop();
 bool bcAppWrapperIsRunning();

@@ -3,15 +3,11 @@
 #include <pthread.h>
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
+#include <emscripten/em_js.h>
 
 #include "../bcgl_internal.h"
 
-typedef struct
-{
-    EGLDisplay _display;
-    EGLSurface _surface;
-    EGLContext _context;
-} BCGLESWindow;
+static const char s_CanvasTarget[] = "canvas";
 
 static struct
 {
@@ -202,7 +198,7 @@ static EM_BOOL s_wheel_callback_func(int eventType, const EmscriptenWheelEvent *
     return true;
 }
 
-static EM_BOOL s_webgl_context_callback(int eventType, const void *reserved, void *userData)
+static EM_BOOL s_webgl_context_callback_func(int eventType, const void *reserved, void *userData)
 {
     switch (eventType)
     {
@@ -216,10 +212,21 @@ static EM_BOOL s_webgl_context_callback(int eventType, const void *reserved, voi
     return true;
 }
 
+EM_BOOL s_resize_callback_func(int eventType, const EmscriptenUiEvent *uiEvent, void *userData)
+{
+    emscripten_set_canvas_element_size(s_CanvasTarget, uiEvent->windowInnerWidth, uiEvent->windowInnerHeight);
+    bcSendEvent(BC_EVENT_WINDOWSIZE, 0, uiEvent->windowInnerWidth, uiEvent->windowInnerHeight);
+    bcLog("resize: %d %d", uiEvent->windowInnerWidth, uiEvent->windowInnerHeight);
+    return true;
+}
+
 static void s_main_loop()
 {
     bcAppWrapperUpdate();
 }
+
+EM_JS(int, js_window_innerWidth, (), { return window.innerWidth; });
+EM_JS(int, js_window_innerHeight, (), { return window.innerHeight; });
 
 int bcRunMain()
 {
@@ -228,31 +235,44 @@ int bcRunMain()
     // Default config
     BCConfig config;
     config.title = NULL;
-    config.width = 800;
-    config.height = 600;
+    config.width = 300;
+    config.height = 150;
     config.format = 0;
     config.mode = 0;
     config.vsync = true;
     config.msaa = 0;
     config.orientation = 0;
 
+    bcAppWrapperConfigure(&config);
+    if (config.mode != BC_DISPLAY_NORMAL)
+    {
+        double w, h;
+        bcLog("get size");
+        emscripten_get_element_css_size("screen", &w, &h);
+        bcLog("size=%lf %lf", w, h);
+        config.width = js_window_innerWidth();
+        config.height = js_window_innerHeight();
+    }
+
+    // setup emscripten
+    emscripten_set_canvas_element_size(s_CanvasTarget, config.width, config.height);
+    emscripten_set_keydown_callback(NULL, NULL, true, s_key_callback_func);
+    emscripten_set_keyup_callback(NULL, NULL, true, s_key_callback_func);
+    emscripten_set_mousedown_callback(s_CanvasTarget, NULL, true, s_mouse_callback_func);
+    emscripten_set_mouseup_callback(s_CanvasTarget, NULL, true, s_mouse_callback_func);
+    emscripten_set_mousemove_callback(s_CanvasTarget, NULL, true, s_mouse_callback_func);
+    emscripten_set_wheel_callback(s_CanvasTarget, NULL, true, s_wheel_callback_func);
+    emscripten_set_webglcontextlost_callback(s_CanvasTarget, NULL, true, s_webgl_context_callback_func);
+    emscripten_set_webglcontextrestored_callback(s_CanvasTarget, NULL, true, s_webgl_context_callback_func);
+    if (config.mode == BC_DISPLAY_RESIZABLE)
+    {
+        emscripten_set_resize_callback(NULL, NULL, true, s_resize_callback_func);
+    }
+
     if (!bcAppWrapperStart(&config))
     {
         return -99;
     }
-
-    const char *target = "canvas";
-    void *userData = NULL;
-    EM_BOOL useCapture = true;
-
-    emscripten_set_keydown_callback(NULL, userData, useCapture, s_key_callback_func);
-    emscripten_set_keyup_callback(NULL, userData, useCapture, s_key_callback_func);
-    emscripten_set_mousedown_callback(target, userData, useCapture, s_mouse_callback_func);
-    emscripten_set_mouseup_callback(target, userData, useCapture, s_mouse_callback_func);
-    emscripten_set_mousemove_callback(target, userData, useCapture, s_mouse_callback_func);
-    emscripten_set_wheel_callback(target, userData, useCapture, s_wheel_callback_func);
-    emscripten_set_webglcontextlost_callback(target, userData, useCapture, s_webgl_context_callback);
-    emscripten_set_webglcontextrestored_callback(target, userData, useCapture, s_webgl_context_callback);
 
     emscripten_set_main_loop(s_main_loop, 0, 1);
 

@@ -223,23 +223,17 @@ float bcGetDisplayDensity()
 BCWindow * bcCreateWindow(BCConfig *config)
 {
     const GLFWvidmode *screen = glfwGetVideoMode(glfwGetPrimaryMonitor());
-    if (config->width == 0)
-    {
-        config->width = screen->width;
-    }
-    if (config->height == 0)
-    {
-        config->height = screen->height;
-    }
 
     // Configure our window
     glfwDefaultWindowHints();
     glfwWindowHint(GLFW_VISIBLE, GL_FALSE);
-    glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
     glfwWindowHint(GLFW_SAMPLES, config->msaa);
-    if (config->mode == 2)
+    glfwWindowHint(GLFW_RESIZABLE, config->mode == BC_DISPLAY_RESIZABLE);
+    if (config->mode == BC_DISPLAY_DESKTOP)
     {
         glfwWindowHint(GLFW_DECORATED, GL_FALSE);
+        config->width = screen->width;
+        config->height = screen->height;
     }
 
     // Create the window
@@ -247,7 +241,7 @@ BCWindow * bcCreateWindow(BCConfig *config)
         config->width,
         config->height,
         config->title ? config->title : "BCGL",
-        (config->mode == 1) ? glfwGetPrimaryMonitor() : NULL,
+        (config->mode == BC_DISPLAY_FULLSCREEN) ? glfwGetPrimaryMonitor() : NULL,
         NULL);
     if (nativeWindow == NULL)
     {
