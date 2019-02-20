@@ -68,13 +68,6 @@ enum BCFontType
     FONT_TYPE_BITMAP
 };
 
-enum BCVboStatus
-{
-    VBO_EMPTY,
-    VBO_STATIC,
-    VBO_DYNAMIC
-};
-
 typedef struct
 {
     int width;
@@ -114,9 +107,9 @@ typedef struct
     uint16_t *indices;
     int draw_mode;
     int draw_count;
-    enum BCVboStatus vbo_status;
     unsigned int vbo_vertices;
     unsigned int vbo_indices;
+    bool is_static;
 } BCMesh;
 
 typedef struct
@@ -220,9 +213,9 @@ float * bcGetProjectionMatrix();
 float * bcGetModelViewMatrix();
 
 // Mesh
-BCMesh * bcCreateMesh(int num_vertices, int num_indices, int flags);
-BCMesh * bcUploadMesh(BCMesh *mesh, enum BCVboStatus status);
+BCMesh * bcCreateMesh(int format, const float *vert_data, int vert_num, const uint16_t *indx_data, int indx_num, bool is_static);
 BCMesh * bcCopyMesh(BCMesh *mesh);
+void bcUpdateMesh(BCMesh *mesh);
 void bcDestroyMesh(BCMesh *mesh);
 void bcDrawMesh(BCMesh *mesh);
 void bcBindMesh(BCMesh *mesh);
