@@ -1,4 +1,6 @@
 #include <dirent.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "bcgl_internal.h"
 
@@ -18,6 +20,13 @@ static char * __strdup(const char *str)
     memcpy(result, str, len);
     result[len] = 0;
     return result;
+}
+
+static off_t __fsize(const char *filename) {
+    struct stat st; 
+    if (stat(filename, &st) == 0)
+        return st.st_size;
+    return -1; 
 }
 
 //
@@ -70,9 +79,7 @@ BCFile * bcOpenFile(const char *filename, enum BCFileMode mode)
     file->name = __strdup(filename);
     file->isDir = false;
     file->isAsset = isAsset;
-    fseek(fp, 0, SEEK_END);
-    file->length = ftell(fp);
-    fseek(fp, 0, SEEK_SET);
+    file->length = __fsize(filename);
     return file;
 }
 
