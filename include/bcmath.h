@@ -77,6 +77,7 @@ typedef struct mat4_stack {
 #define signf(f) ((f < 0) ? -1 : ((f > 0) ? 1 : 0))
 #define randomf() ((float) rand() / (float) RAND_MAX)
 #define randomi(X) (rand() % (X))
+#define clampf(x,l,h) (x < l ? l : (x > h ? h : x))
 
 #ifndef M_PI
 #define M_PI 3.1415926536f

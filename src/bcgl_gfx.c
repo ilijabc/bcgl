@@ -21,7 +21,6 @@
 
 typedef struct
 {
-    BCColor BackgroundColor;
     BCMaterial DefaultMaterial;
     mat4_t ProjectionMatrix;
     mat4_t ModelViewMatrix;
@@ -171,7 +170,6 @@ void bcInitGfx()
     bcLog("GLSL: %s", glGetString(GL_SHADING_LANGUAGE_VERSION));
     // context
     g_Context = NEW_OBJECT(BCContext);
-    g_Context->BackgroundColor = SET_COLOR(0.3f, 0.3f, 0.3f, 1.0f);
     g_Context->DefaultMaterial.objectColor = SET_COLOR(1, 1, 1, 1);
     g_Context->DefaultMaterial.diffuseColor = SET_COLOR(1, 1, 1, 1);
     g_Context->DefaultMaterial.ambientColor = SET_COLOR(0.2f, 0.2f, 0.2f, 1);
@@ -189,12 +187,6 @@ void bcInitGfx()
     glShadeModel(GL_SMOOTH);
 #endif
     // glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
-    // default state
-    glClearColor(
-        g_Context->BackgroundColor.r,
-        g_Context->BackgroundColor.g,
-        g_Context->BackgroundColor.b,
-        g_Context->BackgroundColor.a);
     // gl default
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
@@ -612,8 +604,9 @@ void bcBindTexture(BCTexture *texture)
 // View State
 //
 
-void bcClear()
+void bcClear(BCColor color)
 {
+    glClearColor(color.r, color.g, color.b, color.a);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glViewport(0, 0, bcGetDisplayWidth(), bcGetDisplayHeight());
 }

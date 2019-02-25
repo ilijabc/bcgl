@@ -167,6 +167,7 @@ static const BCColor COLOR_WHITE = {1,1,1,1};
 static const BCColor COLOR_RED = {1,0,0,1};
 static const BCColor COLOR_GREEN = {0,1,0,1};
 static const BCColor COLOR_BLUE = {0,0,1,1};
+static const BCColor COLOR_GRAY = {0.3f, 0.3f, 0.3f, 1.0f};
 
 #ifdef __cplusplus
 extern "C" {
@@ -197,7 +198,7 @@ void bcDestroyTexture(BCTexture *texture);
 void bcBindTexture(BCTexture *texture);
 
 // View State
-void bcClear();
+void bcClear(BCColor color);
 void bcSetBlend(bool enabled);
 void bcSetDepthTest(bool enabled);
 void bcSetWireframe(bool enabled);
