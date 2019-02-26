@@ -331,10 +331,8 @@ void bcPullWindowEvents(BCWindow *window)
 
 int bcRunMain()
 {
-#ifdef __MINGW32__
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
-#endif
 
     glfwSetErrorCallback(glfw_ErrorCallback);
     if (glfwInit() != GL_TRUE)
