@@ -167,6 +167,9 @@ static const BCColor COLOR_WHITE = {1,1,1,1};
 static const BCColor COLOR_RED = {1,0,0,1};
 static const BCColor COLOR_GREEN = {0,1,0,1};
 static const BCColor COLOR_BLUE = {0,0,1,1};
+static const BCColor COLOR_YELLOW = {1,1,0,1};
+static const BCColor COLOR_CYAN = {0,1,1,1};
+static const BCColor COLOR_MAGENTA = {1,0,1,1};
 static const BCColor COLOR_GRAY = {0.3f, 0.3f, 0.3f, 1.0f};
 
 #ifdef __cplusplus
@@ -212,6 +215,8 @@ void bcSetProjectionMatrix(float *m);
 void bcSetModelViewMatrix(float *m);
 float * bcGetProjectionMatrix();
 float * bcGetModelViewMatrix();
+void bcSetScissor(int x, int y, int w, int h);
+void bcResetScissor();
 
 // Mesh
 BCMesh * bcCreateMesh(int format, const float *vert_data, int vert_num, const uint16_t *indx_data, int indx_num, bool is_static);

@@ -737,6 +737,20 @@ float * bcGetModelViewMatrix()
     return g_Context->ModelViewMatrix.v;
 }
 
+void bcSetScissor(int x, int y, int w, int h)
+{
+    // correct y to upper-left corner
+    y = bcGetDisplayHeight() - y - h;
+    // enable scissor
+    glEnable(GL_SCISSOR_TEST);
+    glScissor(x, y, w, h);
+}
+
+void bcResetScissor()
+{
+    glDisable(GL_SCISSOR_TEST);
+}
+
 //
 // Mesh
 //
@@ -999,9 +1013,9 @@ void bcDrawMeshRange(BCMesh *mesh, int start, int count)
     {
         bcBindMesh(mesh);
     }
-    uint16_t *elem_start = (mesh->vbo_indices ? (uint16_t *) 0 : mesh->indices) + start;
     if (mesh->num_indices)
     {
+        uint16_t *elem_start = (mesh->vbo_indices ? (uint16_t *) 0 : mesh->indices) + start;
         glDrawElements(mesh->draw_mode, count, GL_UNSIGNED_SHORT, elem_start);
     }
     else
