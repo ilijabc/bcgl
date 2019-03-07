@@ -18,6 +18,16 @@ typedef struct vec2 {
     };
 } vec2_t;
 
+typedef struct vec2i {
+    union {
+        struct {
+            int x;
+            int y;
+        };
+        int v[2];
+    };
+} vec2i_t;
+
 typedef struct vec3 {
     union {
         struct {
@@ -133,6 +143,9 @@ float vec2_length(vec2_t v0);
 float vec2_length_squared(vec2_t v0);
 float vec2_distance(vec2_t v0, vec2_t v1);
 float vec2_distance_squared(vec2_t v0, vec2_t v1);
+
+// vec2i
+vec2i_t vec2i(int x, int y);
 
 // vec3
 vec3_t vec3(float x, float y, float z);

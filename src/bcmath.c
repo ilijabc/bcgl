@@ -146,6 +146,16 @@ float vec2_distance_squared(vec2_t v0, vec2_t v1)
 }
 
 //
+// vec2i
+//
+
+vec2i_t vec2i(int x, int y)
+{
+    vec2i_t result = { x, y };
+    return result;
+}
+
+//
 // vec3
 //
 
