@@ -737,18 +737,18 @@ float * bcGetModelViewMatrix()
     return g_Context->ModelViewMatrix.v;
 }
 
-void bcSetScissor(int x, int y, int w, int h)
+void bcSetScissor(bool enabled)
 {
-    // correct y to upper-left corner
-    y = bcGetDisplayHeight() - y - h;
-    // enable scissor
-    glEnable(GL_SCISSOR_TEST);
-    glScissor(x, y, w, h);
+    if (enabled)
+        glEnable(GL_SCISSOR_TEST);
+    else
+        glDisable(GL_SCISSOR_TEST);
 }
 
-void bcResetScissor()
+void bcScissorRect(int x, int y, int w, int h)
 {
-    glDisable(GL_SCISSOR_TEST);
+    y = bcGetDisplayHeight() - y - h;
+    glScissor(x, y, w, h);
 }
 
 //

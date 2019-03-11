@@ -215,8 +215,8 @@ void bcSetProjectionMatrix(float *m);
 void bcSetModelViewMatrix(float *m);
 float * bcGetProjectionMatrix();
 float * bcGetModelViewMatrix();
-void bcSetScissor(int x, int y, int w, int h);
-void bcResetScissor();
+void bcSetScissor(bool enabled);
+void bcScissorRect(int x, int y, int w, int h);
 
 // Mesh
 BCMesh * bcCreateMesh(int format, const float *vert_data, int vert_num, const uint16_t *indx_data, int indx_num, bool is_static);
