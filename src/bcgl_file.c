@@ -6,7 +6,7 @@
 
 #define LINE_MAX 1024
 
-static const char * s_ModeStr[] = { "r", "w", "a" };
+static const char * s_ModeStr[] = { "rt", "wt", "at", "rb", "wb", "ab" };
 
 #ifdef __ANDROID__
 #include <android/asset_manager.h>
@@ -51,7 +51,7 @@ void bcTermFiles()
 BCFile * bcOpenFile(const char *filename, enum BCFileMode mode)
 {
     bool isAsset = (strstr(filename, ASSETS_DIR) == filename);
-    if (isAsset && mode != FILE_READ)
+    if (isAsset && mode != BC_FILE_READ_TEXT && mode != BC_FILE_READ_DATA)
     {
         bcLogError("Assets must be opened as read-only!");
         return NULL;
@@ -71,6 +71,7 @@ BCFile * bcOpenFile(const char *filename, enum BCFileMode mode)
         return file;
     }
 #endif
+    off_t length = __fsize(filename);
     FILE *fp = fopen(filename, s_ModeStr[mode]);
     if (fp == NULL)
         return NULL;
@@ -79,7 +80,7 @@ BCFile * bcOpenFile(const char *filename, enum BCFileMode mode)
     file->name = __strdup(filename);
     file->isDir = false;
     file->isAsset = isAsset;
-    file->length = __fsize(filename);
+    file->length = length;
     return file;
 }
 
@@ -258,7 +259,7 @@ char * bcLoadTextFile(const char *filename, int *out_size)
 {
     if (filename == NULL)
         return NULL;
-    BCFile * file = bcOpenFile(filename, FILE_READ);
+    BCFile * file = bcOpenFile(filename, BC_FILE_READ_TEXT);
     if (file == NULL)
     {
         bcLogWarning("Text file '%s' not found!", filename);
@@ -277,10 +278,16 @@ unsigned char * bcLoadDataFile(const char *filename, int *out_size)
 {
     if (filename == NULL)
         return NULL;
-    BCFile * file = bcOpenFile(filename, FILE_READ);
+    BCFile * file = bcOpenFile(filename, BC_FILE_READ_DATA);
     if (file == NULL)
     {
         bcLogWarning("Data file '%s' not found!", filename);
+        return NULL;
+    }
+    if (file->length == 0)
+    {
+        bcLogWarning("Data file '%s' empty!", filename);
+        bcCloseFile(file);
         return NULL;
     }
     unsigned char *out = (unsigned char *) malloc(sizeof(unsigned char) * file->length);

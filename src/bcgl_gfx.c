@@ -1486,7 +1486,7 @@ static bool getFontQuad(BCFont *font, char ch, float *px, float *py, stbtt_align
         return false;
     if (font->type == FONT_TYPE_TRUETYPE)
     {
-        stbtt_GetBakedQuad(font->cdata,
+        stbtt_GetBakedQuad((stbtt_bakedchar *) font->cdata,
                            BAKE_BITMAP_WIDTH, BAKE_BITMAP_HEIGHT,
                            ch - font->char_first, px, py, pq, 1); // 1=opengl & d3d10+, 0=d3d9
     }
@@ -1513,9 +1513,13 @@ static bool getFontQuad(BCFont *font, char ch, float *px, float *py, stbtt_align
 
 BCFont * bcCreateFontTTF(const char *filename, float height)
 {
-    unsigned char *ttf_buffer = bcLoadDataFile(filename, NULL);
+    int size = 0;
+    unsigned char *ttf_buffer = bcLoadDataFile(filename, &size);
     if (ttf_buffer == NULL)
+    {
+        bcLogError("Failed loading font '%s'!", filename);
         return NULL;
+    }
     BCFont *font = NEW_OBJECT(BCFont);
     font->type = FONT_TYPE_TRUETYPE;
     font->char_first = BAKE_CHAR_FIRST;
@@ -1607,17 +1611,14 @@ void bcGetTextSize(BCFont *font, const char *text, float *px, float *py)
         stbtt_aligned_quad q;
         if (getFontQuad(font, *text, &x, &y, &q))
         {
-            float qy = -q.y0 + q.y1;
-            if (my < qy)
-                my = qy;
+            float qy = q.y1 - q.y0;
+            if (my < qy) my = qy;
         }
         ++text;
     }
     y += my;
-    if (px)
-        *px = x;
-    if (py)
-        *py = y;
+    if (px) *px = x;
+    if (py) *py = y;
 }
 
 //

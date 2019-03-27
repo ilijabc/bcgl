@@ -4,9 +4,12 @@
 
 enum BCFileMode
 {
-    FILE_READ,
-    FILE_WRITE,
-    FILE_APPEND
+    BC_FILE_READ_TEXT = 0,
+    BC_FILE_WRITE_TEXT,
+    BC_FILE_APPEND_TEXT,
+    BC_FILE_READ_DATA,
+    BC_FILE_WRITE_DATA,
+    BC_FILE_APPEND_DATA,
 };
 
 typedef struct
