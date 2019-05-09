@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bcgl_common.h"
+#include "bcbase.h"
 
 // Texture params
 #define TEXTURE_PARAM_LINEAR    0x1

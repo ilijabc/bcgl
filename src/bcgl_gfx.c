@@ -1802,7 +1802,7 @@ void bcDumpMesh(BCMesh *mesh, FILE *stream)
 {
     if (mesh == NULL)
     {
-        bcLog("Invalid mesh!");
+        bcLogWarning("Invalid mesh!");
         return;
     }
     fprintf(stream, "o Dump\n");
@@ -1851,7 +1851,7 @@ void bcDumpMesh(BCMesh *mesh, FILE *stream)
     {
         if (mesh->num_indices % 3)
         {
-            bcLog("Invalid number of indicies!");
+            bcLogWarning("Invalid number of indicies!");
         }
         else
         {

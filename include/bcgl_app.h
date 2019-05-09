@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bcgl_common.h"
+#include "bcbase.h"
 
 // Event Types
 enum BCEventType

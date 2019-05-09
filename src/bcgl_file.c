@@ -38,6 +38,7 @@ void bcInitFiles(void *ctx)
 #ifdef __ANDROID__
     s_Manager = ctx;
 #endif
+    bcLog("BCGL: %d.%d.%d (%d)", __BC_MAJOR, __BC_MINOR, __BC_PATCH, __BC_VERSION);
 }
 
 void bcTermFiles()

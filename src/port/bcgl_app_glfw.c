@@ -340,7 +340,7 @@ int main(int argc, char **argv)
         bcLogError("Unable to initialize GLFW");
         return false;
     }
-    bcLog("GLFW - Version: %s", glfwGetVersionString());
+    bcLog("GLFW: %s", glfwGetVersionString());
 
     bcInitFiles(NULL);
 
