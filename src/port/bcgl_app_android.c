@@ -488,8 +488,6 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved)
         g_Method_onNativeGetNumber = (*g_Env)->GetStaticMethodID(g_Env, g_Class, "onNativeGetNumber", "(I)F");
     }
 
-    BC_main();
-
     bcAndroidSetCallbacks(BC_MsgCallback, BC_NumCallback);
 
     return JNI_VERSION_1_6;

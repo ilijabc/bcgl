@@ -16,8 +16,6 @@ typedef struct
 // bcgl_app module
 //
 
-BCCallbacks bcGetCallbacks();
-
 // App
 void bcAppWrapperConfigure(BCConfig *config);
 bool bcAppWrapperStart(BCConfig *config);
@@ -37,7 +35,9 @@ BCWindow * bcGetWindow();
 void bcSetWindow(BCWindow *window);
 
 // Events
-BCEvent * bcSendEvent(int type, int id, int x, int y);
+BCEvent * bcDequeueEvent();
+void bcQueueEvent(BCEvent *event);
+void bcSendEvent(int type, int id, int x, int y);
 int bcPullEvents();
 BCEvent * bcGetEvent(int index);
 void bcFlushEvents();

@@ -228,7 +228,7 @@ static void s_main_loop()
 EM_JS(int, js_window_innerWidth, (), { return window.innerWidth; });
 EM_JS(int, js_window_innerHeight, (), { return window.innerHeight; });
 
-int bcRunMain()
+int main(int argc, char **argv)
 {
     bcInitFiles(NULL);
 
@@ -281,10 +281,4 @@ int bcRunMain()
     bcTermFiles();
 
     return 0;
-}
-
-int main(int argc, char **argv)
-{
-    BC_main();
-    return bcRunMain();
 }

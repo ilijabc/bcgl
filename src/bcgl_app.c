@@ -2,7 +2,6 @@
 
 #include "bcgl_internal.h"
 
-static BCCallbacks s_Callbacks;
 static BCWindow *s_Window = NULL;
 static int s_ExitCode = 0;
 static float s_StartTime;
@@ -75,27 +74,14 @@ static void processEvent(BCEvent *event)
     }
 }
 
-void bcInit(BCCallbacks callbacks)
-{
-    s_Callbacks = callbacks;
-}
-
 void bcAppWrapperConfigure(BCConfig *config)
 {
-    BCCallbacks callbacks = bcGetCallbacks();
-
-    if (callbacks.onConfig)
-        callbacks.onConfig(config);
-    else
-        bcLogWarning("Missing onConfig callback!");
+    BC_onConfig(config);
 }
 
 bool bcAppWrapperStart(BCConfig *config)
 {
-    BCCallbacks callbacks = bcGetCallbacks();
-
-    if (callbacks.onCreate)
-        callbacks.onCreate();
+    BC_onCreate();
 
     BCWindow *window = bcCreateWindow(config);
     if (window == NULL)
@@ -105,8 +91,7 @@ bool bcAppWrapperStart(BCConfig *config)
     }
     bcSetWindow(window);
 
-    if (callbacks.onStart)
-        callbacks.onStart();
+    BC_onStart();
 
     s_StartTime = bcGetTime();
 
@@ -115,15 +100,11 @@ bool bcAppWrapperStart(BCConfig *config)
 
 int bcAppWrapperStop()
 {
-    BCCallbacks callbacks = bcGetCallbacks();
-
-    if (callbacks.onStop)
-        callbacks.onStop();
+    BC_onStop();
 
     bcDestroyWindow(s_Window);
 
-    if (callbacks.onDestroy)
-        callbacks.onDestroy();
+    BC_onDestroy();
 
     return s_ExitCode;
 }
@@ -135,8 +116,6 @@ bool bcAppWrapperIsRunning()
 
 void bcAppWrapperUpdate()
 {
-    BCCallbacks callbacks = bcGetCallbacks();
-
     float now = bcGetTime();
     float dt = now - s_StartTime;
     s_StartTime = now;
@@ -147,13 +126,11 @@ void bcAppWrapperUpdate()
     for (int i = 0; i < n; i++)
     {
         BCEvent *e = bcGetEvent(i);
-        if (callbacks.onEvent)
-            callbacks.onEvent(*e);
+        BC_onEvent(*e);
     }
 
     // update
-    if (callbacks.onUpdate)
-        callbacks.onUpdate(dt);
+    BC_onUpdate(dt);
 
     bcUpdateWindow(s_Window);
 }
@@ -190,12 +167,7 @@ float bcGetDisplayAspectRatio()
     return (float) bcGetWindow()->width / (float) bcGetWindow()->height;
 }
 
-BCCallbacks bcGetCallbacks()
-{
-    return s_Callbacks;
-}
-
-BCEvent * bcSendEvent(int type, int id, int x, int y)
+BCEvent * bcDequeueEvent()
 {
     pthread_mutex_lock(&s_Mutex);
     if (s_CurrentIndex == MAX_EVENTS)
@@ -204,14 +176,32 @@ BCEvent * bcSendEvent(int type, int id, int x, int y)
         bcLogWarning("Max app events reached!");
         return NULL;
     }
-    BCEvent *event = &(s_EventQueue[s_CurrentQueue][s_CurrentIndex]);
-    event->type = type;
-    event->id = id;
-    event->x = x;
-    event->y = y;
+    return &(s_EventQueue[s_CurrentQueue][s_CurrentIndex]);
+}
+
+void bcQueueEvent(BCEvent *event)
+{
+    if (event != &(s_EventQueue[s_CurrentQueue][s_CurrentIndex]))
+    {
+        pthread_mutex_unlock(&s_Mutex);
+        bcLogWarning("Wrong dequeued event!");
+        return;
+    }
     s_CurrentIndex++;
     pthread_mutex_unlock(&s_Mutex);
-    return event;
+}
+
+void bcSendEvent(int type, int id, int x, int y)
+{
+    BCEvent *event = bcDequeueEvent();
+    if (event)
+    {
+        event->type = type;
+        event->id = id;
+        event->x = x;
+        event->y = y;
+        bcQueueEvent(event);
+    }
 }
 
 int bcPullEvents()
@@ -269,12 +259,6 @@ void bcResetStates()
     s_MouseState.wheel = 0;
     s_MouseState.deltaX = 0;
     s_MouseState.deltaY = 0;
-}
-
-void bcSetMousePosition(int x, int y)
-{
-    s_MouseState.x = x;
-    s_MouseState.y = y;
 }
 
 bool bcIsKeyDown(int key)

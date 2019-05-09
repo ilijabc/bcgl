@@ -329,7 +329,7 @@ void bcPullWindowEvents(BCWindow *window)
     glfwPollEvents();
 }
 
-int bcRunMain()
+int main(int argc, char **argv)
 {
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
@@ -366,10 +366,4 @@ int bcRunMain()
     glfwTerminate();
 
     return result;
-}
-
-int main(int argc, char **argv)
-{
-    BC_main();
-    return bcRunMain();
 }

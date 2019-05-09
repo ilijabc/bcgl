@@ -17,7 +17,7 @@ static struct
 // BCGL interface
 //
 
-static void BC_onConfig(BCConfig *config)
+extern "C" void BC_onConfig(BCConfig *config)
 {
     float aspect = (float) config->width / (float) config->height;
 #ifndef __ANDROID__
@@ -29,23 +29,23 @@ static void BC_onConfig(BCConfig *config)
     config->title = "{{bcapp:title}}";
 }
 
-static void BC_onCreate()
+extern "C" void BC_onCreate()
 {
 }
 
-static void BC_onDestroy()
+extern "C" void BC_onDestroy()
 {
 }
 
-static void BC_onStart()
+extern "C" void BC_onStart()
 {
 }
 
-static void BC_onStop()
+extern "C" void BC_onStop()
 {
 }
 
-static void BC_onUpdate(float dt)
+extern "C" void BC_onUpdate(float dt)
 {
     // camera control
     if (bcIsMouseDown(0))
@@ -60,7 +60,7 @@ static void BC_onUpdate(float dt)
     }
 
     // scene 3D
-    bcClear();
+    bcClear(COLOR_GRAY);
     bcPrepareScene3D(60);
     bcSetObjectColorf(1, 1, 1, 1);
 
@@ -82,7 +82,7 @@ static void BC_onUpdate(float dt)
     bcDrawCube(0, 0, 0.5f, 1, 1, 1);
 }
 
-static void BC_onEvent(BCEvent event)
+extern "C" void BC_onEvent(BCEvent event)
 {
     static bool wire = false;
     if (event.type == BC_EVENT_KEYRELEASE)
@@ -101,18 +101,4 @@ static void BC_onEvent(BCEvent event)
             break;
         }
     }
-}
-
-extern "C" void BC_main()
-{
-    BCCallbacks callbacks = {
-        BC_onConfig,
-        BC_onCreate,
-        BC_onDestroy,
-        BC_onStart,
-        BC_onStop,
-        BC_onUpdate,
-        BC_onEvent,
-    };
-    bcInit(callbacks);
 }

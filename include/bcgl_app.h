@@ -176,17 +176,6 @@ typedef struct
     void *surface;
 } BCConfig;
 
-typedef struct
-{
-    void (*onConfig)(BCConfig *config);
-    void (*onCreate)();
-    void (*onDestroy)();
-    void (*onStart)();
-    void (*onStop)();
-    void (*onUpdate)(float dt);
-    void (*onEvent)(BCEvent event);
-} BCCallbacks;
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -194,11 +183,16 @@ extern "C" {
 //
 // !!! OVERRIDE THIS IN APP !!!
 //
-void BC_main();
+void BC_onConfig(BCConfig *config);
+void BC_onCreate();
+void BC_onDestroy();
+void BC_onStart();
+void BC_onStop();
+void BC_onUpdate(float dt);
+void BC_onEvent(BCEvent event);
+
 
 // App
-void bcInit(BCCallbacks callbacks);
-int bcRunMain();
 void bcQuit(int code);
 float bcGetTime();
 void bcShowKeyboard(bool show);
@@ -209,7 +203,6 @@ float bcGetDisplayDensity();
 
 // Input
 void bcResetStates();
-void bcSetMousePosition(int x, int y);
 bool bcIsKeyDown(int key);
 int bcGetMouseX();
 int bcGetMouseY();
