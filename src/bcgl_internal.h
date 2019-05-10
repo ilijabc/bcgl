@@ -41,3 +41,18 @@ void bcSendEvent(int type, int id, int x, int y);
 int bcPullEvents();
 BCEvent * bcGetEvent(int index);
 void bcFlushEvents();
+void bcInputStateReset();
+
+//
+// bcgl_file module
+//
+
+void bcInitFiles(void *ctx);
+void bcTermFiles();
+
+//
+// bcgl_gfx module
+//
+
+void bcInitGfx();
+void bcTermGfx();

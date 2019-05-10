@@ -11,8 +11,8 @@
 #endif
 
 // Version
-#define __BC_MAJOR                  1
-#define __BC_MINOR                  0
+#define __BC_MAJOR                  0
+#define __BC_MINOR                  1
 #define __BC_PATCH                  0
 #define __BC_VERSION                (__BC_MAJOR * 10000 + __BC_MINOR * 100 + __BC_PATCH)
 

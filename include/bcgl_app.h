@@ -191,7 +191,6 @@ void BC_onStop();
 void BC_onUpdate(float dt);
 void BC_onEvent(BCEvent event);
 
-
 // App
 void bcQuit(int code);
 float bcGetTime();
@@ -201,8 +200,7 @@ int bcGetDisplayHeight();
 float bcGetDisplayAspectRatio();
 float bcGetDisplayDensity();
 
-// Input
-void bcResetStates();
+// Input state
 bool bcIsKeyDown(int key);
 int bcGetMouseX();
 int bcGetMouseY();

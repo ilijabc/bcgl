@@ -176,9 +176,6 @@ static const BCColor COLOR_GRAY = {0.3f, 0.3f, 0.3f, 1.0f};
 extern "C" {
 #endif
 
-void bcInitGfx();
-void bcTermGfx();
-
 // Shader
 BCShader * bcCreateShader(const char *vs_code, const char *fs_code, BCShaderVar *attributes, BCShaderVar *uniforms, BCShaderVar *vars);
 BCShader * bcCreateShaderFromSingleFile(const char *filename);

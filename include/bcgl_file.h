@@ -26,13 +26,6 @@ typedef struct
 extern "C" {
 #endif
 
-//
-// bcgl_file module
-//
-
-void bcInitFiles(void *ctx);
-void bcTermFiles();
-
 // File
 BCFile * bcOpenFile(const char *filename, enum BCFileMode mode);
 void bcCloseFile(BCFile *file);

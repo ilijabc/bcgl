@@ -154,5 +154,5 @@ void bcUpdateWindow(BCWindow *window)
     {
         bcLogError("eglSwapBuffers() returned error %d", eglGetError());
     }
-    bcResetStates();
+    bcInputStateReset();
 }

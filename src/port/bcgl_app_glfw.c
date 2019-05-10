@@ -129,6 +129,11 @@ static struct
     { -1, BC_KEY_COUNT }
 };
 
+static struct
+{
+    int x, y;
+} s_LastCursorPos = { 0, 0 };
+
 //
 // Private Functions
 //
@@ -164,12 +169,14 @@ static void glfw_KeyCallback(GLFWwindow *nativeWindow, int keyCode, int scanCode
 
 static void glfw_CursorPosCallback(GLFWwindow *nativeWindow, double x, double y)
 {
+    s_LastCursorPos.x = x;
+    s_LastCursorPos.y = y;
     bcSendEvent(BC_EVENT_MOUSEMOVE, 0, x, y);
 }
 
 static void glfw_MouseButtonCallback(GLFWwindow *nativeWindow, int button, int action, int mods)
 {
-    bcSendEvent((action == GLFW_PRESS) ? BC_EVENT_MOUSEPRESS : BC_EVENT_MOUSERELEASE, button, bcGetMouseX(), bcGetMouseY());
+    bcSendEvent((action == GLFW_PRESS) ? BC_EVENT_MOUSEPRESS : BC_EVENT_MOUSERELEASE, button, s_LastCursorPos.x, s_LastCursorPos.y);
 }
 
 static void glfw_ScrollCallback(GLFWwindow *nativeWindow, double dx, double dy)
@@ -310,7 +317,7 @@ void bcDestroyWindow(BCWindow *window)
 
 void bcUpdateWindow(BCWindow *window)
 {
-    bcResetStates();
+    bcInputStateReset();
     glfwSwapBuffers(window->nativeWindow);
 }
 

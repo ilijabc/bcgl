@@ -14,65 +14,7 @@ static int s_CurrentQueue = 0;
 static int s_PulledQueue = 1;
 static pthread_mutex_t s_Mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static struct
-{
-    int x;
-    int y;
-    bool button[8];
-    float wheel;
-    float deltaX;
-    float deltaY;
-} s_MouseState = { 0 };
-
-static bool s_KeyState[BC_KEY_COUNT] = { false };
-
-static struct
-{
-    bool down;
-    float x;
-    float y;
-} s_TouchState[10] = { 0 };
-
-static void processEvent(BCEvent *event)
-{
-    switch (event->type)
-    {
-    case BC_EVENT_MOUSEMOVE:
-        s_MouseState.deltaX = event->x - s_MouseState.x;
-        s_MouseState.deltaY = event->y - s_MouseState.y;
-        s_MouseState.x = event->x;
-        s_MouseState.y = event->y;
-        break;
-    case BC_EVENT_MOUSEPRESS:
-    case BC_EVENT_MOUSERELEASE:
-        s_MouseState.button[event->id] = (event->type == BC_EVENT_MOUSEPRESS);
-        break;
-    case BC_EVENT_MOUSEWHEEL:
-        s_MouseState.wheel = event->y;
-        break;
-    case BC_EVENT_KEYPRESS:
-    case BC_EVENT_KEYRELEASE:
-        s_KeyState[event->id] = (event->type == BC_EVENT_KEYPRESS);
-        break;
-    case BC_EVENT_WINDOWSIZE:
-        {
-            BCWindow *win = bcGetWindow();
-            win->width = event->x;
-            win->height = event->y;
-        }
-        break;
-    case BC_EVENT_TOUCH_DOWN:
-        s_TouchState[event->id].down = true;
-        break;
-    case BC_EVENT_TOUCH_UP:
-        s_TouchState[event->id].down = false;
-        break;
-    case BC_EVENT_TOUCH_MOVE:
-        s_TouchState[event->id].x = event->x;
-        s_TouchState[event->id].y = event->y;
-        break;
-    }
-}
+static void processEvent(BCEvent *event);
 
 void bcAppWrapperConfigure(BCConfig *config)
 {
@@ -254,59 +196,121 @@ void bcSetWindow(BCWindow *window)
 // Input state
 //
 
-void bcResetStates()
+static struct
 {
-    s_MouseState.wheel = 0;
-    s_MouseState.deltaX = 0;
-    s_MouseState.deltaY = 0;
+    struct {
+        int x;
+        int y;
+        bool button[8];
+        float wheel;
+        float deltaX;
+        float deltaY;
+    } mouse;
+    struct {
+        bool down[BC_KEY_COUNT];
+    } keyboard;
+    struct
+    {
+        bool down;
+        float x;
+        float y;
+    } touch[10];
+} s_InputState = { 0 };
+
+void bcInputStateReset()
+{
+    s_InputState.mouse.wheel = 0;
+    s_InputState.mouse.deltaX = 0;
+    s_InputState.mouse.deltaY = 0;
 }
 
 bool bcIsKeyDown(int key)
 {
-    return s_KeyState[key];
+    return s_InputState.keyboard.down[key];
 }
 
 int bcGetMouseX()
 {
-    return s_MouseState.x;
+    return s_InputState.mouse.x;
 }
 
 int bcGetMouseY()
 {
-    return s_MouseState.y;
+    return s_InputState.mouse.y;
 }
 
 bool bcIsMouseDown(int button)
 {
-    return s_MouseState.button[button];
+    return s_InputState.mouse.button[button];
 }
 
 float bcGetMouseWheel()
 {
-    return s_MouseState.wheel;
+    return s_InputState.mouse.wheel;
 }
 
 float bcGetMouseDeltaX()
 {
-    return s_MouseState.deltaX;
+    return s_InputState.mouse.deltaX;
 }
 
 float bcGetMouseDeltaY()
 {
-    return s_MouseState.deltaY;
+    return s_InputState.mouse.deltaY;
 }
 
 bool bcIsTouchDown(int index)
 {
-    return s_TouchState[index].down;
+    return s_InputState.touch[index].down;
 }
 
 float bcGetTouchX(int index)
 {
-    return s_TouchState[index].x;
+    return s_InputState.touch[index].x;
 }
 
 float bcGetTouchY(int index)
 {
-    return s_TouchState[index].y;
+    return s_InputState.touch[index].y;
+}
+
+void processEvent(BCEvent *event)
+{
+    switch (event->type)
+    {
+    case BC_EVENT_MOUSEMOVE:
+        s_InputState.mouse.deltaX = event->x - s_InputState.mouse.x;
+        s_InputState.mouse.deltaY = event->y - s_InputState.mouse.y;
+        s_InputState.mouse.x = event->x;
+        s_InputState.mouse.y = event->y;
+        break;
+    case BC_EVENT_MOUSEPRESS:
+    case BC_EVENT_MOUSERELEASE:
+        s_InputState.mouse.button[event->id] = (event->type == BC_EVENT_MOUSEPRESS);
+        break;
+    case BC_EVENT_MOUSEWHEEL:
+        s_InputState.mouse.wheel = event->y;
+        break;
+    case BC_EVENT_KEYPRESS:
+    case BC_EVENT_KEYRELEASE:
+        s_InputState.keyboard.down[event->id] = (event->type == BC_EVENT_KEYPRESS);
+        break;
+    case BC_EVENT_WINDOWSIZE:
+        {
+            BCWindow *win = bcGetWindow();
+            win->width = event->x;
+            win->height = event->y;
+        }
+        break;
+    case BC_EVENT_TOUCH_DOWN:
+        s_InputState.touch[event->id].down = true;
+        break;
+    case BC_EVENT_TOUCH_UP:
+        s_InputState.touch[event->id].down = false;
+        break;
+    case BC_EVENT_TOUCH_MOVE:
+        s_InputState.touch[event->id].x = event->x;
+        s_InputState.touch[event->id].y = event->y;
+        break;
+    }
 }
