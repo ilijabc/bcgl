@@ -31,11 +31,11 @@ typedef struct
 #endif
     // draw
     BCMesh *TempMesh;
-    vec4_t TempVertexData[VERTEX_ATTR_MAX];
+    vec4_t TempVertexData[BC_VERTEX_ATTR_MAX];
     int VertexCounter;
     int IndexCounter;
-    enum BCDrawMode DrawMode;
-    mat4_t MatrixStack[MATRIX_STACK_SIZE];
+    BCDrawMode DrawMode;
+    mat4_t MatrixStack[BC_MATRIX_STACK_SIZE];
     int MatrixCounter;
     BCMesh *ReusableSolidMesh;
     BCMesh *ReusableCubeMesh;
@@ -145,15 +145,15 @@ static const char s_DefaultShaderFragmentCode[] =
 // This must be alligned with @BCVertexAttributes
 static struct
 {
-    enum BCVertexAttributes index;
+    BCVertexAttributes index;
     int type;
 } const s_ClientStateType[] =
 {
-    { VERTEX_ATTR_POSITIONS, GL_VERTEX_ARRAY },
-    { VERTEX_ATTR_NORMALS, GL_NORMAL_ARRAY },
-    { VERTEX_ATTR_TEXCOORDS, GL_TEXTURE_COORD_ARRAY },
-    { VERTEX_ATTR_COLORS, GL_COLOR_ARRAY },
-    { VERTEX_ATTR_MAX, -1 }
+    { BC_VERTEX_ATTR_POSITIONS, GL_VERTEX_ARRAY },
+    { BC_VERTEX_ATTR_NORMALS, GL_NORMAL_ARRAY },
+    { BC_VERTEX_ATTR_TEXCOORDS, GL_TEXTURE_COORD_ARRAY },
+    { BC_VERTEX_ATTR_COLORS, GL_COLOR_ARRAY },
+    { BC_VERTEX_ATTR_MAX, -1 }
 };
 
 #endif // SUPPORT_GLSL
@@ -277,7 +277,7 @@ BCShader * bcCreateShader(const char *vs_code, const char *fs_code, BCShaderVar 
     // bind attributes
     if (attributes)
     {
-        for (int i = 0; i < VERTEX_ATTR_MAX; i++)
+        for (int i = 0; i < BC_VERTEX_ATTR_MAX; i++)
         {
             glBindAttribLocation(shader->programId, i, attributes[i].name);
         }
@@ -292,7 +292,7 @@ BCShader * bcCreateShader(const char *vs_code, const char *fs_code, BCShaderVar 
     // get uniforms
     if (uniforms)
     {
-        for (int i = 0; i < SHADER_UNIFORM_MAX; i++)
+        for (int i = 0; i < BC_SHADER_UNIFORM_MAX; i++)
         {
             shader->loc_uniforms[i] = glGetUniformLocation(shader->programId, uniforms[i].name);
             if (shader->loc_uniforms[i] == -1)
@@ -487,7 +487,7 @@ void bcDestroyImage(BCImage *image)
 // Texture
 //
 
-BCTexture * bcCreateTextureFromFile(const char *filename, int flags)
+BCTexture * bcCreateTextureFromFile(const char *filename, BCTextureFlags flags)
 {
     BCImage *image = bcCreateImageFromFile(filename);
     if (image == NULL)
@@ -497,7 +497,7 @@ BCTexture * bcCreateTextureFromFile(const char *filename, int flags)
     return texture;
 }
 
-BCTexture * bcCreateTextureFromImage(BCImage *image, int flags)
+BCTexture * bcCreateTextureFromImage(BCImage *image, BCTextureFlags flags)
 {
     BCTexture *texture = NEW_OBJECT(BCTexture);
     texture->width = image->width;
@@ -522,17 +522,17 @@ BCTexture * bcCreateTextureFromImage(BCImage *image, int flags)
     glGenTextures(1, &(texture->id));
     glBindTexture(GL_TEXTURE_2D, (texture->id));
     // filter flags
-    if (flags & TEXTURE_PARAM_LINEAR)
+    if (flags & BC_TEXTURE_LINEAR)
     {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     }
-    else if (flags & TEXTURE_PARAM_NEAREST)
+    else if (flags & BC_TEXTURE_NEAREST)
     {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
-    else if (flags & TEXTURE_PARAM_MIPMAP)
+    else if (flags & BC_TEXTURE_MIPMAP)
     {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_NEAREST);
@@ -545,12 +545,12 @@ BCTexture * bcCreateTextureFromImage(BCImage *image, int flags)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     }
     // wrap flags
-    if (flags & TEXTURE_PARAM_REPEAT)
+    if (flags & BC_TEXTURE_REPEAT)
     {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     }
-    else if (flags & TEXTURE_PARAM_CLAMP)
+    else if (flags & BC_TEXTURE_CLAMP)
     {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -586,11 +586,11 @@ void bcBindTexture(BCTexture *texture)
         glBindTexture(GL_TEXTURE_2D, texture->id);
     }
 #ifdef SUPPORT_GLSL
-    glUniform1i(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_USETEXTURE], texture ? 1 : 0);
+    glUniform1i(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_USETEXTURE], texture ? 1 : 0);
     if (texture)
     {
-        glUniform1i(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_TEXTURE], 0);
-        glUniform1i(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_ALPHAONLYTEXTURE], texture->format == GL_ALPHA ? 1 : 0);
+        glUniform1i(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_TEXTURE], 0);
+        glUniform1i(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_ALPHAONLYTEXTURE], texture->format == GL_ALPHA ? 1 : 0);
     }
 #else
     if (texture)
@@ -640,10 +640,10 @@ void bcSetWireframe(bool enabled)
 void bcSetLighting(bool enabled)
 {
 #ifdef SUPPORT_GLSL
-    glUniform1i(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_LIGHT_ENABLED], enabled);
+    glUniform1i(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_LIGHT_ENABLED], enabled);
     if (enabled)
     {
-        glUniform4f(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_LIGHT_COLOR], 1, 1, 1, 1);
+        glUniform4f(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_LIGHT_COLOR], 1, 1, 1, 1);
     }
 #else
     if (enabled)
@@ -661,7 +661,7 @@ void bcSetLighting(bool enabled)
 void bcLightPosition(float x, float y, float z)
 {
 #ifdef SUPPORT_GLSL
-    glUniform3f(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_LIGHT_POSITION], x, y, z);
+    glUniform3f(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_LIGHT_POSITION], x, y, z);
 #else
     float lightPos[] = { x, y, z, 1 };
     glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
@@ -671,9 +671,9 @@ void bcLightPosition(float x, float y, float z)
 void bcSetMaterial(BCMaterial material)
 {
 #ifdef SUPPORT_GLSL
-    glUniform4fv(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_OBJECT_COLOR], 1, (float *) &(material.objectColor));
-    glUniform4fv(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_DIFFUSE_COLOR], 1, (float *) &(material.diffuseColor));
-    glUniform4fv(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_AMBIENT_COLOR], 1, (float *) &(material.ambientColor));
+    glUniform4fv(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_OBJECT_COLOR], 1, (float *) &(material.objectColor));
+    glUniform4fv(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_DIFFUSE_COLOR], 1, (float *) &(material.diffuseColor));
+    glUniform4fv(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_AMBIENT_COLOR], 1, (float *) &(material.ambientColor));
 #else
    glColor4fv((float *) &(material.objectColor));
    glMaterialfv(GL_FRONT, GL_DIFFUSE, (float *) &(material.diffuseColor));
@@ -690,7 +690,7 @@ void bcResetMaterial()
 void bcSetObjectColor(BCColor color)
 {
 #ifdef SUPPORT_GLSL
-    glUniform4fv(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_OBJECT_COLOR], 1, (float *) &(color));
+    glUniform4fv(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_OBJECT_COLOR], 1, (float *) &(color));
 #else
     glColor4fv((float *) &(color));
 #endif
@@ -699,7 +699,7 @@ void bcSetObjectColor(BCColor color)
 void bcSetObjectColorf(float r, float g, float b, float a)
 {
 #ifdef SUPPORT_GLSL
-    glUniform4f(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_OBJECT_COLOR], r, g, b, a);
+    glUniform4f(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_OBJECT_COLOR], r, g, b, a);
 #else
     glColor4f(r, g, b, a);
 #endif
@@ -709,7 +709,7 @@ void bcSetProjectionMatrix(float *m)
 {
     g_Context->ProjectionMatrix = mat4_from_array(m);
 #ifdef SUPPORT_GLSL
-    glUniformMatrix4fv(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_PROJECTION], 1, GL_FALSE, m);
+    glUniformMatrix4fv(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_PROJECTION], 1, GL_FALSE, m);
 #else
     glMatrixMode(GL_PROJECTION);
     glLoadMatrixf(m);
@@ -721,7 +721,7 @@ void bcSetModelViewMatrix(float *m)
 {
     g_Context->ModelViewMatrix = mat4_from_array(m);
 #ifdef SUPPORT_GLSL
-    glUniformMatrix4fv(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_MODELVIEW], 1, GL_FALSE, m);
+    glUniformMatrix4fv(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_MODELVIEW], 1, GL_FALSE, m);
 #else
     glLoadMatrixf(m);
 #endif
@@ -763,23 +763,23 @@ BCMesh * bcCreateMesh(int format, const float *vert_data, int vert_num, const ui
     mesh->format = format;
     mesh->is_static = is_static;
     // vertices
-    mesh->comps[VERTEX_ATTR_POSITIONS] =
-        (format & MESH_FLAGS_POS2) ? 2 :
-        (format & MESH_FLAGS_POS3) ? 3 :
-        (format & MESH_FLAGS_POS4) ? 4 :
+    mesh->comps[BC_VERTEX_ATTR_POSITIONS] =
+        (format & BC_MESH_POS2) ? 2 :
+        (format & BC_MESH_POS3) ? 3 :
+        (format & BC_MESH_POS4) ? 4 :
         0;
-    mesh->comps[VERTEX_ATTR_TEXCOORDS] =
-        (format & MESH_FLAGS_TEX2) ? 2 :
-        (format & MESH_FLAGS_TEX3) ? 3 :
+    mesh->comps[BC_VERTEX_ATTR_TEXCOORDS] =
+        (format & BC_MESH_TEX2) ? 2 :
+        (format & BC_MESH_TEX3) ? 3 :
         0;
-    mesh->comps[VERTEX_ATTR_NORMALS] =
-        (format & MESH_FLAGS_NORM) ? 3 :
+    mesh->comps[BC_VERTEX_ATTR_NORMALS] =
+        (format & BC_MESH_NORM) ? 3 :
         0;
-    mesh->comps[VERTEX_ATTR_COLORS] =
-        (format & MESH_FLAGS_COL3) ? 3 :
-        (format & MESH_FLAGS_COL4) ? 4 :
+    mesh->comps[BC_VERTEX_ATTR_COLORS] =
+        (format & BC_MESH_COL3) ? 3 :
+        (format & BC_MESH_COL4) ? 4 :
         0;
-    for (int i = 0; i < VERTEX_ATTR_MAX; i++)
+    for (int i = 0; i < BC_VERTEX_ATTR_MAX; i++)
     {
         mesh->total_comps += mesh->comps[i];
     }
@@ -930,7 +930,7 @@ void bcBindMesh(BCMesh *mesh)
     {
         // unbind mesh
 #ifdef SUPPORT_GLSL
-        for (int i = 0; i < VERTEX_ATTR_MAX; i++)
+        for (int i = 0; i < BC_VERTEX_ATTR_MAX; i++)
         {
             glDisableVertexAttribArray(i);
         }
@@ -950,7 +950,7 @@ void bcBindMesh(BCMesh *mesh)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->vbo_indices);
         float *vert_ptr = (mesh->vbo_vertices ? (float *) 0 : mesh->vertices);
 #ifdef SUPPORT_GLSL
-        for (int i = 0; i < VERTEX_ATTR_MAX; i++)
+        for (int i = 0; i < BC_VERTEX_ATTR_MAX; i++)
         {
             if (mesh->comps[i] > 0)
             {
@@ -963,25 +963,25 @@ void bcBindMesh(BCMesh *mesh)
                 glDisableVertexAttribArray(i);
             }
         }
-        glUniform1i(g_Context->CurrentShader->loc_uniforms[SHADER_UNIFORM_VERTEX_COLOR_ENABLED], mesh->comps[VERTEX_ATTR_COLORS]);
+        glUniform1i(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_VERTEX_COLOR_ENABLED], mesh->comps[BC_VERTEX_ATTR_COLORS]);
 #else
-        for (int i = 0; i < VERTEX_ATTR_MAX; i++)
+        for (int i = 0; i < BC_VERTEX_ATTR_MAX; i++)
         {
             if (mesh->comps[i] > 0)
             {
                 glEnableClientState(s_ClientStateType[i].type);
                 switch (i)
                 {
-                case VERTEX_ATTR_POSITIONS:
+                case BC_VERTEX_ATTR_POSITIONS:
                     glVertexPointer(mesh->comps[i], GL_FLOAT, mesh->total_comps * sizeof(float), vert_ptr);
                     break;
-                case VERTEX_ATTR_NORMALS:
+                case BC_VERTEX_ATTR_NORMALS:
                     glNormalPointer(GL_FLOAT, mesh->total_comps * sizeof(float), vert_ptr);
                     break;
-                case VERTEX_ATTR_TEXCOORDS:
+                case BC_VERTEX_ATTR_TEXCOORDS:
                     glTexCoordPointer(mesh->comps[i], GL_FLOAT, mesh->total_comps * sizeof(float), vert_ptr);
                     break;
-                case VERTEX_ATTR_COLORS:
+                case BC_VERTEX_ATTR_COLORS:
                     glColorPointer(mesh->comps[i], GL_FLOAT, mesh->total_comps * sizeof(float), vert_ptr);
                     break;
                 }
@@ -1082,7 +1082,7 @@ BCMeshPart bcAttachMesh(BCMesh *mesh, BCMesh *src, bool destroy_src)
 
 static struct
 {
-    enum BCDrawMode mode;
+    BCDrawMode mode;
     int type;
 } const s_DrawModeMap[] =
 {
@@ -1095,11 +1095,11 @@ static struct
     { BC_QUADS, GL_TRIANGLES },
 };
 
-bool bcBegin(enum BCDrawMode mode)
+bool bcBegin(BCDrawMode mode)
 {
     if (g_Context->ReusableSolidMesh == NULL)
     {
-        g_Context->ReusableSolidMesh = bcCreateMesh(MESH_FLAGS_POS3 | MESH_FLAGS_NORM | MESH_FLAGS_TEX2 | MESH_FLAGS_COL4, NULL, 1024, NULL, 1024, false);
+        g_Context->ReusableSolidMesh = bcCreateMesh(BC_MESH_POS3 | BC_MESH_NORM | BC_MESH_TEX2 | BC_MESH_COL4, NULL, 1024, NULL, 1024, false);
     }
     return bcBeginMesh(g_Context->ReusableSolidMesh, mode);
 }
@@ -1111,7 +1111,7 @@ void bcEnd()
     bcDrawMesh(g_Context->ReusableSolidMesh);
 }
 
-bool bcBeginMesh(BCMesh *mesh, enum BCDrawMode mode)
+bool bcBeginMesh(BCMesh *mesh, BCDrawMode mode)
 {
     if (g_Context->TempMesh != NULL)
     {
@@ -1126,10 +1126,10 @@ bool bcBeginMesh(BCMesh *mesh, enum BCDrawMode mode)
     g_Context->TempMesh = mesh;
     g_Context->TempMesh->draw_count = 0;
     g_Context->TempMesh->draw_mode = s_DrawModeMap[mode].type;
-    g_Context->TempVertexData[VERTEX_ATTR_POSITIONS] = vec4(0, 0, 0, 0);
-    g_Context->TempVertexData[VERTEX_ATTR_NORMALS] = vec4(0, 0, 1, 0);
-    g_Context->TempVertexData[VERTEX_ATTR_TEXCOORDS] = vec4(0, 0, 0, 0);
-    g_Context->TempVertexData[VERTEX_ATTR_COLORS] = vec4(1, 1, 1, 1);
+    g_Context->TempVertexData[BC_VERTEX_ATTR_POSITIONS] = vec4(0, 0, 0, 0);
+    g_Context->TempVertexData[BC_VERTEX_ATTR_NORMALS] = vec4(0, 0, 1, 0);
+    g_Context->TempVertexData[BC_VERTEX_ATTR_TEXCOORDS] = vec4(0, 0, 0, 0);
+    g_Context->TempVertexData[BC_VERTEX_ATTR_COLORS] = vec4(1, 1, 1, 1);
     g_Context->VertexCounter = 0;
     g_Context->IndexCounter = 0;
     g_Context->DrawMode = mode;
@@ -1176,9 +1176,9 @@ int bcVertex3f(float x, float y, float z)
         bcLogWarning("Mesh limit reached!");
         return -1;
     }
-    g_Context->TempVertexData[VERTEX_ATTR_POSITIONS] = vec4(x, y, z, 0);
+    g_Context->TempVertexData[BC_VERTEX_ATTR_POSITIONS] = vec4(x, y, z, 0);
     float *vert_ptr = &(g_Context->TempMesh->vertices[g_Context->VertexCounter * g_Context->TempMesh->total_comps]);
-    for (int i = 0; i < VERTEX_ATTR_MAX; i++)
+    for (int i = 0; i < BC_VERTEX_ATTR_MAX; i++)
     {
         if (g_Context->TempMesh->comps[i] > 0)
         {
@@ -1211,17 +1211,17 @@ void bcIndexi(int i)
 
 void bcTexCoord2f(float u, float v)
 {
-    g_Context->TempVertexData[VERTEX_ATTR_TEXCOORDS] = vec4(u, v, 0, 0);
+    g_Context->TempVertexData[BC_VERTEX_ATTR_TEXCOORDS] = vec4(u, v, 0, 0);
 }
 
 void bcNormal3f(float x, float y, float z)
 {
-    g_Context->TempVertexData[VERTEX_ATTR_NORMALS] = vec4(x, y, z, 0);
+    g_Context->TempVertexData[BC_VERTEX_ATTR_NORMALS] = vec4(x, y, z, 0);
 }
 
 void bcColor4f(float r, float g, float b, float a)
 {
-    g_Context->TempVertexData[VERTEX_ATTR_COLORS] = vec4(r, g, b, a);
+    g_Context->TempVertexData[BC_VERTEX_ATTR_COLORS] = vec4(r, g, b, a);
 }
 
 void bcColor3f(float r, float g, float b)
@@ -1250,7 +1250,7 @@ static mat4_t getCurrentMatrix()
 
 void bcPushMatrix()
 {
-    if (g_Context->MatrixCounter == MATRIX_STACK_SIZE - 1)
+    if (g_Context->MatrixCounter == BC_MATRIX_STACK_SIZE - 1)
     {
         bcLogWarning("Max matrix stack reached!");
         return;
@@ -1484,16 +1484,16 @@ static bool getFontQuad(BCFont *font, char ch, float *px, float *py, stbtt_align
 {
     if (ch < font->char_first || ch >= font->char_first + font->char_count)
         return false;
-    if (font->type == FONT_TYPE_TRUETYPE)
+    if (font->type == BC_FONT_TRUETYPE)
     {
         stbtt_GetBakedQuad((stbtt_bakedchar *) font->cdata,
                            BAKE_BITMAP_WIDTH, BAKE_BITMAP_HEIGHT,
                            ch - font->char_first, px, py, pq, 1); // 1=opengl & d3d10+, 0=d3d9
     }
-    else if (font->type == FONT_TYPE_ANGELCODE)
+    else if (font->type == BC_FONT_ANGELCODE)
     {
     }
-    else if (font->type == FONT_TYPE_BITMAP)
+    else if (font->type == BC_FONT_BITMAP)
     {
         struct font_data_bm *bm = (struct font_data_bm *) font->cdata;
         pq->x0 = *px;
@@ -1521,7 +1521,7 @@ BCFont * bcCreateFontTTF(const char *filename, float height)
         return NULL;
     }
     BCFont *font = NEW_OBJECT(BCFont);
-    font->type = FONT_TYPE_TRUETYPE;
+    font->type = BC_FONT_TRUETYPE;
     font->char_first = BAKE_CHAR_FIRST;
     font->char_count = BAKE_CHAR_COUNT;
     font->cdata = NEW_ARRAY(BAKE_CHAR_COUNT, stbtt_bakedchar);
@@ -1551,7 +1551,7 @@ BCFont * bcCreateFontBMP(const char *filename, int char_first, int char_count, i
     bm->char_width = image->width / cols;
     bm->char_height = image->height / bm->rows;
     BCFont *font = NEW_OBJECT(BCFont);
-    font->type = FONT_TYPE_BITMAP;
+    font->type = BC_FONT_BITMAP;
     font->char_first = char_first;
     font->char_count = char_count;
     font->cdata = bm;
@@ -1628,16 +1628,16 @@ void bcGetTextSize(BCFont *font, const char *text, float *px, float *py)
 BCMesh * bcCreateMeshFromShape(void *par_shape)
 {
     par_shapes_mesh *shape = (par_shapes_mesh *) par_shape;
-    int format = MESH_FLAGS_POS3;
+    int format = BC_MESH_POS3;
     int comps = 3;
     if (shape->normals)
     {
-        format |= MESH_FLAGS_NORM;
+        format |= BC_MESH_NORM;
         comps += 3;
     }
     if (shape->tcoords)
     {
-        format |= MESH_FLAGS_TEX2;
+        format |= BC_MESH_TEX2;
         comps += 2;
     }
     float *vert_ptr = NEW_ARRAY(shape->npoints * comps, float);
@@ -1671,7 +1671,7 @@ BCMesh * bcCreateMeshCube()
 
 BCMesh * bcCreateMeshBox(float x1, float y1, float z1, float x2, float y2, float z2)
 {
-    BCMesh *mesh = bcCreateMesh(MESH_FLAGS_POS3 | MESH_FLAGS_NORM | MESH_FLAGS_TEX2, NULL, 24, NULL, 36, false);
+    BCMesh *mesh = bcCreateMesh(BC_MESH_POS3 | BC_MESH_NORM | BC_MESH_TEX2, NULL, 24, NULL, 36, false);
     if (bcBeginMesh(mesh, BC_QUADS))
     {
         // TODO: generate tex coords
@@ -1712,7 +1712,7 @@ BCMesh * bcCreateMeshBox(float x1, float y1, float z1, float x2, float y2, float
 
 BCMesh * bcCreateCylinder(float radius, float height, int slices)
 {
-    BCMesh *mesh = bcCreateMesh(MESH_FLAGS_POS3 | MESH_FLAGS_NORM | MESH_FLAGS_TEX2, NULL, 240, NULL, 360, false);
+    BCMesh *mesh = bcCreateMesh(BC_MESH_POS3 | BC_MESH_NORM | BC_MESH_TEX2, NULL, 240, NULL, 360, false);
     if (bcBeginMesh(mesh, BC_QUADS))
     {
         bcNormal3f(0, 0, -1);
@@ -1786,7 +1786,7 @@ void bcTransformMesh(BCMesh *mesh, float *m)
         vert_ptr[0] = v.x;
         vert_ptr[1] = v.y;
         vert_ptr[2] = v.z;
-        if (mesh->comps[VERTEX_ATTR_NORMALS] == 3)
+        if (mesh->comps[BC_VERTEX_ATTR_NORMALS] == 3)
         {
             vec4_t vn = vec4(vert_ptr[3], vert_ptr[4], vert_ptr[5], 0);
             vn = vec4_multiply_mat4(tm, vn);
@@ -1807,9 +1807,9 @@ void bcDumpMesh(BCMesh *mesh, FILE *stream)
     }
     fprintf(stream, "o Dump\n");
     char line[100];
-    int vp_size = mesh->comps[VERTEX_ATTR_POSITIONS];
-    int vt_size = mesh->comps[VERTEX_ATTR_TEXCOORDS];
-    int vn_size = mesh->comps[VERTEX_ATTR_NORMALS];
+    int vp_size = mesh->comps[BC_VERTEX_ATTR_POSITIONS];
+    int vt_size = mesh->comps[BC_VERTEX_ATTR_TEXCOORDS];
+    int vn_size = mesh->comps[BC_VERTEX_ATTR_NORMALS];
     // vertices
     for (int i = 0; i < mesh->num_vertices; i++)
     {

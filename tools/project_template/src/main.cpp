@@ -60,7 +60,7 @@ extern "C" void BC_onUpdate(float dt)
     }
 
     // scene 3D
-    bcClear(COLOR_GRAY);
+    bcClear(BC_COLOR_GRAY);
     bcPrepareScene3D(60);
     bcSetObjectColorf(1, 1, 1, 1);
 
@@ -78,14 +78,14 @@ extern "C" void BC_onUpdate(float dt)
     bcPopMatrix();
 
     // scene
-    bcSetObjectColor(COLOR_BLUE);
+    bcSetObjectColor(BC_COLOR_BLUE);
     bcDrawCube(0, 0, 0.5f, 1, 1, 1);
 }
 
 extern "C" void BC_onEvent(BCEvent event)
 {
     static bool wire = false;
-    if (event.type == BC_EVENT_KEYRELEASE)
+    if (event.type == BC_EVENT_KEY_RELEASE)
     {
         switch (event.id)
         {

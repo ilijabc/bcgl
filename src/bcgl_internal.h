@@ -3,7 +3,7 @@
 #include <bcgl.h>
 #include <bcgl_opengl.h>
 
-#define MATRIX_STACK_SIZE 32
+#define BC_MATRIX_STACK_SIZE 32
 
 typedef struct
 {

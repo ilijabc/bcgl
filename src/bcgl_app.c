@@ -278,24 +278,24 @@ void processEvent(BCEvent *event)
 {
     switch (event->type)
     {
-    case BC_EVENT_MOUSEMOVE:
+    case BC_EVENT_MOUSE_MOVE:
         s_InputState.mouse.deltaX = event->x - s_InputState.mouse.x;
         s_InputState.mouse.deltaY = event->y - s_InputState.mouse.y;
         s_InputState.mouse.x = event->x;
         s_InputState.mouse.y = event->y;
         break;
-    case BC_EVENT_MOUSEPRESS:
-    case BC_EVENT_MOUSERELEASE:
-        s_InputState.mouse.button[event->id] = (event->type == BC_EVENT_MOUSEPRESS);
+    case BC_EVENT_MOUSE_PRESS:
+    case BC_EVENT_MOUSE_RELEASE:
+        s_InputState.mouse.button[event->id] = (event->type == BC_EVENT_MOUSE_PRESS);
         break;
-    case BC_EVENT_MOUSEWHEEL:
+    case BC_EVENT_MOUSE_WHEEL:
         s_InputState.mouse.wheel = event->y;
         break;
-    case BC_EVENT_KEYPRESS:
-    case BC_EVENT_KEYRELEASE:
-        s_InputState.keyboard.down[event->id] = (event->type == BC_EVENT_KEYPRESS);
+    case BC_EVENT_KEY_PRESS:
+    case BC_EVENT_KEY_RELEASE:
+        s_InputState.keyboard.down[event->id] = (event->type == BC_EVENT_KEY_PRESS);
         break;
-    case BC_EVENT_WINDOWSIZE:
+    case BC_EVENT_WINDOW_SIZE:
         {
             BCWindow *win = bcGetWindow();
             win->width = event->x;

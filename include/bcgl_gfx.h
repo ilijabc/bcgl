@@ -2,28 +2,29 @@
 
 #include "bcbase.h"
 
-// Texture params
-#define TEXTURE_PARAM_LINEAR    0x1
-#define TEXTURE_PARAM_NEAREST   0x2
-#define TEXTURE_PARAM_MIPMAP    0x4
-#define TEXTURE_PARAM_REPEAT    0x8
-#define TEXTURE_PARAM_CLAMP     0x10
+typedef enum
+{
+    BC_TEXTURE_LINEAR   = 0x1,
+    BC_TEXTURE_NEAREST  = 0x2,
+    BC_TEXTURE_MIPMAP   = 0x4,
+    BC_TEXTURE_REPEAT   = 0x8,
+    BC_TEXTURE_CLAMP    = 0x10,
+} BCTextureFlags;
 
-// Mesh flags
-#define MESH_FLAGS_POS2         0x1
-#define MESH_FLAGS_POS3         0x2
-#define MESH_FLAGS_POS4         0x4
-#define MESH_FLAGS_NORM         0x8
-#define MESH_FLAGS_TEX2         0x10
-#define MESH_FLAGS_TEX3         0x20
-#define MESH_FLAGS_COL3         0x40
-#define MESH_FLAGS_COL4         0x80
+typedef enum
+{
+    BC_MESH_POS2        = 0x1,
+    BC_MESH_POS3        = 0x2,
+    BC_MESH_POS4        = 0x4,
+    BC_MESH_NORM        = 0x8,
+    BC_MESH_TEX2        = 0x10,
+    BC_MESH_TEX3        = 0x20,
+    BC_MESH_COL3        = 0x40,
+    BC_MESH_COL4        = 0x80,
+    BC_MESH_DEFAULT     = (BC_MESH_POS3 | BC_MESH_NORM | BC_MESH_TEX2 | BC_MESH_COL4),
+} BCMeshFlags;
 
-#define MESH_FLAGS_DEFAULT      (MESH_FLAGS_POS3 | MESH_FLAGS_NORM | MESH_FLAGS_TEX2 | MESH_FLAGS_COL4)
-
-// enums
-
-enum BCDrawMode
+typedef enum
 {
     BC_LINES,
     BC_LINE_LOOP,
@@ -32,41 +33,41 @@ enum BCDrawMode
     BC_TRIANGLE_STRIP,
     BC_TRIANGLE_FAN,
     BC_QUADS // works only on mashes with indices
-};
+} BCDrawMode;
 
-enum BCVertexAttributes
+typedef enum
 {
-    VERTEX_ATTR_POSITIONS,
-    VERTEX_ATTR_NORMALS,
-    VERTEX_ATTR_TEXCOORDS,
-    VERTEX_ATTR_COLORS,
-    VERTEX_ATTR_MAX
-};
+    BC_VERTEX_ATTR_POSITIONS,
+    BC_VERTEX_ATTR_NORMALS,
+    BC_VERTEX_ATTR_TEXCOORDS,
+    BC_VERTEX_ATTR_COLORS,
+    BC_VERTEX_ATTR_MAX
+} BCVertexAttributes;
 
-enum BCShaderUniforms
+typedef enum
 {
-    SHADER_UNIFORM_PROJECTION,
-    SHADER_UNIFORM_MODELVIEW,
-    SHADER_UNIFORM_TEXTURE,
-    SHADER_UNIFORM_USETEXTURE,
-    SHADER_UNIFORM_ALPHAONLYTEXTURE,
-    SHADER_UNIFORM_ALPHATEST,
-    SHADER_UNIFORM_VERTEX_COLOR_ENABLED,
-    SHADER_UNIFORM_OBJECT_COLOR,
-    SHADER_UNIFORM_DIFFUSE_COLOR,
-    SHADER_UNIFORM_AMBIENT_COLOR,
-    SHADER_UNIFORM_LIGHT_ENABLED,
-    SHADER_UNIFORM_LIGHT_POSITION,
-    SHADER_UNIFORM_LIGHT_COLOR,
-    SHADER_UNIFORM_MAX
-};
+    BC_SHADER_UNIFORM_PROJECTION,
+    BC_SHADER_UNIFORM_MODELVIEW,
+    BC_SHADER_UNIFORM_TEXTURE,
+    BC_SHADER_UNIFORM_USETEXTURE,
+    BC_SHADER_UNIFORM_ALPHAONLYTEXTURE,
+    BC_SHADER_UNIFORM_ALPHATEST,
+    BC_SHADER_UNIFORM_VERTEX_COLOR_ENABLED,
+    BC_SHADER_UNIFORM_OBJECT_COLOR,
+    BC_SHADER_UNIFORM_DIFFUSE_COLOR,
+    BC_SHADER_UNIFORM_AMBIENT_COLOR,
+    BC_SHADER_UNIFORM_LIGHT_ENABLED,
+    BC_SHADER_UNIFORM_LIGHT_POSITION,
+    BC_SHADER_UNIFORM_LIGHT_COLOR,
+    BC_SHADER_UNIFORM_MAX
+} BCShaderUniforms;
 
-enum BCFontType
+typedef enum
 {
-    FONT_TYPE_TRUETYPE,
-    FONT_TYPE_ANGELCODE,
-    FONT_TYPE_BITMAP
-};
+    BC_FONT_TRUETYPE,
+    BC_FONT_ANGELCODE,
+    BC_FONT_BITMAP
+} BCFontType;
 
 typedef struct
 {
@@ -87,7 +88,7 @@ typedef struct
 typedef struct
 {
     unsigned int programId;
-    int loc_uniforms[SHADER_UNIFORM_MAX];
+    int loc_uniforms[BC_SHADER_UNIFORM_MAX];
 } BCShader;
 
 typedef struct
@@ -101,7 +102,7 @@ typedef struct
     int num_vertices;
     int num_indices;
     int format;
-    int comps[VERTEX_ATTR_MAX];
+    int comps[BC_VERTEX_ATTR_MAX];
     int total_comps;
     float *vertices;
     uint16_t *indices;
@@ -114,7 +115,7 @@ typedef struct
 
 typedef struct
 {
-    enum BCFontType type;
+    BCFontType type;
     int char_first;
     int char_count;
     void *cdata;
@@ -161,16 +162,16 @@ typedef struct
 #endif
 #define SET_COLOR(r,g,b,a) (BCColor) { r, g, b, a }
 
-static const BCColor COLOR_TRANSPARENT = {0,0,0,0};
-static const BCColor COLOR_BLACK = {0,0,0,1};
-static const BCColor COLOR_WHITE = {1,1,1,1};
-static const BCColor COLOR_RED = {1,0,0,1};
-static const BCColor COLOR_GREEN = {0,1,0,1};
-static const BCColor COLOR_BLUE = {0,0,1,1};
-static const BCColor COLOR_YELLOW = {1,1,0,1};
-static const BCColor COLOR_CYAN = {0,1,1,1};
-static const BCColor COLOR_MAGENTA = {1,0,1,1};
-static const BCColor COLOR_GRAY = {0.3f, 0.3f, 0.3f, 1.0f};
+static const BCColor BC_COLOR_TRANSPARENT   = {0,0,0,0};
+static const BCColor BC_COLOR_BLACK         = {0,0,0,1};
+static const BCColor BC_COLOR_WHITE         = {1,1,1,1};
+static const BCColor BC_COLOR_RED           = {1,0,0,1};
+static const BCColor BC_COLOR_GREEN         = {0,1,0,1};
+static const BCColor BC_COLOR_BLUE          = {0,0,1,1};
+static const BCColor BC_COLOR_YELLOW        = {1,1,0,1};
+static const BCColor BC_COLOR_CYAN          = {0,1,1,1};
+static const BCColor BC_COLOR_MAGENTA       = {1,0,1,1};
+static const BCColor BC_COLOR_GRAY          = {0.3f,0.3f,0.3f,1.0f};
 
 #ifdef __cplusplus
 extern "C" {
@@ -192,8 +193,8 @@ BCImage * bcCreateImageFromMemory(void *buffer, int size);
 void bcDestroyImage(BCImage *image);
 
 // Texture
-BCTexture * bcCreateTextureFromFile(const char *filename, int flags);
-BCTexture * bcCreateTextureFromImage(BCImage *image, int flags);
+BCTexture * bcCreateTextureFromFile(const char *filename, BCTextureFlags flags);
+BCTexture * bcCreateTextureFromImage(BCImage *image, BCTextureFlags flags);
 void bcDestroyTexture(BCTexture *texture);
 void bcBindTexture(BCTexture *texture);
 
@@ -228,9 +229,9 @@ BCMeshPart bcPartFromMesh(BCMesh *mesh);
 BCMeshPart bcAttachMesh(BCMesh *mesh, BCMesh *src, bool destroy_src);
 
 // IM
-bool bcBegin(enum BCDrawMode mode);
+bool bcBegin(BCDrawMode mode);
 void bcEnd();
-bool bcBeginMesh(BCMesh *mesh, enum BCDrawMode mode);
+bool bcBeginMesh(BCMesh *mesh, BCDrawMode mode);
 void bcEndMesh(BCMesh *mesh);
 int bcVertex3f(float x, float y, float z);
 int bcVertex2f(float x, float y);
