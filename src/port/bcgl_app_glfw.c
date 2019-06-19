@@ -134,6 +134,12 @@ static struct
     int x, y;
 } s_LastCursorPos = { 0, 0 };
 
+static struct
+{
+    int argc;
+    char **argv;
+} s_CommandLine = { 0, 0 };
+
 //
 // Private Functions
 //
@@ -221,6 +227,18 @@ void bcShowKeyboard(bool show)
 float bcGetDisplayDensity()
 {
     return 1.0f;
+}
+
+int bcGetCommandLineArgs()
+{
+    return s_CommandLine.argc;
+}
+
+const char * bcGetCommandLineArg(int index)
+{
+    if (index < 0 || index >= s_CommandLine.argc)
+        return NULL;
+    return s_CommandLine.argv[index];
 }
 
 //
@@ -341,6 +359,13 @@ int main(int argc, char **argv)
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
 
+    s_CommandLine.argc = argc;
+    s_CommandLine.argv = malloc(argc * sizeof(char *));
+    for (int i = 0; i < argc; i++)
+    {
+        s_CommandLine.argv[i] = strdup(argv[i]);
+    }
+
     glfwSetErrorCallback(glfw_ErrorCallback);
     if (glfwInit() != GL_TRUE)
     {
@@ -371,6 +396,12 @@ int main(int argc, char **argv)
     bcTermFiles();
 
     glfwTerminate();
+
+    for (int i = 0; i < argc; i++)
+    {
+        free(s_CommandLine.argv[i]);
+    }
+    free(s_CommandLine.argv);
 
     return result;
 }

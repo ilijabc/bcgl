@@ -158,6 +158,16 @@ float bcGetDisplayDensity()
     return 1.0f;
 }
 
+int bcGetCommandLineArgs()
+{
+    return 0;
+}
+
+const char * bcGetCommandLineArg(int index)
+{
+    return NULL;
+}
+
 static EM_BOOL s_key_callback_func(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData)
 {
     int code = convertWebKeyCode(keyEvent->code);

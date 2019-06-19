@@ -352,6 +352,16 @@ float bcGetDisplayDensity()
     return bcAndroidGetNumber(GET_NUMBER_DENSITY);
 }
 
+int bcGetCommandLineArgs()
+{
+    return 0;
+}
+
+const char * bcGetCommandLineArg(int index)
+{
+    return NULL;
+}
+
 //
 // BCGL Android API
 //

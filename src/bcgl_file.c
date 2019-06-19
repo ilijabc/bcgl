@@ -49,7 +49,7 @@ void bcTermFiles()
 // File
 //
 
-BCFile * bcOpenFile(const char *filename, enum BCFileMode mode)
+BCFile * bcOpenFile(const char *filename, BCFileMode mode)
 {
     bool isAsset = (strstr(filename, ASSETS_DIR) == filename);
     if (isAsset && mode != BC_FILE_READ_TEXT && mode != BC_FILE_READ_DATA)

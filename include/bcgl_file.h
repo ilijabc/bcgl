@@ -2,7 +2,7 @@
 
 #include "bcbase.h"
 
-enum BCFileMode
+typedef enum
 {
     BC_FILE_READ_TEXT = 0,
     BC_FILE_WRITE_TEXT,
@@ -10,7 +10,7 @@ enum BCFileMode
     BC_FILE_READ_DATA,
     BC_FILE_WRITE_DATA,
     BC_FILE_APPEND_DATA,
-};
+} BCFileMode;
 
 typedef struct
 {
@@ -27,7 +27,7 @@ extern "C" {
 #endif
 
 // File
-BCFile * bcOpenFile(const char *filename, enum BCFileMode mode);
+BCFile * bcOpenFile(const char *filename, BCFileMode mode);
 void bcCloseFile(BCFile *file);
 size_t bcReadFile(BCFile *file, void* buf, size_t count);
 size_t bcWriteFile(BCFile *file, void* buf, size_t count);

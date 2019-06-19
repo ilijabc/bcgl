@@ -199,6 +199,8 @@ int bcGetDisplayWidth();
 int bcGetDisplayHeight();
 float bcGetDisplayAspectRatio();
 float bcGetDisplayDensity();
+int bcGetCommandLineArgs();
+const char * bcGetCommandLineArg(int index);
 
 // Input state
 bool bcIsKeyDown(int key);
