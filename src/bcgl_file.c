@@ -184,7 +184,13 @@ BCFile * bcOpenDir(const char *filename)
 #ifdef __ANDROID__
     if (isAsset)
     {
-        AAssetDir *aas = AAssetManager_openDir(s_Manager, filename + strlen(ASSETS_DIR));
+        char dir_name[256];
+        int n = strlen(filename) - strlen(ASSETS_DIR);
+        if (filename[strlen(filename) - 1] == '/')
+            n--;
+        strncpy(dir_name, filename + strlen(ASSETS_DIR), n);
+        dir_name[n] = 0;
+        AAssetDir *aas = AAssetManager_openDir(s_Manager, dir_name);
         if (aas == NULL)
             return NULL;
         BCFile *file = NEW_OBJECT(BCFile);
