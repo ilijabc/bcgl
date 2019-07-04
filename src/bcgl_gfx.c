@@ -18,17 +18,20 @@
 #include "par/par_shapes.h"
 #endif
 
+#define DEBUG_SHADER 0
 
 typedef struct
 {
-    BCMaterial DefaultMaterial;
     mat4_t ProjectionMatrix;
     mat4_t ModelViewMatrix;
+    BCColor ColorArray[BC_COLOR_TYPE_MAX];
+    bool ColorNeedUpdate;
     BCMesh *CurrentMesh;
 #ifdef SUPPORT_GLSL
     BCShader *DefaultShader;
     BCShader *CurrentShader;
 #endif
+    bool LightingEnabled;
     // draw
     BCMesh *TempMesh;
     vec4_t TempVertexData[BC_VERTEX_ATTR_MAX];
@@ -39,7 +42,6 @@ typedef struct
     int MatrixCounter;
     BCMesh *ReusableSolidMesh;
     BCMesh *ReusableCubeMesh;
-    BCModel *CurrentModel;
 } BCContext;
 
 static BCContext *g_Context = NULL;
@@ -63,41 +65,55 @@ static BCContext *g_Context = NULL;
     "#version 120\n"
 #endif
 
+static struct { const char * name; int value; } s_DefaultShaderConstInts[] =
+{
+    { "COLOR_PRIMARY", BC_COLOR_TYPE_PRIMARY },
+    { "COLOR_SECONDARY", BC_COLOR_TYPE_SECONDARY },
+    { "COLOR_DIFFUSE", BC_COLOR_TYPE_DIFFUSE },
+    { "COLOR_AMBIENT", BC_COLOR_TYPE_AMBIENT },
+    { "COLOR_SPECULAR", BC_COLOR_TYPE_SPECULAR },
+    { "COLOR_EMISSION", BC_COLOR_TYPE_EMISSION },
+    { "COLOR_CUSTOM_1", BC_COLOR_TYPE_CUSTOM_1 },
+    { "COLOR_CUSTOM_2", BC_COLOR_TYPE_CUSTOM_2 },
+    { "COLOR_CUSTOM_3", BC_COLOR_TYPE_CUSTOM_3 },
+    { "COLOR_CUSTOM_4", BC_COLOR_TYPE_CUSTOM_4 },
+    { "COLOR_MAX", BC_COLOR_TYPE_MAX },
+    { NULL, 0 }
+};
+
 // This must be alligned with @BCVertexAttributes
 static BCShaderVar s_DefaultShaderAttributes[] =
 {
-    { "vec3", "a_Position" },
-    { "vec3", "a_Normal" },
-    { "vec2", "a_TexCoord" },
-    { "vec4", "a_Color" },
+    { "vec3", "a_Position", 1 },
+    { "vec3", "a_Normal", 1 },
+    { "vec2", "a_TexCoord", 1 },
+    { "vec4", "a_Color", 1 },
     { NULL, NULL }
 };
 
 // This must be alligned with @BCShaderUniforms
 static BCShaderVar s_DefaultShaderUniforms[] =
 {
-    { "mat4", "u_ProjectionMatrix" },
-    { "mat4", "u_ModelViewMatrix" },
-    { "sampler2D", "u_Texture" },
-    { "bool", "u_UseTexture" },
-    { "bool", "u_AlphaOnlyTexture" },
-    { "bool", "u_AlphaTest" },
-    { "bool", "u_VertexColorEnabled" },
-    { "vec4", "u_ObjectColor" },
-    { "vec4", "u_DiffuseColor" },
-    { "vec4", "u_AmbientColor" },
-    { "bool", "u_LightEnabled" },
-    { "vec3", "u_LightPosition" },
-    { "vec4", "u_LightColor" },
+    { "mat4", "u_ProjectionMatrix", 1 },
+    { "mat4", "u_ModelViewMatrix", 1 },
+    { "sampler2D", "u_Texture", 1 },
+    { "bool", "u_UseTexture", 1 },
+    { "bool", "u_AlphaOnlyTexture", 1 },
+    { "bool", "u_AlphaTest", 1 },
+    { "bool", "u_VertexColorEnabled", 1 },
+    { "vec4", "u_ColorArray", BC_COLOR_TYPE_MAX },
+    { "bool", "u_LightEnabled", 1 },
+    { "vec3", "u_LightPosition", 1 },
+    { "vec4", "u_LightColor", 1 },
     { NULL, NULL }
 };
 
 static BCShaderVar s_DefaultShaderVars[] =
 {
-    { "vec3", "v_position" },
-    { "vec3", "v_normal" },
-    { "vec2", "v_texCoord" },
-    { "vec4", "v_color" },
+    { "vec3", "v_position", 1 },
+    { "vec3", "v_normal", 1 },
+    { "vec2", "v_texCoord", 1 },
+    { "vec4", "v_color", 1 },
     { NULL, NULL }
 };
 
@@ -115,7 +131,7 @@ static const char s_DefaultShaderVertexCode[] =
 static const char s_DefaultShaderFragmentCode[] =
 "void main()\n" \
 "{\n" \
-"    gl_FragColor = u_ObjectColor;\n" \
+"    gl_FragColor = u_VertexColorEnabled ? v_color : u_ColorArray[COLOR_PRIMARY];\n" \
 "    if (u_UseTexture)\n" \
 "    {\n" \
 "        vec4 tex = texture2D(u_Texture, v_texCoord);\n" \
@@ -130,12 +146,8 @@ static const char s_DefaultShaderFragmentCode[] =
 "        vec3 norm = normalize(v_normal);\n" \
 "        vec3 lightDir = normalize(u_LightPosition - v_position);\n" \
 "        float diff = max(dot(norm, lightDir), 0.0);\n" \
-"        vec4 diffuse = diff * u_LightColor * u_DiffuseColor;\n" \
-"        gl_FragColor *= (u_AmbientColor + diffuse);\n" \
-"    }\n" \
-"    if (u_VertexColorEnabled)\n" \
-"    {\n" \
-"        gl_FragColor *= v_color;\n" \
+"        vec4 diffuse = diff * u_LightColor;\n" \
+"        gl_FragColor *= (u_ColorArray[COLOR_AMBIENT] + diffuse);\n" \
 "    }\n" \
 "}\n" \
 ;
@@ -170,10 +182,13 @@ void bcInitGfx()
     bcLog("GLSL: %s", glGetString(GL_SHADING_LANGUAGE_VERSION));
     // context
     g_Context = NEW_OBJECT(BCContext);
-    g_Context->DefaultMaterial.objectColor = SET_COLOR(1, 1, 1, 1);
-    g_Context->DefaultMaterial.diffuseColor = SET_COLOR(1, 1, 1, 1);
-    g_Context->DefaultMaterial.ambientColor = SET_COLOR(0.2f, 0.2f, 0.2f, 1);
-    g_Context->DefaultMaterial.texture = NULL;
+    g_Context->ColorArray[BC_COLOR_TYPE_PRIMARY] = SET_COLOR(1, 1, 1, 1);
+    g_Context->ColorArray[BC_COLOR_TYPE_SECONDARY] = SET_COLOR(1, 1, 1, 1);
+    g_Context->ColorArray[BC_COLOR_TYPE_DIFFUSE] = SET_COLOR(0.8f, 0.8f, 0.8f, 1);
+    g_Context->ColorArray[BC_COLOR_TYPE_AMBIENT] = SET_COLOR(0.2f, 0.2f, 0.2f, 1);
+    g_Context->ColorArray[BC_COLOR_TYPE_SPECULAR] = SET_COLOR(0, 0, 0, 1);
+    g_Context->ColorArray[BC_COLOR_TYPE_EMISSION] = SET_COLOR(0, 0, 0, 1);
+    g_Context->ColorNeedUpdate = true;
     g_Context->VertexCounter = -1;
     g_Context->IndexCounter = -1;
 #ifdef SUPPORT_GLSL
@@ -323,7 +338,6 @@ void bcBindShader(BCShader *shader)
     glUseProgram(shader->programId);
     // applyProjectionMatrix();
     // applyCurrentMatrix();
-    bcSetMaterial(g_Context->DefaultMaterial);
 }
 
 unsigned int bcLoadShader(const char *code, unsigned int shaderType, BCShaderVar *attributes, BCShaderVar *uniforms, BCShaderVar *vars)
@@ -331,7 +345,13 @@ unsigned int bcLoadShader(const char *code, unsigned int shaderType, BCShaderVar
     const char *type_str = (shaderType == GL_VERTEX_SHADER) ? "VERTEX" : "FRAGMENT";
     // generated code
     char generated_code[2000];
+    // defines
     sprintf(generated_code, "#define %s\n", type_str);
+    for (int i = 0; s_DefaultShaderConstInts[i].name; i++)
+    {
+        sprintf(generated_code, "%s#define %s %d\n", generated_code, s_DefaultShaderConstInts[i].name, s_DefaultShaderConstInts[i].value);
+    }
+    // attributes
     if (attributes && shaderType == GL_VERTEX_SHADER)
     {
         for (int i = 0; attributes[i].name; i++)
@@ -339,13 +359,18 @@ unsigned int bcLoadShader(const char *code, unsigned int shaderType, BCShaderVar
             sprintf(generated_code, "%sattribute %s %s;\n", generated_code, attributes[i].type, attributes[i].name);
         }
     }
+    // uniforms
     if (uniforms)
     {
         for (int i = 0; uniforms[i].name; i++)
         {
-            sprintf(generated_code, "%suniform %s %s;\n", generated_code, uniforms[i].type, uniforms[i].name);
+            if (uniforms[i].size > 1)
+                sprintf(generated_code, "%suniform %s %s[%d];\n", generated_code, uniforms[i].type, uniforms[i].name, uniforms[i].size);
+            else
+                sprintf(generated_code, "%suniform %s %s;\n", generated_code, uniforms[i].type, uniforms[i].name);
         }
     }
+    // varyings
     if (vars)
     {
         for (int i = 0; vars[i].name; i++)
@@ -356,6 +381,10 @@ unsigned int bcLoadShader(const char *code, unsigned int shaderType, BCShaderVar
     // init shader source
     const char *strings[3] = { GLSL_VERSION,  generated_code, code };
     int lengths[3] = { (int) strlen(GLSL_VERSION), (int) strlen(generated_code), (int) strlen(code) };
+#if DEBUG_SHADER
+    // print shader code
+    printf("\n>>> SHADER type=%d <<<\n%s%s%s\n>>> END <<<\n", strings[0], strings[1], strings[2]);
+#endif
     // create and compile
     GLuint shaderId = glCreateShader(shaderType);
     if (shaderId == 0)
@@ -420,12 +449,13 @@ bool bcLinkShaderProgram(unsigned int programId)
 
 #else // SUPPORT_GLSL
 
-BCShader * bcCreateShaderFromFile(const char *filename) { return NULL; }
-BCShader * bcCreateShaderFromCode(const char *vsCode, const char *fsCode) { return NULL; }
+BCShader * bcCreateShader(const char *vs_code, const char *fs_code, BCShaderVar *attributes, BCShaderVar *uniforms, BCShaderVar *vars) { return NULL; }
+BCShader * bcCreateShaderFromSingleFile(const char *filename) { return NULL; }
+BCShader * bcCreateShaderFromFile(const char *vsFilename, const char *fsFilename) { return NULL; }
 void bcDestroyShader(BCShader *shader) { }
 void bcBindShader(BCShader *shader) { }
-unsigned int bcLoadShader(const char *code, unsigned int shaderType) { }
-bool bcLinkShaderProgram(unsigned int programId) { }
+unsigned int bcLoadShader(const char *code, unsigned int shaderType, BCShaderVar *attributes, BCShaderVar *uniforms, BCShaderVar *vars) { return 0; }
+bool bcLinkShaderProgram(unsigned int programId) { return false; }
 
 #endif // SUPPORT_GLSL
 
@@ -656,6 +686,7 @@ void bcSetLighting(bool enabled)
         glDisable(GL_LIGHTING);
     }
 #endif
+    g_Context->LightingEnabled = enabled;
 }
 
 void bcLightPosition(float x, float y, float z)
@@ -665,43 +696,6 @@ void bcLightPosition(float x, float y, float z)
 #else
     float lightPos[] = { x, y, z, 1 };
     glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
-#endif
-}
-
-void bcSetMaterial(BCMaterial material)
-{
-#ifdef SUPPORT_GLSL
-    glUniform4fv(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_OBJECT_COLOR], 1, (float *) &(material.objectColor));
-    glUniform4fv(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_DIFFUSE_COLOR], 1, (float *) &(material.diffuseColor));
-    glUniform4fv(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_AMBIENT_COLOR], 1, (float *) &(material.ambientColor));
-#else
-   glColor4fv((float *) &(material.objectColor));
-   glMaterialfv(GL_FRONT, GL_DIFFUSE, (float *) &(material.diffuseColor));
-   glMaterialfv(GL_FRONT, GL_AMBIENT, (float *) &(material.ambientColor));
-#endif
-    bcBindTexture(material.texture);
-}
-
-void bcResetMaterial()
-{
-    bcSetMaterial(g_Context->DefaultMaterial);
-}
-
-void bcSetObjectColor(BCColor color)
-{
-#ifdef SUPPORT_GLSL
-    glUniform4fv(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_OBJECT_COLOR], 1, (float *) &(color));
-#else
-    glColor4fv((float *) &(color));
-#endif
-}
-
-void bcSetObjectColorf(float r, float g, float b, float a)
-{
-#ifdef SUPPORT_GLSL
-    glUniform4f(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_OBJECT_COLOR], r, g, b, a);
-#else
-    glColor4f(r, g, b, a);
 #endif
 }
 
@@ -749,6 +743,12 @@ void bcScissorRect(int x, int y, int w, int h)
 {
     y = bcGetDisplayHeight() - y - h;
     glScissor(x, y, w, h);
+}
+
+void bcSetColor(BCColor color, BCColorType type)
+{
+    g_Context->ColorArray[type] = color;
+    g_Context->ColorNeedUpdate = true;
 }
 
 //
@@ -1013,6 +1013,19 @@ void bcDrawMeshRange(BCMesh *mesh, int start, int count)
     {
         bcBindMesh(mesh);
     }
+    if (g_Context->ColorNeedUpdate)
+    {
+#ifdef SUPPORT_GLSL
+        glUniform4fv(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_COLOR_ARRAY], BC_COLOR_TYPE_MAX, (float *) g_Context->ColorArray);
+#else
+        glColor4fv((float *) &(g_Context->ColorArray[BC_COLOR_TYPE_PRIMARY]));
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, (float *) &(g_Context->ColorArray[BC_COLOR_TYPE_DIFFUSE]));
+        glMaterialfv(GL_FRONT, GL_AMBIENT, (float *) &(g_Context->ColorArray[BC_COLOR_TYPE_AMBIENT]));
+        glMaterialfv(GL_FRONT, GL_SPECULAR, (float *) &(g_Context->ColorArray[BC_COLOR_TYPE_SPECULAR]));
+        glMaterialfv(GL_FRONT, GL_EMISSION, (float *) &(g_Context->ColorArray[BC_COLOR_TYPE_EMISSION]));
+#endif
+        g_Context->ColorNeedUpdate = false;
+    }
     if (mesh->num_indices)
     {
         uint16_t *elem_start = (mesh->vbo_indices ? (uint16_t *) 0 : mesh->indices) + start;
@@ -1026,7 +1039,7 @@ void bcDrawMeshRange(BCMesh *mesh, int start, int count)
 
 BCMeshPart bcPartFromMesh(BCMesh *mesh)
 {
-    BCMeshPart part = { mesh, NULL, 0, mesh->draw_count };
+    BCMeshPart part = { mesh, 0, mesh->draw_count };
     return part;
 }
 
@@ -1101,7 +1114,12 @@ bool bcBegin(BCDrawMode mode)
     {
         g_Context->ReusableSolidMesh = bcCreateMesh(BC_MESH_POS3 | BC_MESH_NORM | BC_MESH_TEX2 | BC_MESH_COL4, NULL, 1024, NULL, 1024, false);
     }
-    return bcBeginMesh(g_Context->ReusableSolidMesh, mode);
+    int ret = bcBeginMesh(g_Context->ReusableSolidMesh, mode);
+    if (ret)
+    {
+        bcColor(g_Context->ColorArray[BC_COLOR_TYPE_PRIMARY]);
+    }
+    return ret;
 }
 
 void bcEnd()
@@ -1227,6 +1245,11 @@ void bcColor4f(float r, float g, float b, float a)
 void bcColor3f(float r, float g, float b)
 {
     bcColor4f(r, g, b, 1.0f);
+}
+
+void bcColor(BCColor c)
+{
+    bcColor4f(c.r, c.g, c.b, c.a);
 }
 
 //
@@ -1879,121 +1902,4 @@ void bcDumpMesh(BCMesh *mesh, FILE *stream)
             }
         }
     }
-}
-
-//
-// Model
-//
-
-#define INVALID_PART    -1
-#define ALL_PARTS       -2
-
-BCModel * bcCreateModel(BCMesh *mesh, BCMaterial material, int parts)
-{
-    BCModel *model = NEW_OBJECT(BCModel);
-    model->mesh = mesh;
-    model->material = material;
-    if (parts)
-    {
-        model->parts_count = parts;
-        model->parts_list = NEW_ARRAY(parts, BCMeshPart);
-    }
-    return model;
-}
-
-BCModel * bcCreateModelFromFile(const char *filename)
-{
-    BCModel *model = NULL;
-    // TODO: load model from file (.obj, .3ds, ...)
-    return model;
-}
-
-void bcDestroyModel(BCModel *model)
-{
-    if (model == NULL)
-    {
-        bcLogError("Invalid model!");
-        return;
-    }
-    bcDestroyMesh(model->mesh);
-    if (model->parts_list)
-    {
-        for (int i = 0; i < model->parts_count; i++)
-        {
-            if (model->parts_list[i].name)
-                free(model->parts_list[i].name);
-        }
-        free(model->parts_list);
-    }
-    free(model);
-}
-
-void bcDrawModel(BCModel *model)
-{
-    if (model == NULL)
-    {
-        bcLogError("Invalid model!");
-        return;
-    }
-    bcDrawModelPart(model, ALL_PARTS);
-}
-
-void bcBeginModelDraw(BCModel *model)
-{
-    if (model == NULL)
-    {
-        bcLogError("Invalid model!");
-        return;
-    }
-    g_Context->CurrentModel = model;
-    bcSetMaterial(model->material);
-    bcBindMesh(model->mesh);
-}
-
-void bcEndModelDraw(BCModel *model)
-{
-    if (model == NULL)
-    {
-        bcLogError("Invalid model!");
-        return;
-    }
-    // bcBindMesh(NULL);
-    bcResetMaterial();
-    g_Context->CurrentModel = NULL;
-}
-
-void bcDrawModelPart(BCModel *model, int part)
-{
-    if (model == NULL)
-    {
-        bcLogError("Invalid model!");
-        return;
-    }
-    bool autoEnd = false;
-    if (g_Context->CurrentModel == NULL)
-    {
-        bcBeginModelDraw(model);
-        autoEnd = true;
-    }
-    if (part == ALL_PARTS)
-        bcDrawMesh(model->mesh);
-    else if (part >= 0 && part < model->parts_count)
-        bcDrawMeshRange(model->mesh, model->parts_list[part].start, model->parts_list[part].count);
-    if (autoEnd)
-    {
-        bcEndModelDraw(model);
-    }
-}
-
-int bcGetModelPartByName(BCModel *model, const char *name)
-{
-    if (model->parts_list)
-    {
-        for (int i = 0; i < model->parts_count; i++)
-        {
-            if (model->parts_list[i].name && strcmp(model->parts_list[i].name, name) == 0)
-                return i;
-        }
-    }
-    return INVALID_PART;
 }

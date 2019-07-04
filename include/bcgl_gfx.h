@@ -2,6 +2,10 @@
 
 #include "bcbase.h"
 
+//
+// enums
+//
+
 typedef enum
 {
     BC_TEXTURE_LINEAR   = 0x1,
@@ -53,9 +57,7 @@ typedef enum
     BC_SHADER_UNIFORM_ALPHAONLYTEXTURE,
     BC_SHADER_UNIFORM_ALPHATEST,
     BC_SHADER_UNIFORM_VERTEX_COLOR_ENABLED,
-    BC_SHADER_UNIFORM_OBJECT_COLOR,
-    BC_SHADER_UNIFORM_DIFFUSE_COLOR,
-    BC_SHADER_UNIFORM_AMBIENT_COLOR,
+    BC_SHADER_UNIFORM_COLOR_ARRAY,
     BC_SHADER_UNIFORM_LIGHT_ENABLED,
     BC_SHADER_UNIFORM_LIGHT_POSITION,
     BC_SHADER_UNIFORM_LIGHT_COLOR,
@@ -68,6 +70,25 @@ typedef enum
     BC_FONT_ANGELCODE,
     BC_FONT_BITMAP
 } BCFontType;
+
+typedef enum
+{
+    BC_COLOR_TYPE_PRIMARY = 0,
+    BC_COLOR_TYPE_SECONDARY,
+    BC_COLOR_TYPE_DIFFUSE = 0,
+    BC_COLOR_TYPE_AMBIENT,
+    BC_COLOR_TYPE_SPECULAR,
+    BC_COLOR_TYPE_EMISSION,
+    BC_COLOR_TYPE_CUSTOM_1,
+    BC_COLOR_TYPE_CUSTOM_2,
+    BC_COLOR_TYPE_CUSTOM_3,
+    BC_COLOR_TYPE_CUSTOM_4,
+    BC_COLOR_TYPE_MAX
+} BCColorType;
+
+//
+// structs
+//
 
 typedef struct
 {
@@ -95,6 +116,7 @@ typedef struct
 {
     const char *type;
     const char *name;
+    int size;
 } BCShaderVar;
 
 typedef struct
@@ -129,27 +151,14 @@ typedef struct
 
 typedef struct
 {
-    BCColor objectColor;
-    BCColor diffuseColor;
-    BCColor ambientColor;
-    BCTexture *texture;
-} BCMaterial;
-
-typedef struct
-{
     BCMesh *mesh;
-    char *name;
     int start;
     int count;
 } BCMeshPart;
 
-typedef struct
-{
-    BCMesh *mesh;
-    BCMaterial material;
-    int parts_count;
-    BCMeshPart *parts_list;
-} BCModel;
+//
+// macros
+//
 
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #define RGB_COLOR(C)  (BCColor) { (C >> 16 & 0xff) / 255.0f, (C >> 8 & 0xff) / 255.0f, (C & 0xff) / 255.0f, 1.0f }
@@ -161,6 +170,7 @@ typedef struct
 #define ARGB_COLOR(C) (BCColor) { (C >> 8 & 0xff) / 255.0f, (C >> 16 & 0xff) / 255.0f, (C >> 24 & 0xff) / 255.0f, (C & 0xff) / 255.0f }
 #endif
 #define SET_COLOR(r,g,b,a) (BCColor) { r, g, b, a }
+#define COLOR_TO_ARRAY(C) { C.r, C.g, C.b, C.a }
 
 static const BCColor BC_COLOR_TRANSPARENT   = {0,0,0,0};
 static const BCColor BC_COLOR_BLACK         = {0,0,0,1};
@@ -172,6 +182,10 @@ static const BCColor BC_COLOR_YELLOW        = {1,1,0,1};
 static const BCColor BC_COLOR_CYAN          = {0,1,1,1};
 static const BCColor BC_COLOR_MAGENTA       = {1,0,1,1};
 static const BCColor BC_COLOR_GRAY          = {0.3f,0.3f,0.3f,1.0f};
+
+//
+// functions
+//
 
 #ifdef __cplusplus
 extern "C" {
@@ -205,16 +219,13 @@ void bcSetDepthTest(bool enabled);
 void bcSetWireframe(bool enabled);
 void bcSetLighting(bool enabled);
 void bcLightPosition(float x, float y, float z);
-void bcSetMaterial(BCMaterial material);
-void bcResetMaterial();
-void bcSetObjectColor(BCColor color);
-void bcSetObjectColorf(float r, float g, float b, float a);
 void bcSetProjectionMatrix(float *m);
 void bcSetModelViewMatrix(float *m);
 float * bcGetProjectionMatrix();
 float * bcGetModelViewMatrix();
 void bcSetScissor(bool enabled);
 void bcScissorRect(int x, int y, int w, int h);
+void bcSetColor(BCColor color, BCColorType type);
 
 // Mesh
 BCMesh * bcCreateMesh(int format, const float *vert_data, int vert_num, const uint16_t *indx_data, int indx_num, bool is_static);
@@ -240,6 +251,7 @@ void bcTexCoord2f(float u, float v);
 void bcNormal3f(float x, float y, float z);
 void bcColor4f(float r, float g, float b, float a);
 void bcColor3f(float r, float g, float b);
+void bcColor(BCColor c);
 
 // Matrix Stack
 void bcSetPerspective(float fovy, float aspect, float znear, float zfar);
@@ -285,16 +297,6 @@ BCMesh * bcCreateCylinder(float radius, float height, int slices);
 BCMesh * bcCreateMeshSphere(float radius, int slices, int stacks);
 void bcTransformMesh(BCMesh *mesh, float *m);
 void bcDumpMesh(BCMesh *mesh, FILE *stream);
-
-// Model
-BCModel * bcCreateModel(BCMesh *mesh, BCMaterial material, int parts);
-BCModel * bcCreateModelFromFile(const char *filename);
-void bcDestroyModel(BCModel *model);
-void bcDrawModel(BCModel *model);
-void bcBeginModelDraw(BCModel *model);
-void bcEndModelDraw(BCModel *model);
-void bcDrawModelPart(BCModel *model, int part);
-int bcGetModelPartByName(BCModel *model, const char *name);
 
 #ifdef __cplusplus
 }
