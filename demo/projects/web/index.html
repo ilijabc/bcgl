@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en-us">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Test App</title>
+</head>
+<style>
+    .canvas_normal {
+        display: block;
+    }
+
+    .canvas_fullscreen {
+        display: block;
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        margin: 0px;
+        border: 0;
+        overflow: hidden;
+    }
+
+    #output {
+        display: block;
+        width: 100%;
+    }
+</style>
+
+<body>
+    <canvas class="canvas_normal" id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+    <div id="debug">
+        <button onClick="toggleConsole()">Console</button>
+        <textarea id="output" rows="10"></textarea>
+    </div>
+    <script>
+        var Module = {
+            print: (function () {
+                var element = document.getElementById('output');
+                return function (text) {
+                    element.innerHTML += text + "\n";
+                };
+            })(),
+            canvas: (function () {
+                var canvas = document.getElementById('canvas');
+                return canvas;
+            })(),
+            locateFile: (function () {
+                return function (path, prefix) {
+                    if (prefix == '') prefix = "build/";
+                    return prefix + path;
+                }
+            })()
+        };
+        function toggleConsole() {
+            var elementx = document.getElementById("output");
+            if (element.style.display === "none") {
+                element.style.display = "block";
+            } else {
+                element.style.display = "none";
+            }
+        }
+    </script>
+    <script src="build/test_app.js"></script>
+</body>
+
+</html>

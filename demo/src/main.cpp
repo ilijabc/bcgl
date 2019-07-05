@@ -1,0 +1,157 @@
+#include <bcgl.h>
+#include <bcmath.h>
+
+#include <vector>
+
+static struct
+{
+    vec3_t pos;
+    vec3_t rot;
+    bool auto_rotate;
+} camera =
+{
+    { 0, 0, -6 },
+    { -45, 0, 40},
+    false
+};
+
+static BCFont *font = NULL;
+
+struct Object
+{
+    BCMesh *mesh;
+    vec3_t pos;
+    BCColor color;
+};
+
+static std::vector<Object> objs;
+
+//
+// BCGL interface
+//
+
+extern "C" void BC_onConfig(BCConfig *config)
+{
+    float aspect = (float) config->width / (float) config->height;
+#ifndef __ANDROID__
+    config->height = 480;
+    config->width = aspect * config->height;
+    config->vsync = false;
+    config->msaa = 4;
+#endif
+    config->title = "Test App";
+}
+
+extern "C" void BC_onCreate()
+{
+}
+
+extern "C" void BC_onDestroy()
+{
+}
+
+extern "C" void BC_onStart()
+{
+    font = bcCreateFontTTF(ASSETS_DIR"vera.ttf", 30);
+
+    objs.push_back(
+    {
+        bcCreateMeshBox(-1, -1, 0, 1, 1, 2),
+        vec3(-2, 2, 0),
+        BC_COLOR_RED
+    });
+    objs.push_back(
+    {
+        bcCreateCylinder(1, 0.5f, 16),
+        vec3(4, 0, 0),
+        BC_COLOR_GREEN
+    });
+    objs.push_back(
+    {
+        bcCreateMeshSphere(1, 12, 12),
+        vec3(-1, -1, 0),
+        BC_COLOR_BLUE
+    });
+}
+
+extern "C" void BC_onStop()
+{
+    bcDestroyFont(font);
+    for (Object & obj : objs)
+    {
+        bcDestroyMesh(obj.mesh);
+        obj.mesh = NULL;
+    }
+}
+
+extern "C" void BC_onUpdate(float dt)
+{
+    // camera control
+    if (bcIsMouseDown(0))
+    {
+        camera.rot.z += bcGetMouseDeltaX();
+        camera.rot.x += bcGetMouseDeltaY();
+    }
+    camera.pos.z += bcGetMouseWheel() * 0.1f;
+    if (camera.auto_rotate)
+    {
+        camera.rot.z += dt * 50;
+    }
+
+    // scene 3D
+    bcClear(BC_COLOR_GRAY);
+    bcPrepareScene3D(60);
+
+    // camera
+    bcTranslatef(0, 0, camera.pos.z);
+    bcRotatef(camera.rot.x, 1, 0, 0);
+    bcRotatef(camera.rot.y, 0, 1, 0);
+    bcRotatef(camera.rot.z, 0, 0, 1);
+    bcTranslatef(camera.pos.x, camera.pos.y, 0);
+
+    // grid
+    bcSetColor(BC_COLOR_WHITE, BC_COLOR_TYPE_DIFFUSE);
+    bcPushMatrix();
+    bcTranslatef(-5, -5, 0);
+    bcDrawGrid(10, 10);
+    bcPopMatrix();
+
+    // scene
+    for (const Object & obj : objs)
+    {
+        bcPushMatrix();
+        bcTranslatef(obj.pos.x, obj.pos.y, obj.pos.z);
+        bcSetColor(obj.color, BC_COLOR_TYPE_DIFFUSE);
+        bcDrawMesh(obj.mesh);
+        bcPopMatrix();
+    }
+
+    bcPrepareSceneGUI();
+    bcSetColor(BC_COLOR_YELLOW, BC_COLOR_TYPE_PRIMARY);
+    bcDrawText(font, 10, 30, "Text is YELLOW");
+    bcDrawText(font, 10, 60, "Box is RED");
+    bcDrawText(font, 10, 90, "Cylinder is GREEN");
+    bcDrawText(font, 10, 120, "Sphere is BLUE");
+    bcDrawText(font, 10, 150, "Grid is WHITE");
+}
+
+extern "C" void BC_onEvent(BCEvent event)
+{
+    static bool wire = false;
+    if (event.type == BC_EVENT_KEY_RELEASE)
+    {
+        switch (event.id)
+        {
+        case BC_KEY_ESCAPE:
+            bcQuit(0);
+            break;
+        case BC_KEY_W:
+            wire = !wire;
+            bcSetWireframe(wire);
+            break;
+        case BC_KEY_R:
+            camera.auto_rotate = !camera.auto_rotate;
+            break;
+        }
+    }
+}
