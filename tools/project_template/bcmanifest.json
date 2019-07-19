@@ -1,0 +1,8 @@
+{
+    "name": "{{bcapp:name}}",
+    "title": "{{bcapp:title}}",
+    "company": "{{bcapp:company}}",
+    "bcgl_dir": "{{bcapp:bcgl_dir}}",
+    "assets_dir": "{{bcapp:assets_dir}}",
+    "src_dir": "{{bcapp:src_dir}}"
+}

@@ -3,13 +3,14 @@
 import getopt
 import os
 import sys
+import json
 
 bcvars = {
-    'company': 'com.example',
-    'name': 'test_app',
-    'title': 'Test App',
+    'name': None,
+    'title': None,
+    'company': 'com.bcgl',
+    'bcgl_dir': os.path.relpath(os.path.dirname(__file__) + "/..", os.getcwd()),
     'assets_dir': 'assets',
-    'bcgl_dir': 'bcgl',
     'src_dir': 'src',
 }
 
@@ -62,46 +63,99 @@ def create_project(root):
     except Exception as e:
         raise e
 
+def print_bcvars():
+    print '======================'
+    for k in bcvars:
+        v = bcvars[k]
+        print '  ', k, '=', v
+    print '======================'
+
 ##########
 ## MAIN ##
 ##########
 
+print
+
 README = """Usage: create_project.py [OPTIONS]
 
-    -C, --compeny=COMPANY           default: com.example
-    -N, --name=NAME                 default: test_app
-    -T, --title=TITLE               default: Test App
+    -N, --name=NAME                 required
+    -T, --title=TITLE               default: same as name
+    -C, --company=COMPANY           default: com.bcgl
+        --bcgl_dir=BCGL_DIR         default: relative path to bcgl
         --assets_dir=ASSETS_DIR     default: assets
-        --bcgl_dir=BCGL_DIR         default: bcgl
         --src_dir=SRC_DIR           default: src
+        --update                    update existing project
 """
 
-if len(sys.argv) <= 1:
-    print README
-    sys.exit()
+MANIFEST_FILE = 'bcmanifest.json'
 
+existing_manifest = False
+do_update = False
+
+# read manifest
+if os.path.isfile(MANIFEST_FILE):
+    with open(MANIFEST_FILE) as json_file:
+        print 'Existing manifest'
+        bcvars = json.load(json_file)
+        print_bcvars()
+        print
+        existing_manifest = True
+
+# get arguments
 options, rest = getopt.getopt(sys.argv[1:], 'C:N:T:', [
-    'company=',
     'name=',
     'title=',
-    'assets_dir=',
+    'company=',
     'bcgl_dir=',
+    'assets_dir=',
     'src_dir=',
-    'init'
+    'help',
+    'update'
     ])
 
 for opt, arg in options:
-    if opt in ('-C', '--company'):
-        bcvars['company'] = arg
-    elif opt in ('-N', '--name'):
+    if opt in ('-N', '--name'):
         bcvars['name'] = arg
     elif opt in ('-T', '--title'):
         bcvars['title'] = arg
-    elif opt == '--assets_dir':
-        bcvars['assets_dir'] = arg
+    elif opt in ('-C', '--company'):
+        bcvars['company'] = arg
     elif opt == '--bcgl_dir':
         bcvars['bcgl_dir'] = arg
+    elif opt == '--assets_dir':
+        bcvars['assets_dir'] = arg
     elif opt == '--src_dir':
         bcvars['src_dir'] = arg
+    elif opt == '--help':
+        print README
+        sys.exit()
+    elif opt == '--update':
+        do_update = True
+
+# check manifest override
+if existing_manifest == True:
+    if do_update == False:
+        print "To override existing project use '--update' option!"
+        sys.exit()
+    else:
+        print 'Update manifest'
+
+# check existing name
+if bcvars['name'] is None:
+    print "Missing option, '--name' must be provided!"
+    print
+    print README
+    sys.exit()
+
+# check existing title
+if bcvars['title'] is None:
+    bcvars['title'] = bcvars['name']
+
+# print config
+print_bcvars()
+print
 
 create_project(os.path.dirname(__file__) + '/project_template')
+
+print
+print 'Project ready.'

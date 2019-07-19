@@ -62,7 +62,7 @@ extern "C" void BC_onUpdate(float dt)
     // scene 3D
     bcClear(BC_COLOR_GRAY);
     bcPrepareScene3D(60);
-    bcSetObjectColorf(1, 1, 1, 1);
+    bcSetColor(BC_COLOR_WHITE, BC_COLOR_TYPE_PRIMARY);
 
     // camera
     bcTranslatef(0, 0, camera.pos.z);
@@ -78,7 +78,7 @@ extern "C" void BC_onUpdate(float dt)
     bcPopMatrix();
 
     // scene
-    bcSetObjectColor(BC_COLOR_BLUE);
+    bcSetColor(BC_COLOR_BLUE, BC_COLOR_TYPE_PRIMARY);
     bcDrawCube(0, 0, 0.5f, 1, 1, 1);
 }
 
