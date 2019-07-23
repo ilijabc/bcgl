@@ -39,7 +39,7 @@ extern "C" void BC_onConfig(BCConfig *config)
     config->vsync = false;
     config->msaa = 4;
 #endif
-    config->title = "Test App";
+    config->title = "BCGL Demo";
 }
 
 extern "C" void BC_onCreate()

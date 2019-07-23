@@ -1,6 +1,6 @@
 @echo off
 
-adb shell am force-stop com.example.test_app
+adb shell am force-stop com.bcgl.demo
 
 pushd %~dp0
 
@@ -10,7 +10,7 @@ if not %ERRORLEVEL% == 0 (
     exit /B 1
 )
 
-adb shell am start com.example.test_app/info.djukic.bcgl.BCGLActivity
+adb shell am start com.bcgl.demo/info.djukic.bcgl.BCGLActivity
 
 popd
 exit /B 0

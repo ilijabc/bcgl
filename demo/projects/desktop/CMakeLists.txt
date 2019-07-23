@@ -12,6 +12,6 @@ endif()
 #     set(RES "res/resource.rc")
 # endif()
 
-add_executable(test_app ${SRCS} ${RES})
+add_executable(demo ${SRCS} ${RES})
 
-target_link_libraries(test_app bcgl)
+target_link_libraries(demo bcgl)

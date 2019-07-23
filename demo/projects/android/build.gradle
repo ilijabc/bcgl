@@ -14,7 +14,7 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 26
     defaultConfig {
-        applicationId "com.example.test_app"
+        applicationId "com.bcgl.demo"
         minSdkVersion 23
         targetSdkVersion 26
         versionCode 1
