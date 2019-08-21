@@ -6,7 +6,7 @@
 
 #define LINE_MAX 1024
 
-static const char * s_ModeStr[] = { "rt", "wt", "at", "rb", "wb", "ab" };
+static const char * s_ModeStr[] = { "r", "w", "a", "rb", "wb", "ab" };
 
 #ifdef __ANDROID__
 #include <android/asset_manager.h>
@@ -266,10 +266,10 @@ char * bcLoadTextFile(const char *filename, int *out_size)
 {
     if (filename == NULL)
         return NULL;
-    BCFile * file = bcOpenFile(filename, BC_FILE_READ_TEXT);
+    BCFile * file = bcOpenFile(filename, BC_FILE_READ_DATA);
     if (file == NULL)
     {
-        bcLogWarning("Text file '%s' not found!", filename);
+        // bcLogWarning("Text file '%s' not found!", filename);
         return NULL;
     }
     char *text = (char *) malloc(sizeof(char) * (file->length + 1));
