@@ -23,8 +23,9 @@ typedef enum
     BC_MESH_NORM        = 0x8,
     BC_MESH_TEX2        = 0x10,
     BC_MESH_TEX3        = 0x20,
-    BC_MESH_COL3        = 0x40,
-    BC_MESH_COL4        = 0x80,
+    BC_MESH_COL1        = 0x40,
+    BC_MESH_COL3        = 0x80,
+    BC_MESH_COL4        = 0x100,
     BC_MESH_DEFAULT     = (BC_MESH_POS3 | BC_MESH_NORM | BC_MESH_TEX2 | BC_MESH_COL4),
 } BCMeshFlags;
 

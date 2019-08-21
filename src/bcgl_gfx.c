@@ -674,6 +674,11 @@ void bcSetLighting(bool enabled)
     if (enabled)
     {
         glUniform4f(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_LIGHT_COLOR], 1, 1, 1, 1);
+        glEnable(GL_CULL_FACE);
+    }
+    else
+    {
+        glDisable(GL_CULL_FACE);
     }
 #else
     if (enabled)
@@ -776,6 +781,7 @@ BCMesh * bcCreateMesh(int format, const float *vert_data, int vert_num, const ui
         (format & BC_MESH_NORM) ? 3 :
         0;
     mesh->comps[BC_VERTEX_ATTR_COLORS] =
+        (format & BC_MESH_COL1) ? 1 :
         (format & BC_MESH_COL3) ? 3 :
         (format & BC_MESH_COL4) ? 4 :
         0;
