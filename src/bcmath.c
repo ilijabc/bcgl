@@ -269,6 +269,16 @@ vec3_t vec3_multiply_mat3(vec3_t v, mat3_t m)
     return result;
 }
 
+vec3_t vec3_multiply_mat4(vec3_t v, float w, mat4_t m)
+{
+    vec3_t result = {
+        m.v[0] * v.x + m.v[4] * v.y + m.v[8] * v.z + m.v[12] * w,
+        m.v[1] * v.x + m.v[5] * v.y + m.v[9] * v.z + m.v[13] * w,
+        m.v[2] * v.x + m.v[6] * v.y + m.v[10] *v.z + m.v[14] * w,
+    };
+    return result;
+}
+
 vec3_t vec3_divide(vec3_t v1, vec3_t v2)
 {
     vec3_t result = {
@@ -549,6 +559,19 @@ vec4_t vec4_divide_f(vec4_t v0, float f)
 // mat4
 //
 
+mat4_t mat4(float m00, float m10, float m20, float m30,
+            float m01, float m11, float m21, float m31,
+            float m02, float m12, float m22, float m32,
+            float m03, float m13, float m23, float m33)
+{
+    mat4_t result = {
+        m00, m10, m20, m30,
+        m01, m11, m21, m31,
+        m02, m12, m22, m32,
+        m03, m13, m23, m33
+    };
+    return result;
+}
 mat4_t mat4_from_array(float *v)
 {
     mat4_t result;
@@ -890,6 +913,16 @@ vec4_t mat4_unproject_inv(mat4_t m, float x, float y, float z, int viewport[4])
     };
     result = vec4_divide_f(result, result.w);
     return result;
+}
+
+float mat4_determinant(mat4_t m)
+{
+    return (m.m00 * m.m11 - m.m01 * m.m10) * (m.m22 * m.m33 - m.m23 * m.m32)
+         + (m.m02 * m.m10 - m.m00 * m.m12) * (m.m21 * m.m33 - m.m23 * m.m31)
+         + (m.m00 * m.m13 - m.m03 * m.m10) * (m.m21 * m.m32 - m.m22 * m.m31)
+         + (m.m01 * m.m12 - m.m02 * m.m11) * (m.m20 * m.m33 - m.m23 * m.m30)
+         + (m.m03 * m.m11 - m.m01 * m.m13) * (m.m20 * m.m32 - m.m22 * m.m30)
+         + (m.m02 * m.m13 - m.m03 * m.m12) * (m.m20 * m.m31 - m.m21 * m.m30);
 }
 
 #if 1

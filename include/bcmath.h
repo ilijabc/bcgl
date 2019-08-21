@@ -163,6 +163,7 @@ vec3_t vec3_subtract_f(vec3_t v0, float f);
 vec3_t vec3_multiply(vec3_t v0, vec3_t v1);
 vec3_t vec3_multiply_f(vec3_t v0, float f);
 vec3_t vec3_multiply_mat3(vec3_t v0, mat3_t m0);
+vec3_t vec3_multiply_mat4(vec3_t v, float w, mat4_t m);
 vec3_t vec3_divide(vec3_t v0, vec3_t v1);
 vec3_t vec3_divide_f(vec3_t v0, float f);
 vec3_t vec3_snap(vec3_t v0, vec3_t v1);
@@ -197,6 +198,10 @@ vec4_t vec4_divide(vec4_t v0, vec4_t v1);
 vec4_t vec4_divide_f(vec4_t v0, float f);
 
 // mat4
+mat4_t mat4(float m00, float m10, float m20, float m30,
+            float m01, float m11, float m21, float m31,
+            float m02, float m12, float m22, float m32,
+            float m03, float m13, float m23, float m33);
 mat4_t mat4_from_array(float *v);
 mat4_t mat4_identity();
 mat4_t mat4_perspective(float fov_y, float aspect, float near, float far);
@@ -221,6 +226,7 @@ mat4_t mat4_inverse(mat4_t m);
 vec4_t mat4_project(mat4_t m, float x, float y, float z, int viewport[4]);
 vec4_t mat4_unproject(mat4_t m, float x, float y, float z, int viewport[4]);
 vec4_t mat4_unproject_inv(mat4_t m, float x, float y, float z, int viewport[4]);
+float mat4_determinant(mat4_t m);
 void mat4_dump(mat4_t m);
 
 // quat
