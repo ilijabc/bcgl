@@ -42,6 +42,7 @@ typedef struct
     int MatrixCounter;
     BCMesh *ReusableSolidMesh;
     BCMesh *ReusableCubeMesh;
+    BCMesh *ReusableWireCubeMesh;
 } BCContext;
 
 static BCContext *g_Context = NULL;
@@ -217,6 +218,8 @@ void bcTermGfx()
         bcDestroyMesh(g_Context->ReusableSolidMesh);
     if (g_Context->ReusableCubeMesh)
         bcDestroyMesh(g_Context->ReusableCubeMesh);
+    if (g_Context->ReusableWireCubeMesh)
+        bcDestroyMesh(g_Context->ReusableWireCubeMesh);
 #ifdef SUPPORT_GLSL
     bcDestroyShader(g_Context->DefaultShader);
 #endif
@@ -1452,17 +1455,31 @@ void bcDrawCircle2D(float x, float y, float r, int segments, bool fill)
 // Draw 3D
 //
 
-void bcDrawCube(float x, float y, float z, float size_x, float size_y, float size_z)
+void bcDrawCube(float x, float y, float z, float size_x, float size_y, float size_z, bool solid)
 {
-    if (g_Context->ReusableCubeMesh == NULL)
+    BCMesh * mesh = NULL;
+    if (solid)
     {
-        g_Context->ReusableCubeMesh = bcCreateMeshCube();
-        bcUpdateMesh(g_Context->ReusableCubeMesh);
+        if (g_Context->ReusableCubeMesh == NULL)
+        {
+            g_Context->ReusableCubeMesh = bcCreateMeshCube();
+            bcUpdateMesh(g_Context->ReusableCubeMesh);
+        }
+        mesh = g_Context->ReusableCubeMesh;
+    }
+    else
+    {
+        if (g_Context->ReusableWireCubeMesh == NULL)
+        {
+            g_Context->ReusableWireCubeMesh = bcCreateMeshWireBox(0, 0, 0, 1, 1, 1);
+            bcUpdateMesh(g_Context->ReusableWireCubeMesh);
+        }
+        mesh = g_Context->ReusableWireCubeMesh;
     }
     bcPushMatrix();
     bcTranslatef(x, y, z);
     bcScalef(size_x, size_y, size_z);
-    bcDrawMesh(g_Context->ReusableCubeMesh);
+    bcDrawMesh(mesh);
     bcPopMatrix();
 }
 
@@ -1490,6 +1507,71 @@ void bcDrawPlane(int size_x, int size_y)
     bcVertex2f(size_x, size_y);
     bcVertex2f(0, size_y);
     bcEnd();
+}
+
+
+BCMesh * bcCreateMeshWireBox(float x1, float y1, float z1, float x2, float y2, float z2)
+{
+    BCMesh *mesh = bcCreateMesh(BC_MESH_POS3 | BC_MESH_NORM, NULL, 48, NULL, 0, false);
+    if (bcBeginMesh(mesh, BC_LINES))
+    {
+        bcNormal3f(0, 0, -1);
+        bcVertex3f(x2, y1, z1);
+        bcVertex3f(x1, y1, z1);
+        bcVertex3f(x1, y1, z1);
+        bcVertex3f(x1, y2, z1);
+        bcVertex3f(x1, y2, z1);
+        bcVertex3f(x2, y2, z1);
+        bcVertex3f(x2, y2, z1);
+        bcVertex3f(x2, y1, z1);
+        bcNormal3f(0, 1, 0);
+        bcVertex3f(x2, y2, z1);
+        bcVertex3f(x1, y2, z1);
+        bcVertex3f(x1, y2, z1);
+        bcVertex3f(x1, y2, z2);
+        bcVertex3f(x1, y2, z2);
+        bcVertex3f(x2, y2, z2);
+        bcVertex3f(x2, y2, z2);
+        bcVertex3f(x2, y2, z1);
+        bcNormal3f(0, -1, 0);
+        bcVertex3f(x2, y1, z2);
+        bcVertex3f(x1, y1, z2);
+        bcVertex3f(x1, y1, z2);
+        bcVertex3f(x1, y1, z1);
+        bcVertex3f(x1, y1, z1);
+        bcVertex3f(x2, y1, z1);
+        bcVertex3f(x2, y1, z1);
+        bcVertex3f(x2, y1, z2);
+        bcNormal3f(-1, 0, 0);
+        bcVertex3f(x1, y2, z2);
+        bcVertex3f(x1, y2, z1);
+        bcVertex3f(x1, y2, z1);
+        bcVertex3f(x1, y1, z1);
+        bcVertex3f(x1, y1, z1);
+        bcVertex3f(x1, y1, z2);
+        bcVertex3f(x1, y1, z2);
+        bcVertex3f(x1, y2, z2);
+        bcNormal3f(1, 0, 0);
+        bcVertex3f(x2, y2, z1);
+        bcVertex3f(x2, y2, z2);
+        bcVertex3f(x2, y2, z2);
+        bcVertex3f(x2, y1, z2);
+        bcVertex3f(x2, y1, z2);
+        bcVertex3f(x2, y1, z1);
+        bcVertex3f(x2, y1, z1);
+        bcVertex3f(x2, y2, z1);
+        bcNormal3f(0, 0, 1);
+        bcVertex3f(x2, y2, z2);
+        bcVertex3f(x1, y2, z2);
+        bcVertex3f(x1, y2, z2);
+        bcVertex3f(x1, y1, z2);
+        bcVertex3f(x1, y1, z2);
+        bcVertex3f(x2, y1, z2);
+        bcVertex3f(x2, y1, z2);
+        bcVertex3f(x2, y2, z2);
+        bcEndMesh(mesh);
+    }
+    return mesh;
 }
 
 //

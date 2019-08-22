@@ -76,7 +76,7 @@ typedef enum
 {
     BC_COLOR_TYPE_PRIMARY = 0,
     BC_COLOR_TYPE_SECONDARY,
-    BC_COLOR_TYPE_DIFFUSE = 0,
+    BC_COLOR_TYPE_DIFFUSE,
     BC_COLOR_TYPE_AMBIENT,
     BC_COLOR_TYPE_SPECULAR,
     BC_COLOR_TYPE_EMISSION,
@@ -278,7 +278,7 @@ void bcDrawRect2D(float x, float y, float w, float h, bool fill);
 void bcDrawCircle2D(float x, float y, float r, int segments, bool fill);
 
 // Draw 3D
-void bcDrawCube(float x, float y, float z, float size_x, float size_y, float size_z);
+void bcDrawCube(float x, float y, float z, float size_x, float size_y, float size_z, bool solid);
 void bcDrawGrid(int size_x, int size_y);
 void bcDrawPlane(int size_x, int size_y);
 
@@ -296,6 +296,7 @@ BCMesh * bcCreateMeshCube();
 BCMesh * bcCreateMeshBox(float x1, float y1, float z1, float x2, float y2, float z2);
 BCMesh * bcCreateCylinder(float radius, float height, int slices);
 BCMesh * bcCreateMeshSphere(float radius, int slices, int stacks);
+BCMesh * bcCreateMeshWireBox(float x1, float y1, float z1, float x2, float y2, float z2);
 void bcTransformMesh(BCMesh *mesh, float *m);
 void bcDumpMesh(BCMesh *mesh, FILE *stream);
 
