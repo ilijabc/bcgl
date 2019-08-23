@@ -13,20 +13,25 @@ static const char * s_ModeStr[] = { "r", "w", "a", "rb", "wb", "ab" };
 static AAssetManager *s_Manager = NULL;
 #endif
 
-static char * __strdup(const char *str)
-{
-    int len = strlen(str);
-    char *result = malloc(len + 1);
-    memcpy(result, str, len);
-    result[len] = 0;
-    return result;
-}
-
 static off_t __fsize(const char *filename) {
     struct stat st; 
     if (stat(filename, &st) == 0)
         return st.st_size;
     return -1; 
+}
+
+static char * path_convert(const char *str)
+{
+    int len = strlen(str);
+    char *path = malloc(len + 1);
+    for (int i = 0; i < len + 1; i++)
+    {
+        char c = str[i];
+        if (c == '\\')
+            c = '/';
+        path[i] = c;
+    }
+    return path;
 }
 
 //
@@ -57,28 +62,35 @@ BCFile * bcOpenFile(const char *filename, BCFileMode mode)
         bcLogError("Assets must be opened as read-only!");
         return NULL;
     }
+    char *path = path_convert(filename);
 #ifdef __ANDROID__
     if (isAsset)
     {
-        AAsset *aas = AAssetManager_open(s_Manager, filename + strlen(ASSETS_DIR), 0);
+        AAsset *aas = AAssetManager_open(s_Manager, path + strlen(ASSETS_DIR), 0);
         if (aas == NULL)
+        {
+            free(path);
             return NULL;
+        }
         BCFile *file = NEW_OBJECT(BCFile);
         file->handle = aas;
-        file->name = __strdup(filename);
+        file->name = path;
         file->isDir = false;
         file->isAsset = true;
         file->length = AAsset_getLength(aas);
         return file;
     }
 #endif
-    off_t length = __fsize(filename);
-    FILE *fp = fopen(filename, s_ModeStr[mode]);
+    off_t length = __fsize(path);
+    FILE *fp = fopen(path, s_ModeStr[mode]);
     if (fp == NULL)
+    {
+        free(path);
         return NULL;
+    }
     BCFile *file = NEW_OBJECT(BCFile);
     file->handle = fp;
-    file->name = __strdup(filename);
+    file->name = path;
     file->isDir = false;
     file->isAsset = isAsset;
     file->length = length;
@@ -181,33 +193,40 @@ const char * bcReadFileLine(BCFile *file)
 BCFile * bcOpenDir(const char *filename)
 {
     bool isAsset = (strstr(filename, ASSETS_DIR) == filename);
+    char *path = path_convert(filename);
 #ifdef __ANDROID__
     if (isAsset)
     {
         char dir_name[256];
-        int n = strlen(filename) - strlen(ASSETS_DIR);
-        if (filename[strlen(filename) - 1] == '/')
+        int n = strlen(path) - strlen(ASSETS_DIR);
+        if (path[strlen(path) - 1] == '/')
             n--;
-        strncpy(dir_name, filename + strlen(ASSETS_DIR), n);
+        strncpy(dir_name, path + strlen(ASSETS_DIR), n);
         dir_name[n] = 0;
         AAssetDir *aas = AAssetManager_openDir(s_Manager, dir_name);
         if (aas == NULL)
+        {
+            free(path);
             return NULL;
+        }
         BCFile *file = NEW_OBJECT(BCFile);
         file->handle = aas;
-        file->name = __strdup(filename);
+        file->name = path;
         file->isDir = true;
         file->isAsset = true;
         file->length = 0;
         return file;
     }
 #endif
-    DIR *d = opendir(filename);
+    DIR *d = opendir(path);
     if (d == NULL)
+    {
+        free(path);
         return NULL;
+    }
     BCFile *file = NEW_OBJECT(BCFile);
     file->handle = d;
-    file->name = __strdup(filename);
+    file->name = path;
     file->isDir = true;
     file->isAsset = false;
     file->length = 0;
