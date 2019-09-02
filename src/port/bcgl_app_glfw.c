@@ -168,9 +168,22 @@ static void glfw_KeyCallback(GLFWwindow *nativeWindow, int keyCode, int scanCode
     if (action == GLFW_PRESS)
         bcSendEvent(BC_EVENT_KEY_PRESS, appCode, 0, 0);
     else if (action == GLFW_RELEASE)
-        bcSendEvent( BC_EVENT_KEY_RELEASE, appCode, 0, 0);
+        bcSendEvent(BC_EVENT_KEY_RELEASE, appCode, 0, 0);
     else if (action == GLFW_REPEAT)
-        bcSendEvent( BC_EVENT_KEY_REPEAT, appCode, 0, 0);
+        bcSendEvent(BC_EVENT_KEY_REPEAT, appCode, 0, 0);
+    // missing key chars
+    if (action == GLFW_PRESS || action == GLFW_REPEAT)
+    {
+        if (keyCode == GLFW_KEY_BACKSPACE)
+            bcSendEvent(BC_EVENT_KEY_CHAR, 8, 0, 0);
+        else if (keyCode == GLFW_KEY_ENTER)
+            bcSendEvent(BC_EVENT_KEY_CHAR, 13, 0, 0);
+    }
+}
+
+static void glfw_KeyCharCallback(GLFWwindow *nativeWindow, unsigned int code)
+{
+    bcSendEvent(BC_EVENT_KEY_CHAR, code, 0, 0);
 }
 
 static void glfw_CursorPosCallback(GLFWwindow *nativeWindow, double x, double y)
@@ -276,6 +289,7 @@ BCWindow * bcCreateWindow(BCConfig *config)
 
     // Setup callbacks
     glfwSetKeyCallback(nativeWindow, glfw_KeyCallback);
+    glfwSetCharCallback(nativeWindow, glfw_KeyCharCallback);
     glfwSetCursorPosCallback(nativeWindow, glfw_CursorPosCallback);
     glfwSetMouseButtonCallback(nativeWindow, glfw_MouseButtonCallback);
     glfwSetScrollCallback(nativeWindow, glfw_ScrollCallback);
