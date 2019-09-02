@@ -118,40 +118,44 @@ static BCShaderVar s_DefaultShaderVars[] =
     { NULL, NULL }
 };
 
-static const char s_DefaultShaderVertexCode[] =
-"void main()\n" \
-"{\n" \
-"    v_position = (u_ModelViewMatrix * vec4(a_Position, 1)).xyz;\n" \
-"    v_normal = (u_ModelViewMatrix * vec4(a_Normal, 0)).xyz;\n" \
-"    v_texCoord = a_TexCoord;\n" \
-"    v_color = a_Color;\n" \
-"    gl_Position = u_ProjectionMatrix * u_ModelViewMatrix * vec4(a_Position, 1);\n" \
-"}\n" \
-;
+#define STRINGIFY(s) #s
 
-static const char s_DefaultShaderFragmentCode[] =
-"void main()\n" \
-"{\n" \
-"    gl_FragColor = u_VertexColorEnabled ? v_color : u_ColorArray[COLOR_PRIMARY];\n" \
-"    if (u_UseTexture)\n" \
-"    {\n" \
-"        vec4 tex = texture2D(u_Texture, v_texCoord);\n" \
-"        if (u_AlphaTest && tex.a < 0.1)\n" \
-"            discard;\n" \
-"        if (u_AlphaOnlyTexture)\n" \
-"            tex = vec4(1, 1, 1, tex.a);\n" \
-"        gl_FragColor *= tex;\n" \
-"    }\n" \
-"    if (u_LightEnabled)\n" \
-"    {\n" \
-"        vec3 norm = normalize(v_normal);\n" \
-"        vec3 lightDir = normalize(u_LightPosition - v_position);\n" \
-"        float diff = max(dot(norm, lightDir), 0.0);\n" \
-"        vec4 diffuse = diff * u_LightColor;\n" \
-"        gl_FragColor *= (u_ColorArray[COLOR_AMBIENT] + diffuse);\n" \
-"    }\n" \
-"}\n" \
-;
+// vertex code string
+static const char s_DefaultShaderVertexCode[] = STRINGIFY(
+void main()
+{
+    v_position = (u_ModelViewMatrix * vec4(a_Position, 1)).xyz;
+    v_normal = (u_ModelViewMatrix * vec4(a_Normal, 0)).xyz;
+    v_texCoord = a_TexCoord;
+    v_color = a_Color;
+    gl_Position = u_ProjectionMatrix * u_ModelViewMatrix * vec4(a_Position, 1);
+}
+);
+
+// fragment code string
+static const char s_DefaultShaderFragmentCode[] = STRINGIFY(
+void main()
+{
+    gl_FragColor = u_VertexColorEnabled ? v_color : u_ColorArray[COLOR_PRIMARY];
+    if (u_UseTexture)
+    {
+        vec4 tex = texture2D(u_Texture, v_texCoord);
+        if (u_AlphaTest && tex.a < 0.1)
+            discard;
+        if (u_AlphaOnlyTexture)
+            tex = vec4(1, 1, 1, tex.a);
+        gl_FragColor *= tex;
+    }
+    if (u_LightEnabled)
+    {
+        vec3 norm = normalize(v_normal);
+        vec3 lightDir = normalize(u_LightPosition - v_position);
+        float diff = max(dot(norm, lightDir), 0.0);
+        vec4 diffuse = diff * u_ColorArray[COLOR_DIFFUSE];
+        gl_FragColor *= (u_ColorArray[COLOR_AMBIENT] + diffuse);
+    }
+}
+);
 
 #else // SUPPORT_GLSL
 
