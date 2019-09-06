@@ -228,6 +228,7 @@ vec4_t mat4_unproject(mat4_t m, float x, float y, float z, int viewport[4]);
 vec4_t mat4_unproject_inv(mat4_t m, float x, float y, float z, int viewport[4]);
 float mat4_determinant(mat4_t m);
 void mat4_dump(mat4_t m);
+bool mat4_is_zero(mat4_t m);
 
 // quat
 // bool quat_is_zero(quat_t q0);

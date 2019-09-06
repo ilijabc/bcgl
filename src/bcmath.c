@@ -943,6 +943,16 @@ void mat4_dump(mat4_t m)
 }
 #endif
 
+bool mat4_is_zero(mat4_t m)
+{
+    for (int i = 0; i < 16; i++)
+    {
+        if (fabsf(m.v[i]) >= FLT_EPSILON)
+            return false;
+    }
+    return true;
+}
+
 //
 // quat
 //

@@ -34,6 +34,7 @@ size_t bcWriteFile(BCFile *file, void* buf, size_t count);
 size_t bcSeekFile(BCFile *file, size_t offset);
 size_t bcGetFilePosition(BCFile *file);
 const char * bcReadFileLine(BCFile *file);
+bool bcFileExists(const char *filename);
 
 // Dir
 BCFile * bcOpenDir(const char *filename);

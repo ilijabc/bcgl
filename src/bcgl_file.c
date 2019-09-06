@@ -1,6 +1,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include "bcgl_internal.h"
 
@@ -184,6 +185,16 @@ const char * bcReadFileLine(BCFile *file)
     } while (bcReadFile(file, &c, 1));
     line[i] = '\0';
     return line;
+}
+
+bool bcFileExists(const char *filename)
+{
+    bool exists = false;
+    char *path = path_convert(filename);
+    if (access(path, F_OK) != -1)
+        exists = true;
+    free(path);
+    return exists;
 }
 
 //
