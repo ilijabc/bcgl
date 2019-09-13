@@ -42,7 +42,7 @@ else()
     list(APPEND SRCS external/glad/src/glad.c)
 endif()
 
-add_library(bcgl ${SRCS})
+add_library(bcgl STATIC ${SRCS})
 
 target_include_directories(bcgl PUBLIC include external external/glad/include)
 

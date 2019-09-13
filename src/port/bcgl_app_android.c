@@ -504,48 +504,47 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved)
 }
 
 JNIEXPORT void JNICALL
-Java_info_djukic_bcgl_BCGLLib_nativeSetAssetsManager(JNIEnv *env, jclass type,
-                                                                     jobject manager) {
+Java_info_djukic_bcgl_BCGLLib_nativeSetAssetsManager(JNIEnv *env, jclass type, jobject manager)
+{
     AAssetManager *aam = AAssetManager_fromJava(env, manager);
     bcAndroidSetAssetManager(aam);
 }
 
 JNIEXPORT void JNICALL
-Java_info_djukic_bcgl_BCGLLib_nativeSurfaceCreated(JNIEnv *env, jclass type, jint id,
-                                                                   jobject surface) {
+Java_info_djukic_bcgl_BCGLLib_nativeSurfaceCreated(JNIEnv *env, jclass type, jint id, jobject surface)
+{
     g_NativeWindow = ANativeWindow_fromSurface(env, surface);
     bcAndroidSurfaceCreated(g_NativeWindow);
 }
 
 JNIEXPORT void JNICALL
-Java_info_djukic_bcgl_BCGLLib_nativeSurfaceChanged(JNIEnv *env, jclass type, jint id,
-                                                                   jobject surface, jint format, jint width,
-                                                                   jint height) {
+Java_info_djukic_bcgl_BCGLLib_nativeSurfaceChanged(JNIEnv *env, jclass type, jint id, jobject surface, jint format, jint width, jint height)
+{
     bcAndroidSurfaceChanged(format, width, height);
 }
 
 JNIEXPORT void JNICALL
-Java_info_djukic_bcgl_BCGLLib_nativeSurfaceDestroyed(JNIEnv *env, jclass type, jint id,
-                                                                     jobject surface) {
+Java_info_djukic_bcgl_BCGLLib_nativeSurfaceDestroyed(JNIEnv *env, jclass type, jint id, jobject surface)
+{
     bcAndroidSurfaceDestroyed();
     ANativeWindow_release(g_NativeWindow);
     g_NativeWindow = NULL;
 }
 
 JNIEXPORT void JNICALL
-Java_info_djukic_bcgl_BCGLLib_nativeAppChangeState(JNIEnv *env, jclass type,
-                                                                   jint state) {
+Java_info_djukic_bcgl_BCGLLib_nativeAppChangeState(JNIEnv *env, jclass type, jint state)
+{
     bcAndroidAppChengeState(state);
 }
 
 JNIEXPORT void JNICALL
-Java_info_djukic_bcgl_BCGLLib_nativeTouchEvent(JNIEnv *env, jclass type, jint event,
-                                                               jint id, jfloat x, jfloat y) {
+Java_info_djukic_bcgl_BCGLLib_nativeTouchEvent(JNIEnv *env, jclass type, jint event, jint id, jfloat x, jfloat y)
+{
     bcAndroidTouchEvent(event, id, x, y);
 }
 
 JNIEXPORT void JNICALL
-Java_info_djukic_bcgl_BCGLLib_nativeKeyEvent(JNIEnv *env, jclass type, jint event,
-                                                             jint key, jint code) {
+Java_info_djukic_bcgl_BCGLLib_nativeKeyEvent(JNIEnv *env, jclass type, jint event, jint key, jint code)
+{
     bcAndroidKeyEvent(event, key, code);
 }
