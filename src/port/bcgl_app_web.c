@@ -132,6 +132,20 @@ static int convertWebKeyCode(const char *key)
     return BC_KEY_UNKNOWN;
 }
 
+static int convertMouseButton(int button)
+{
+    switch (button)
+    {
+    case 0:
+        return 0;
+    case 1:
+        return 2;
+    case 2:
+        return 1;
+    }
+    return 0;
+}
+
 // Window
 
 void bcCloseWindow(BCWindow *window)
@@ -173,6 +187,9 @@ static EM_BOOL s_key_callback_func(int eventType, const EmscriptenKeyboardEvent 
     int code = convertWebKeyCode(keyEvent->code);
     switch (eventType)
     {
+    case EMSCRIPTEN_EVENT_KEYPRESS:
+        bcSendEvent(BC_EVENT_KEY_CHAR, keyEvent->charCode, 0, 0);
+        break;
     case EMSCRIPTEN_EVENT_KEYDOWN:
         bcSendEvent(keyEvent->repeat ? BC_EVENT_KEY_REPEAT : BC_EVENT_KEY_PRESS, code, keyEvent->keyCode, 0);
         break;
@@ -182,21 +199,23 @@ static EM_BOOL s_key_callback_func(int eventType, const EmscriptenKeyboardEvent 
     default:
         bcLogWarning("Unhandled event: %d", eventType);
     }
-    return true;
+    // TODO: keypress not working when keydown and keuup return true
+    return false;
 }
 
 static EM_BOOL s_mouse_callback_func(int eventType, const EmscriptenMouseEvent *mouseEvent, void *userData)
 {
+    int button = convertMouseButton(mouseEvent->button);
     switch (eventType)
     {
     case EMSCRIPTEN_EVENT_MOUSEDOWN:
-        bcSendEvent(BC_EVENT_MOUSE_PRESS, mouseEvent->button, mouseEvent->targetX, mouseEvent->targetY);
+        bcSendEvent(BC_EVENT_MOUSE_PRESS, button, mouseEvent->targetX, mouseEvent->targetY);
         break;
     case EMSCRIPTEN_EVENT_MOUSEUP:
-        bcSendEvent(BC_EVENT_MOUSE_RELEASE, mouseEvent->button, mouseEvent->targetX, mouseEvent->targetY);
+        bcSendEvent(BC_EVENT_MOUSE_RELEASE, button, mouseEvent->targetX, mouseEvent->targetY);
         break;
     case EMSCRIPTEN_EVENT_MOUSEMOVE:
-        bcSendEvent(BC_EVENT_MOUSE_MOVE, mouseEvent->button, mouseEvent->targetX, mouseEvent->targetY);
+        bcSendEvent(BC_EVENT_MOUSE_MOVE, button, mouseEvent->targetX, mouseEvent->targetY);
         break;
     }
     return true;
@@ -204,7 +223,7 @@ static EM_BOOL s_mouse_callback_func(int eventType, const EmscriptenMouseEvent *
 
 static EM_BOOL s_wheel_callback_func(int eventType, const EmscriptenWheelEvent *wheelEvent, void *userData)
 {
-    bcSendEvent(BC_EVENT_MOUSE_WHEEL, 0, -wheelEvent->deltaX / 100, -wheelEvent->deltaY / 100);
+    bcSendEvent(BC_EVENT_MOUSE_WHEEL, 0, -signf(wheelEvent->deltaX), -signf(wheelEvent->deltaY));
     return true;
 }
 
@@ -252,6 +271,7 @@ int main(int argc, char **argv)
     config.vsync = true;
     config.msaa = 0;
     config.orientation = 0;
+    config.surface = NULL;
 
     bcAppWrapperConfigure(&config);
     if (config.mode != BC_DISPLAY_NORMAL)
@@ -266,6 +286,7 @@ int main(int argc, char **argv)
 
     // setup emscripten
     emscripten_set_canvas_element_size(s_CanvasTarget, config.width, config.height);
+    emscripten_set_keypress_callback(NULL, NULL, true, s_key_callback_func);
     emscripten_set_keydown_callback(NULL, NULL, true, s_key_callback_func);
     emscripten_set_keyup_callback(NULL, NULL, true, s_key_callback_func);
     emscripten_set_mousedown_callback(s_CanvasTarget, NULL, true, s_mouse_callback_func);
