@@ -56,11 +56,11 @@ static BCContext *g_Context = NULL;
 #if defined(__EMSCRIPTEN__)
     #define GLSL_VERSION \
     "#version 100\n" \
-    "precision mediump float;\n"
+    "precision highp float;\n"
 #elif defined(__ANDROID__)
     #define GLSL_VERSION \
     "#version 100\n" \
-    "precision mediump float;\n"
+    "precision highp float;\n"
 #else
     #define GLSL_VERSION \
     "#version 120\n"
