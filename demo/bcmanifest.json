@@ -1,0 +1,8 @@
+{
+    "name": "demo",
+    "title": "BCGL Demo",
+    "company": "com.bcgl",
+    "bcgl_dir": "..",
+    "assets_dir": "assets",
+    "src_dir": "src"
+}
