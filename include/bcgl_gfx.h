@@ -143,6 +143,7 @@ typedef struct
     int char_count;
     void *cdata;
     BCTexture *texture;
+    float height;
 } BCFont;
 
 typedef struct

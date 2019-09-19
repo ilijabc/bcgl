@@ -1640,6 +1640,7 @@ BCFont * bcCreateFontTTF(const char *filename, float height)
     font->char_first = BAKE_CHAR_FIRST;
     font->char_count = BAKE_CHAR_COUNT;
     font->cdata = NEW_ARRAY(BAKE_CHAR_COUNT, stbtt_bakedchar);
+    font->height = height;
     BCImage *image = bcCreateImage(BAKE_BITMAP_WIDTH, BAKE_BITMAP_HEIGHT, 1);
     stbtt_BakeFontBitmap(ttf_buffer, 0, height, image->data,
                          BAKE_BITMAP_WIDTH, BAKE_BITMAP_HEIGHT,
@@ -1671,6 +1672,7 @@ BCFont * bcCreateFontBMP(const char *filename, int char_first, int char_count, i
     font->char_count = char_count;
     font->cdata = bm;
     font->texture = bcCreateTextureFromImage(image, 0);
+    font->height = bm->char_height;
     bcDestroyImage(image);
     return font;
 }
@@ -1690,6 +1692,7 @@ void bcDrawText(BCFont *font, float x, float y, const char *text)
         return;
     bcBindTexture(font->texture);
     bcBegin(BC_TRIANGLES);
+    float start_x = x;
     while (*text)
     {
         stbtt_aligned_quad q;
@@ -1707,6 +1710,11 @@ void bcDrawText(BCFont *font, float x, float y, const char *text)
             bcVertex2f(q.x0, q.y1);
             bcTexCoord2f(q.s0, q.t0);
             bcVertex2f(q.x0, q.y0);
+        }
+        if (*text == '\n')
+        {
+            x = start_x;
+            y += font->height; // TODO: remove this or provide valid line height!
         }
         ++text;
     }
