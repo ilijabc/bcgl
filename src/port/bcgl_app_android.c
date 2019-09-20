@@ -373,9 +373,9 @@ static void * rendererThread(void *arg)
     return NULL;
 }
 
-void bcAndroidSetAssetManager(AAssetManager *manager)
+void bcAndroidInitFileSystem(AAssetManager *manager, const char *local_path, const char *external_path)
 {
-    bcInitFiles(manager);
+    bcInitFiles(manager, local_path, external_path);
 }
 
 void bcAndroidSurfaceCreated(ANativeWindow *window)
@@ -504,10 +504,14 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved)
 }
 
 JNIEXPORT void JNICALL
-Java_info_djukic_bcgl_BCGLLib_nativeSetAssetsManager(JNIEnv *env, jclass type, jobject manager)
+Java_info_djukic_bcgl_BCGLLib_nativeInitFileSystem(JNIEnv *env, jclass type, jobject manager, jstring local_path, jstring external_path)
 {
     AAssetManager *aam = AAssetManager_fromJava(env, manager);
-    bcAndroidSetAssetManager(aam);
+    const char *c_local_path = (*env)->GetStringUTFChars(env, local_path, NULL);
+    const char *c_external_path = (*env)->GetStringUTFChars(env, external_path, NULL);
+    bcAndroidInitFileSystem(aam, c_local_path, c_external_path);
+    (*env)->ReleaseStringUTFChars(env, local_path, c_local_path);
+    (*env)->ReleaseStringUTFChars(env, external_path, c_external_path);
 }
 
 JNIEXPORT void JNICALL

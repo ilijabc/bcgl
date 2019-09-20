@@ -31,7 +31,10 @@ public class BCGLActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        BCGLLib.nativeSetAssetsManager(getAssets());
+        BCGLLib.nativeInitFileSystem(
+            getAssets(),
+            getFilesDir().getAbsolutePath(),
+            android.os.Environment.getExternalStorageDirectory().getAbsolutePath());
 
         mView = new BCGLView(this);
         setContentView(mView);

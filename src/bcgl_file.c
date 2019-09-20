@@ -7,12 +7,19 @@
 
 #define LINE_MAX 1024
 
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
+
 static const char * s_ModeStr[] = { "r", "w", "a", "rb", "wb", "ab" };
 
 #ifdef __ANDROID__
 #include <android/asset_manager.h>
 static AAssetManager *s_Manager = NULL;
 #endif
+
+static char s_LocalPath[PATH_MAX] = "";
+static char s_ExternalPath[PATH_MAX] = "";
 
 static off_t __fsize(const char *filename) {
     struct stat st; 
@@ -21,29 +28,51 @@ static off_t __fsize(const char *filename) {
     return -1; 
 }
 
-static char * path_convert(const char *str)
+static char * __strdup(const char *str)
 {
     int len = strlen(str);
-    char *path = malloc(len + 1);
-    for (int i = 0; i < len + 1; i++)
+    char *result = malloc(len + 1);
+    memcpy(result, str, len);
+    result[len] = 0;
+    return result;
+}
+
+static void path_convert(const char *path_in, char *path_out, bool *p_asset)
+{
+    bool isAsset = (strstr(path_in, ASSETS_DIR) == path_in);
+    if (p_asset)
     {
-        char c = str[i];
-        if (c == '\\')
-            c = '/';
-        path[i] = c;
+        *p_asset = isAsset;
     }
-    return path;
+    strcpy(path_out, "");
+    if (path_in[0] != '/' && !isAsset)
+    {
+        strcat(path_out, s_LocalPath);
+        strcat(path_out, "/");
+    }
+    strcat(path_out, path_in);
+    // convert backslashes to slashes
+    int n = strlen(path_out);
+    for (int i = 0; i < n; i++)
+    {
+        if (path_out[i] == '\\')
+        {
+            path_out[i] = '/';
+        }
+    }
 }
 
 //
 // Init
 //
 
-void bcInitFiles(void *ctx)
+void bcInitFiles(void *ctx, const char *local_path, const char *external_path)
 {
 #ifdef __ANDROID__
     s_Manager = ctx;
 #endif
+    strcpy(s_LocalPath, local_path);
+    strcpy(s_ExternalPath, external_path);
     bcLog("BCGL: %d.%d.%d (%d)", __BC_MAJOR, __BC_MINOR, __BC_PATCH, __BC_VERSION);
 }
 
@@ -57,25 +86,25 @@ void bcTermFiles()
 
 BCFile * bcOpenFile(const char *filename, BCFileMode mode)
 {
-    bool isAsset = (strstr(filename, ASSETS_DIR) == filename);
+    bool isAsset;
+    char path[PATH_MAX];
+    path_convert(filename, path, &isAsset);
     if (isAsset && mode != BC_FILE_READ_TEXT && mode != BC_FILE_READ_DATA)
     {
         bcLogError("Assets must be opened as read-only!");
         return NULL;
     }
-    char *path = path_convert(filename);
 #ifdef __ANDROID__
     if (isAsset)
     {
         AAsset *aas = AAssetManager_open(s_Manager, path + strlen(ASSETS_DIR), 0);
         if (aas == NULL)
         {
-            free(path);
             return NULL;
         }
         BCFile *file = NEW_OBJECT(BCFile);
         file->handle = aas;
-        file->name = path;
+        file->name = __strdup(path);
         file->isDir = false;
         file->isAsset = true;
         file->length = AAsset_getLength(aas);
@@ -86,12 +115,11 @@ BCFile * bcOpenFile(const char *filename, BCFileMode mode)
     FILE *fp = fopen(path, s_ModeStr[mode]);
     if (fp == NULL)
     {
-        free(path);
         return NULL;
     }
     BCFile *file = NEW_OBJECT(BCFile);
     file->handle = fp;
-    file->name = path;
+    file->name = __strdup(path);
     file->isDir = false;
     file->isAsset = isAsset;
     file->length = length;
@@ -189,12 +217,10 @@ const char * bcReadFileLine(BCFile *file)
 
 bool bcFileExists(const char *filename)
 {
-    bool exists = false;
-    char *path = path_convert(filename);
-    if (access(path, F_OK) != -1)
-        exists = true;
-    free(path);
-    return exists;
+    bool isAsset;
+    char path[PATH_MAX];
+    path_convert(filename, path, &isAsset);
+    return (access(path, F_OK) != -1);
 }
 
 //
@@ -203,26 +229,28 @@ bool bcFileExists(const char *filename)
 
 BCFile * bcOpenDir(const char *filename)
 {
-    bool isAsset = (strstr(filename, ASSETS_DIR) == filename);
-    char *path = path_convert(filename);
+    bool isAsset;
+    char path[PATH_MAX];
+    path_convert(filename, path, &isAsset);
 #ifdef __ANDROID__
     if (isAsset)
     {
-        char dir_name[256];
+        char dir_name[PATH_MAX];
         int n = strlen(path) - strlen(ASSETS_DIR);
         if (path[strlen(path) - 1] == '/')
+        {
             n--;
+        }
         strncpy(dir_name, path + strlen(ASSETS_DIR), n);
         dir_name[n] = 0;
         AAssetDir *aas = AAssetManager_openDir(s_Manager, dir_name);
         if (aas == NULL)
         {
-            free(path);
             return NULL;
         }
         BCFile *file = NEW_OBJECT(BCFile);
         file->handle = aas;
-        file->name = path;
+        file->name = __strdup(path);
         file->isDir = true;
         file->isAsset = true;
         file->length = 0;
@@ -232,12 +260,11 @@ BCFile * bcOpenDir(const char *filename)
     DIR *d = opendir(path);
     if (d == NULL)
     {
-        free(path);
         return NULL;
     }
     BCFile *file = NEW_OBJECT(BCFile);
     file->handle = d;
-    file->name = path;
+    file->name = __strdup(path);
     file->isDir = true;
     file->isAsset = false;
     file->length = 0;

@@ -259,7 +259,7 @@ EM_JS(int, js_window_innerHeight, (), { return window.innerHeight; });
 
 int main(int argc, char **argv)
 {
-    bcInitFiles(NULL);
+    bcInitFiles(NULL, ".", ".");
 
     // Default config
     BCConfig config;

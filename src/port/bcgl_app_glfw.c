@@ -388,7 +388,7 @@ int main(int argc, char **argv)
     }
     bcLog("GLFW: %s", glfwGetVersionString());
 
-    bcInitFiles(NULL);
+    bcInitFiles(NULL, ".", ".");
 
     // Get the resolution of the primary monitor
     const GLFWvidmode *screen = glfwGetVideoMode(glfwGetPrimaryMonitor());

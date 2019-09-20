@@ -30,7 +30,7 @@ public class BCGLLib {
 
     public static final int GET_NUMBER_DENSITY = 1;
 
-    public static native void nativeSetAssetsManager(AssetManager manager);
+    public static native void nativeInitFileSystem(AssetManager manager, String local_path, String external_path);
     public static native void nativeSurfaceCreated(int id, Surface surface);
     public static native void nativeSurfaceChanged(int id, Surface surface, int format, int width, int height);
     public static native void nativeSurfaceDestroyed(int id, Surface surface);
