@@ -39,6 +39,17 @@ typedef struct vec3 {
     };
 } vec3_t;
 
+typedef struct vec3i {
+    union {
+        struct {
+            int x;
+            int y;
+            int z;
+        };
+        int v[3];
+    };
+} vec3i_t;
+
 typedef struct vec4 {
     union {
         struct {

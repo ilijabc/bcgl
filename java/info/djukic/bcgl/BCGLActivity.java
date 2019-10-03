@@ -117,6 +117,10 @@ public class BCGLActivity extends Activity {
         return true;
     }
 
+    @Override
+    public void onBackPressed() {
+    }
+
     private int convertOrientation(int i) {
         switch (i) {
             case 0:

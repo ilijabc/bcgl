@@ -1789,7 +1789,7 @@ BCMesh * bcCreateMeshFromShape(void *par_shape)
 
 BCMesh * bcCreateMeshCube()
 {
-    return bcCreateMeshBox(-0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f);
+    return bcCreateMeshBox(0, 0, 0, 1, 1, 1);
 }
 
 BCMesh * bcCreateMeshBox(float x1, float y1, float z1, float x2, float y2, float z2)
