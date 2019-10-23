@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.6)
 
+project(bcgl)
+
 set(CMAKE_C_FLAGS "-std=c99")
 
 add_definitions("-D SUPPORT_PAR_SHAPES")
