@@ -1,2 +1,3 @@
 build/
 {{bcapp:bcgl_dir}}/
+*.sublime-workspace

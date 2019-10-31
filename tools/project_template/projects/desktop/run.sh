@@ -3,5 +3,5 @@
 (
 	$(dirname $0)/build.sh &&
 	cd $(dirname $0)/../.. &&
-	$(dirname $0)/build/{{bcapp:name}}
+	$(dirname $0)/build/{{bcapp:name}} $@
 )

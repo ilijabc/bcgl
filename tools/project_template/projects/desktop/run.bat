@@ -6,5 +6,5 @@ if not %ERRORLEVEL% == 0 (
 )
 
 pushd %~dp0\..\..
-%~dp0\build\{{bcapp:name}}.exe
+%~dp0\build\{{bcapp:name}}.exe %*
 popd

@@ -79,7 +79,7 @@ extern "C" void BC_onUpdate(float dt)
 
     // scene
     bcSetColor(BC_COLOR_BLUE, BC_COLOR_TYPE_PRIMARY);
-    bcDrawCube(0, 0, 0.5f, 1, 1, 1);
+    bcDrawCube(-1, -1, 0, 2, 2, 2, true);
 }
 
 extern "C" void BC_onEvent(BCEvent event)

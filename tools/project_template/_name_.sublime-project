@@ -14,28 +14,115 @@
             "variants":
             [
                 {
-                    "cmd": "$project_path\\projects\\desktop\\run.bat",
-                    "name": "mingw-run"
+                    "windows":
+                    {
+                        "cmd": "$project_path/projects/desktop/run.bat"
+                    },
+                    "linux":
+                    {
+                        "cmd": "$project_path/projects/desktop/run.sh"
+                    },
+                    "name": "desktop-run"
                 },
                 {
-                    "cmd": "$project_path\\projects\\desktop\\build.bat",
-                    "name": "mingw-build"
+                    "windows":
+                    {
+                        "cmd": "$project_path/projects/desktop/build.bat"
+                    },
+                    "linux":
+                    {
+                        "cmd": "$project_path/projects/desktop/build.sh"
+                    },
+                    "name": "desktop-build"
                 },
                 {
-                    "cmd": "$project_path\\projects\\android\\run.bat",
+                    "windows":
+                    {
+                        "cmd": "$project_path/projects/desktop/clean.bat"
+                    },
+                    "linux":
+                    {
+                        "cmd": "$project_path/projects/desktop/clean.sh"
+                    },
+                    "name": "desktop-clean"
+                },
+                {
+                    "windows":
+                    {
+                        "cmd": "$project_path/projects/android/run.bat"
+                    },
+                    "linux":
+                    {
+                        "cmd": "$project_path/projects/android/run.sh"
+                    },
                     "name": "android-run"
                 },
                 {
-                    "cmd": "$project_path\\projects\\android\\build.bat",
+                    "windows":
+                    {
+                        "cmd": "$project_path/projects/android/build.bat"
+                    },
+                    "linux":
+                    {
+                        "cmd": "$project_path/projects/android/build.sh"
+                    },
                     "name": "android-build"
                 },
                 {
-                    "cmd": [ "$project_path\\projects\\web\\deploy.bat", "%HTDOCS%" ],
-                    "name": "web-deploy"
+                    "windows":
+                    {
+                        "cmd": "$project_path/projects/android/clean.bat"
+                    },
+                    "linux":
+                    {
+                        "cmd": "$project_path/projects/android/clean.sh"
+                    },
+                    "name": "android-clean"
                 },
                 {
-                    "cmd": "$project_path\\projects\\web\\build.bat",
+                    "windows":
+                    {
+                        "cmd": "$project_path/projects/web/build.bat"
+                    },
+                    "linux":
+                    {
+                        "cmd": "$project_path/projects/web/build.sh"
+                    },
                     "name": "web-build"
+                },
+                {
+                    "windows":
+                    {
+                        "cmd": "$project_path/projects/web/clean.bat"
+                    },
+                    "linux":
+                    {
+                        "cmd": "$project_path/projects/web/clean.sh"
+                    },
+                    "name": "web-clean"
+                },
+                {
+                    "windows":
+                    {
+                        "cmd": "$project_path/projects/clean_all.bat"
+                    },
+                    "linux":
+                    {
+                        "cmd": "$project_path/projects/clean_all.sh"
+                    },
+                    "name": "clean_all"
+                },
+                {
+                    "windows":
+                    {
+                        "cmd": "$project_path/bcgl/demo/projects/desktop/run.bat"
+                    },
+                    "linux":
+                    {
+                        "cmd": "$project_path/bcgl/demo/projects/desktop/run.sh"
+                    },
+                    "name": "bcgl-demo",
+                    "working_dir": "$project_path/bcgl/demo"
                 }
             ],
             "working_dir": "$project_path"

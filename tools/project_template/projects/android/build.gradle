@@ -1,5 +1,4 @@
 buildscript {
-    
     repositories {
         google()
         jcenter()
@@ -15,13 +14,14 @@ android {
     compileSdkVersion 26
     defaultConfig {
         applicationId "{{bcapp:company}}.{{bcapp:name}}"
-        minSdkVersion 23
+        minSdkVersion 21
         targetSdkVersion 26
         versionCode 1
         versionName "1.0"
         externalNativeBuild {
             cmake {
                 cppFlags ""
+                arguments "-DANDROID_STL=c++_shared"
             }
         }
     }

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.6)
 
-project(bcgl)
+project(bcgl_lib)
 
 set(CMAKE_C_FLAGS "-std=c99")
 
@@ -44,8 +44,8 @@ else()
     list(APPEND SRCS external/glad/src/glad.c)
 endif()
 
-add_library(bcgl STATIC ${SRCS})
+add_library(bcgl_lib STATIC ${SRCS})
 
-target_include_directories(bcgl PUBLIC include external external/glad/include)
+target_include_directories(bcgl_lib PUBLIC include external external/glad/include)
 
-target_link_libraries(bcgl ${LIBS})
+target_link_libraries(bcgl_lib ${LIBS})
