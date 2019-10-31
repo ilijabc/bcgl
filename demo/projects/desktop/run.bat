@@ -6,5 +6,5 @@ if not %ERRORLEVEL% == 0 (
 )
 
 pushd %~dp0\..\..
-%~dp0\build\demo.exe
+%~dp0\build\demo.exe %*
 popd

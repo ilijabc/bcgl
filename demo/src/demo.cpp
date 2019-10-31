@@ -110,7 +110,7 @@ extern "C" void BC_onUpdate(float dt)
     bcTranslatef(camera.pos.x, camera.pos.y, 0);
 
     // grid
-    bcSetColor(BC_COLOR_WHITE, BC_COLOR_TYPE_DIFFUSE);
+    bcSetColor(BC_COLOR_WHITE, BC_COLOR_TYPE_PRIMARY);
     bcPushMatrix();
     bcTranslatef(-5, -5, 0);
     bcDrawGrid(10, 10);
@@ -121,7 +121,7 @@ extern "C" void BC_onUpdate(float dt)
     {
         bcPushMatrix();
         bcTranslatef(obj.pos.x, obj.pos.y, obj.pos.z);
-        bcSetColor(obj.color, BC_COLOR_TYPE_DIFFUSE);
+        bcSetColor(obj.color, BC_COLOR_TYPE_PRIMARY);
         bcDrawMesh(obj.mesh);
         bcPopMatrix();
     }
