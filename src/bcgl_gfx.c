@@ -767,13 +767,18 @@ void bcSetColor(BCColor color, BCColorType type)
 // Mesh
 //
 
-BCMesh * bcCreateMesh(int format, const float *vert_data, int vert_num, const uint16_t *indx_data, int indx_num, bool is_static)
+BCMesh * bcCreateMesh(int format, const float *vert_data, int vert_num, const uint16_t *indx_data, int indx_num, BCMeshType type)
 {
+    if (type == BC_MESH_OPTIMIZED && !vert_data)
+    {
+        bcLogError("BC_MESH_OPTIMIZED must have data!");
+        return NULL;
+    }
     BCMesh *mesh = NEW_OBJECT(BCMesh);
     mesh->num_vertices = vert_num;
     mesh->num_indices = indx_num;
     mesh->format = format;
-    mesh->is_static = is_static;
+    mesh->type = type;
     // calculate components
     mesh->comps[BC_VERTEX_ATTR_POSITIONS] =
         (format & BC_MESH_POS2) ? 2 :
@@ -796,50 +801,45 @@ BCMesh * bcCreateMesh(int format, const float *vert_data, int vert_num, const ui
     {
         mesh->total_comps += mesh->comps[i];
     }
-    // init VBOs
-#if 0
-    if (LOADING_OPTIMIZATION)
+    if (mesh->type == BC_MESH_OPTIMIZED)
     {
+        // init VBOs
         if (mesh->num_vertices)
         {
             glGenBuffers(1, &(mesh->vbo_vertices));
-            if (is_static && vert_data)
-            {
-                glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo_vertices);
-                glBufferData(GL_ARRAY_BUFFER, mesh->num_vertices * mesh->total_comps * sizeof(float), vert_data, GL_STATIC_DRAW);
-            }
+            glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo_vertices);
+            glBufferData(GL_ARRAY_BUFFER, mesh->num_vertices * mesh->total_comps * sizeof(float), vert_data, GL_STATIC_DRAW);
         }
         // init vbo_indices
         if (mesh->num_indices)
         {
             glGenBuffers(1, &(mesh->vbo_indices));
-            if (is_static && indx_data)
-            {
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->vbo_indices);
-                glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->num_indices * sizeof(uint16_t), indx_data, GL_STATIC_DRAW);
-            }
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->vbo_indices);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->num_indices * sizeof(uint16_t), indx_data, GL_STATIC_DRAW);
         }
     }
-#endif
-    // allocate vertex and index data holders
-    if (mesh->num_vertices)
+    else
     {
-        mesh->vertices = NEW_ARRAY(mesh->num_vertices * mesh->total_comps, float);
-        if (vert_data)
-            memcpy(mesh->vertices, vert_data, mesh->num_vertices * mesh->total_comps * sizeof(float));
+        // allocate vertex and index data holders
+        if (mesh->num_vertices)
+        {
+            mesh->vertices = NEW_ARRAY(mesh->num_vertices * mesh->total_comps, float);
+            if (vert_data)
+                memcpy(mesh->vertices, vert_data, mesh->num_vertices * mesh->total_comps * sizeof(float));
+        }
+        if (mesh->num_indices)
+        {
+            mesh->indices = NEW_ARRAY(mesh->num_indices, uint16_t);
+            if (indx_data)
+                memcpy(mesh->indices, indx_data, mesh->num_indices * sizeof(uint16_t));
+        }
+        // update VBOs
+        if (vert_data || indx_data)
+        {
+            bcUpdateMesh(mesh);
+        }
     }
-    if (mesh->num_indices)
-    {
-        mesh->indices = NEW_ARRAY(mesh->num_indices, uint16_t);
-        if (indx_data)
-            memcpy(mesh->indices, indx_data, mesh->num_indices * sizeof(uint16_t));
-    }
-    // update VBOs
-    if (vert_data || indx_data)
-    {
-        bcUpdateMesh(mesh);
-    }
-    // draw
+    // draw params
     mesh->draw_mode = GL_TRIANGLES;
     mesh->draw_count = (mesh->num_indices > 0) ? mesh->num_indices : mesh->num_vertices;
     return mesh;
@@ -852,7 +852,7 @@ BCMesh * bcCopyMesh(BCMesh *src)
         bcLogError("Invalid mesh!");
         return NULL;
     }
-    BCMesh *mesh = bcCreateMesh(src->format, src->vertices, src->num_vertices, src->indices, src->num_indices, src->is_static);
+    BCMesh *mesh = bcCreateMesh(src->format, src->vertices, src->num_vertices, src->indices, src->num_indices, src->type);
     if (src->num_vertices)
     {
         memcpy(mesh->vertices, src->vertices, src->num_vertices * src->total_comps * sizeof(float));
@@ -871,7 +871,17 @@ void bcUpdateMesh(BCMesh *mesh)
         bcLogError("Invalid mesh!");
         return;
     }
-    if (mesh->is_static)
+    if (mesh->type == BC_MESH_OPTIMIZED)
+    {
+        bcLogWarning("Can't update BC_MESH_OPTIMIZED");
+        return;
+    }
+    if (mesh->type == BC_MESH_NO_VBO)
+    {
+        bcLogWarning("Can't update BC_MESH_NO_VBO");
+        return;
+    }
+    if (mesh->type == BC_MESH_STATIC)
     {
         if (mesh->vbo_vertices)
         {
@@ -897,7 +907,7 @@ void bcUpdateMesh(BCMesh *mesh)
             glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo_vertices);
             glBufferData(GL_ARRAY_BUFFER, mesh->num_vertices * mesh->total_comps * sizeof(float),
                 mesh->vertices,
-                mesh->is_static ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
+                (mesh->type == BC_MESH_STATIC) ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
         }
     }
     if (mesh->num_indices)
@@ -913,7 +923,7 @@ void bcUpdateMesh(BCMesh *mesh)
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->vbo_indices);
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->num_indices * sizeof(uint16_t),
                 mesh->indices,
-                mesh->is_static ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
+                (mesh->type == BC_MESH_STATIC) ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
         }
     }
     // reset state machine
@@ -1148,7 +1158,7 @@ bool bcBegin(BCDrawMode mode)
 {
     if (g_Context->ReusableSolidMesh == NULL)
     {
-        g_Context->ReusableSolidMesh = bcCreateMesh(BC_MESH_POS3 | BC_MESH_NORM | BC_MESH_TEX2 | BC_MESH_COL4, NULL, 1024, NULL, 1024, false);
+        g_Context->ReusableSolidMesh = bcCreateMesh(BC_MESH_POS3 | BC_MESH_NORM | BC_MESH_TEX2 | BC_MESH_COL4, NULL, 1024, NULL, 1024, BC_MESH_DYNAMIC);
     }
     int ret = bcBeginMesh(g_Context->ReusableSolidMesh, mode);
     if (ret)
@@ -1216,7 +1226,10 @@ void bcEndMesh(BCMesh *mesh)
     g_Context->TempMesh->draw_count = (g_Context->TempMesh->num_indices > 0) ? g_Context->IndexCounter : g_Context->VertexCounter;
     g_Context->TempMesh = NULL;
     // finish mesh
-    bcUpdateMesh(mesh);
+    if (mesh->type != BC_MESH_NO_VBO)
+    {
+        bcUpdateMesh(mesh);
+    }
 }
 
 int bcVertex3f(float x, float y, float z)
@@ -1540,7 +1553,7 @@ void bcDrawPlane(int size_x, int size_y)
 
 BCMesh * bcCreateMeshWireBox(float x1, float y1, float z1, float x2, float y2, float z2)
 {
-    BCMesh *mesh = bcCreateMesh(BC_MESH_POS3 | BC_MESH_NORM, NULL, 48, NULL, 0, true);
+    BCMesh *mesh = bcCreateMesh(BC_MESH_POS3 | BC_MESH_NORM, NULL, 48, NULL, 0, BC_MESH_STATIC);
     if (bcBeginMesh(mesh, BC_LINES))
     {
         bcNormal3f(0, 0, -1);
@@ -1806,7 +1819,7 @@ BCMesh * bcCreateMeshFromShape(void *par_shape)
             vert_ptr[vp++] = shape->tcoords[i * 2 + 1];
         }
     }
-    BCMesh *mesh = bcCreateMesh(format, vert_ptr, shape->npoints, shape->triangles, shape->ntriangles * 3, true);
+    BCMesh *mesh = bcCreateMesh(format, vert_ptr, shape->npoints, shape->triangles, shape->ntriangles * 3, BC_MESH_STATIC);
     free(vert_ptr);
     return mesh;
 }
@@ -1818,7 +1831,7 @@ BCMesh * bcCreateMeshCube()
 
 BCMesh * bcCreateMeshBox(float x1, float y1, float z1, float x2, float y2, float z2)
 {
-    BCMesh *mesh = bcCreateMesh(BC_MESH_POS3 | BC_MESH_NORM | BC_MESH_TEX2, NULL, 24, NULL, 36, true);
+    BCMesh *mesh = bcCreateMesh(BC_MESH_POS3 | BC_MESH_NORM | BC_MESH_TEX2, NULL, 24, NULL, 36, BC_MESH_STATIC);
     if (bcBeginMesh(mesh, BC_QUADS))
     {
         // TODO: generate tex coords
@@ -1859,7 +1872,7 @@ BCMesh * bcCreateMeshBox(float x1, float y1, float z1, float x2, float y2, float
 
 BCMesh * bcCreateCylinder(float radius, float height, int slices)
 {
-    BCMesh *mesh = bcCreateMesh(BC_MESH_POS3 | BC_MESH_NORM | BC_MESH_TEX2, NULL, 240, NULL, 360, true);
+    BCMesh *mesh = bcCreateMesh(BC_MESH_POS3 | BC_MESH_NORM | BC_MESH_TEX2, NULL, 240, NULL, 360, BC_MESH_STATIC);
     if (bcBeginMesh(mesh, BC_QUADS))
     {
         bcNormal3f(0, 0, -1);

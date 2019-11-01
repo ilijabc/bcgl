@@ -31,6 +31,14 @@ typedef enum
 
 typedef enum
 {
+    BC_MESH_STATIC,
+    BC_MESH_DYNAMIC,
+    BC_MESH_OPTIMIZED,
+    BC_MESH_NO_VBO,
+} BCMeshType;
+
+typedef enum
+{
     BC_LINES,
     BC_LINE_LOOP,
     BC_LINE_STRIP,
@@ -133,7 +141,7 @@ typedef struct
     int draw_count;
     unsigned int vbo_vertices;
     unsigned int vbo_indices;
-    bool is_static;
+    BCMeshType type;
 } BCMesh;
 
 typedef struct
@@ -230,7 +238,7 @@ void bcScissorRect(int x, int y, int w, int h);
 void bcSetColor(BCColor color, BCColorType type);
 
 // Mesh
-BCMesh * bcCreateMesh(int format, const float *vert_data, int vert_num, const uint16_t *indx_data, int indx_num, bool is_static);
+BCMesh * bcCreateMesh(int format, const float *vert_data, int vert_num, const uint16_t *indx_data, int indx_num, BCMeshType type);
 BCMesh * bcCopyMesh(BCMesh *mesh);
 void bcUpdateMesh(BCMesh *mesh);
 void bcDestroyMesh(BCMesh *mesh);
