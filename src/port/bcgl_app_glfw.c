@@ -374,11 +374,7 @@ int main(int argc, char **argv)
     setvbuf(stderr, NULL, _IONBF, 0);
 
     s_CommandLine.argc = argc;
-    s_CommandLine.argv = malloc(argc * sizeof(char *));
-    for (int i = 0; i < argc; i++)
-    {
-        s_CommandLine.argv[i] = strdup(argv[i]);
-    }
+    s_CommandLine.argv = argv;
 
     glfwSetErrorCallback(glfw_ErrorCallback);
     if (glfwInit() != GL_TRUE)
@@ -389,6 +385,8 @@ int main(int argc, char **argv)
     bcLog("GLFW: %s", glfwGetVersionString());
 
     bcInitFiles(NULL, ".", ".");
+
+    bcAppCreate();
 
     // Get the resolution of the primary monitor
     const GLFWvidmode *screen = glfwGetVideoMode(glfwGetPrimaryMonitor());
@@ -405,17 +403,22 @@ int main(int argc, char **argv)
     config.orientation = 0;
     config.surface = NULL;
 
-    int result = bcAppWrapperRun(&config);
+    bcAppConfig(&config);
+
+    if (!bcAppStart(&config))
+    {
+        return 1;
+    }
+
+    bcAppMainLoop();
+
+    bcAppStop();
 
     bcTermFiles();
 
+    bcAppDestroy();
+
     glfwTerminate();
 
-    for (int i = 0; i < argc; i++)
-    {
-        free(s_CommandLine.argv[i]);
-    }
-    free(s_CommandLine.argv);
-
-    return result;
+    return 0;
 }

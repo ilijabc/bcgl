@@ -368,7 +368,18 @@ const char * bcGetCommandLineArg(int index)
 
 static void * rendererThread(void *arg)
 {
-    bcAppWrapperRun((BCConfig *)arg);
+    BCConfig *config = (BCConfig *)arg;
+
+    bcAppConfig(config);
+
+    if (!bcAppStart(config))
+    {
+        return NULL;
+    }
+
+    bcAppMainLoop();
+
+    bcAppStop();
 
     return NULL;
 }
@@ -404,10 +415,21 @@ void bcAndroidSurfaceChanged(int format, int width, int height)
 
 void bcAndroidAppChengeState(int state)
 {
-    if (state == EVENT_APP_PAUSE)
+    switch (state)
+    {
+    case EVENT_APP_CREATE:
+        bcAppCreate();
+        break;
+    case EVENT_APP_DESTROY:
+        bcAppDestroy();
+        break;
+    case EVENT_APP_PAUSE:
         bcSendEvent(BC_EVENT_WINDOW_FOCUS, 0, 0, 0);
-    else if (state == EVENT_APP_RESUME)
+        break;
+    case EVENT_APP_RESUME:
         bcSendEvent(BC_EVENT_WINDOW_FOCUS, 1, 0, 0);
+        break;
+    }
 }
 
 void bcAndroidTouchEvent(int event, int id, float x, float y)

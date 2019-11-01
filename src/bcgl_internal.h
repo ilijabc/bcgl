@@ -17,12 +17,13 @@ typedef struct
 //
 
 // App
-void bcAppWrapperConfigure(BCConfig *config);
-bool bcAppWrapperStart(BCConfig *config);
-int bcAppWrapperStop();
-bool bcAppWrapperIsRunning();
-void bcAppWrapperUpdate();
-int bcAppWrapperRun(BCConfig *config);
+void bcAppCreate();
+void bcAppDestroy();
+void bcAppConfig(BCConfig *config);
+bool bcAppStart(BCConfig *config);
+void bcAppStop();
+void bcAppUpdate();
+void bcAppMainLoop();
 
 // Window
 BCWindow * bcCreateWindow(BCConfig *config);

@@ -249,17 +249,14 @@ EM_BOOL s_resize_callback_func(int eventType, const EmscriptenUiEvent *uiEvent, 
     return true;
 }
 
-static void s_main_loop()
-{
-    bcAppWrapperUpdate();
-}
-
 EM_JS(int, js_window_innerWidth, (), { return window.innerWidth; });
 EM_JS(int, js_window_innerHeight, (), { return window.innerHeight; });
 
 int main(int argc, char **argv)
 {
     bcInitFiles(NULL, ".", ".");
+
+    bcAppCreate();
 
     // Default config
     BCConfig config;
@@ -273,7 +270,7 @@ int main(int argc, char **argv)
     config.orientation = 0;
     config.surface = NULL;
 
-    bcAppWrapperConfigure(&config);
+    bcAppConfig(&config);
     if (config.mode != BC_DISPLAY_NORMAL)
     {
         double w, h;
@@ -300,14 +297,16 @@ int main(int argc, char **argv)
         emscripten_set_resize_callback(NULL, NULL, true, s_resize_callback_func);
     }
 
-    if (!bcAppWrapperStart(&config))
+    if (!bcAppStart(&config))
     {
-        return -99;
+        return 1;
     }
 
-    emscripten_set_main_loop(s_main_loop, 0, 1);
+    emscripten_set_main_loop(bcAppUpdate, 0, 1);
 
-    // bcAppWrapperStop();
+    bcAppStop();
+
+    bcAppDestroy();
 
     bcTermFiles();
 

@@ -16,15 +16,23 @@ static pthread_mutex_t s_Mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void processEvent(BCEvent *event);
 
-void bcAppWrapperConfigure(BCConfig *config)
+void bcAppCreate()
+{
+    BC_onCreate();
+}
+
+void bcAppDestroy()
+{
+    BC_onDestroy();
+}
+
+void bcAppConfig(BCConfig *config)
 {
     BC_onConfig(config);
 }
 
-bool bcAppWrapperStart(BCConfig *config)
+bool bcAppStart(BCConfig *config)
 {
-    BC_onCreate();
-
     BCWindow *window = bcCreateWindow(config);
     if (window == NULL)
     {
@@ -40,23 +48,13 @@ bool bcAppWrapperStart(BCConfig *config)
     return true;
 }
 
-int bcAppWrapperStop()
+void bcAppStop()
 {
     BC_onStop();
-
     bcDestroyWindow(s_Window);
-
-    BC_onDestroy();
-
-    return s_ExitCode;
 }
 
-bool bcAppWrapperIsRunning()
-{
-    return bcIsWindowOpened(s_Window);
-}
-
-void bcAppWrapperUpdate()
+void bcAppUpdate()
 {
     float now = bcGetTime();
     float dt = now - s_StartTime;
@@ -77,21 +75,12 @@ void bcAppWrapperUpdate()
     bcUpdateWindow(s_Window);
 }
 
-int bcAppWrapperRun(BCConfig *config)
+void bcAppMainLoop()
 {
-    bcAppWrapperConfigure(config);
-
-    if (!bcAppWrapperStart(config))
+    while (bcIsWindowOpened(s_Window))
     {
-        return -99;
+        bcAppUpdate();
     }
-
-    while (bcAppWrapperIsRunning())
-    {
-        bcAppWrapperUpdate();
-    }
-
-    return bcAppWrapperStop();
 }
 
 int bcGetDisplayWidth()
