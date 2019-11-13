@@ -224,6 +224,7 @@ void bcBindTexture(BCTexture *texture);
 
 // View State
 void bcClear(BCColor color);
+void bcViewport(int x, int y, int width, int height);
 void bcSetBlend(bool enabled);
 void bcSetDepthTest(bool enabled);
 void bcSetWireframe(bool enabled);

@@ -648,6 +648,15 @@ void bcClear(BCColor color)
     glViewport(0, 0, bcGetDisplayWidth(), bcGetDisplayHeight());
 }
 
+void bcViewport(int x, int y, int width, int height)
+{
+    if (width == 0)
+        width = bcGetDisplayWidth();
+    if (height == 0)
+        height = bcGetDisplayHeight();
+    glViewport(x, bcGetDisplayHeight() - height, width, height);
+}
+
 void bcSetBlend(bool enabled)
 {
     if (enabled)
@@ -1834,36 +1843,65 @@ BCMesh * bcCreateMeshBox(float x1, float y1, float z1, float x2, float y2, float
     BCMesh *mesh = bcCreateMesh(BC_MESH_POS3 | BC_MESH_NORM | BC_MESH_TEX2, NULL, 24, NULL, 36, BC_MESH_STATIC);
     if (bcBeginMesh(mesh, BC_QUADS))
     {
-        // TODO: generate tex coords
+        // bottom
         bcNormal3f(0, 0, -1);
+        bcTexCoord2f(1, 0);
         bcVertex3f(x2, y1, z1);
+        bcTexCoord2f(0, 0);
         bcVertex3f(x1, y1, z1);
+        bcTexCoord2f(0, 1);
         bcVertex3f(x1, y2, z1);
+        bcTexCoord2f(1, 1);
         bcVertex3f(x2, y2, z1);
+        // fornt
         bcNormal3f(0, 1, 0);
+        bcTexCoord2f(0, 1);
         bcVertex3f(x2, y2, z1);
+        bcTexCoord2f(1, 1);
         bcVertex3f(x1, y2, z1);
+        bcTexCoord2f(1, 0);
         bcVertex3f(x1, y2, z2);
+        bcTexCoord2f(0, 0);
         bcVertex3f(x2, y2, z2);
+        // back
         bcNormal3f(0, -1, 0);
+        bcTexCoord2f(1, 0);
         bcVertex3f(x2, y1, z2);
+        bcTexCoord2f(0, 0);
         bcVertex3f(x1, y1, z2);
+        bcTexCoord2f(0, 1);
         bcVertex3f(x1, y1, z1);
+        bcTexCoord2f(1, 1);
         bcVertex3f(x2, y1, z1);
+        // left
         bcNormal3f(-1, 0, 0);
+        bcTexCoord2f(0, 0);
         bcVertex3f(x1, y2, z2);
+        bcTexCoord2f(0, 1);
         bcVertex3f(x1, y2, z1);
+        bcTexCoord2f(1, 1);
         bcVertex3f(x1, y1, z1);
+        bcTexCoord2f(1, 0);
         bcVertex3f(x1, y1, z2);
+        // right
         bcNormal3f(1, 0, 0);
+        bcTexCoord2f(1, 1);
         bcVertex3f(x2, y2, z1);
+        bcTexCoord2f(1, 0);
         bcVertex3f(x2, y2, z2);
+        bcTexCoord2f(0, 0);
         bcVertex3f(x2, y1, z2);
+        bcTexCoord2f(0, 1);
         bcVertex3f(x2, y1, z1);
+        // top
         bcNormal3f(0, 0, 1);
+        bcTexCoord2f(1, 0);
         bcVertex3f(x2, y2, z2);
+        bcTexCoord2f(0, 0);
         bcVertex3f(x1, y2, z2);
+        bcTexCoord2f(0, 1);
         bcVertex3f(x1, y1, z2);
+        bcTexCoord2f(1, 1);
         bcVertex3f(x2, y1, z2);
         bcEndMesh(mesh);
     }
