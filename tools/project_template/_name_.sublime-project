@@ -3,14 +3,8 @@
     [
         {
             "cmd": "cmake_run.bat",
-            "env":
-            {
-                "EMSDK": "C:\\emsdk",
-                "HTDOCS": "C:\\xampp\\htdocs\\{{bcapp:name}}"
-            },
             "file_regex": "^(..[^:]*):([0-9]+):?([0-9]+)?:? (.*)$",
             "name": "{{bcapp:name}}",
-            "syntax": "CMakeOutput.sublime-syntax",
             "variants":
             [
                 {
