@@ -122,7 +122,7 @@ void bcQueueEvent(BCEvent *event)
     pthread_mutex_unlock(&s_Mutex);
 }
 
-void bcSendEvent(int type, int id, int x, int y)
+void bcSendEvent(int type, int id, int x, int y, void *data)
 {
     BCEvent *event = bcDequeueEvent();
     if (event)
@@ -131,6 +131,7 @@ void bcSendEvent(int type, int id, int x, int y)
         event->id = id;
         event->x = x;
         event->y = y;
+        event->data = data;
         bcQueueEvent(event);
     }
 }

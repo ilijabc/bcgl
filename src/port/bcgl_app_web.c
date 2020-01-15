@@ -182,19 +182,28 @@ const char * bcGetCommandLineArg(int index)
     return NULL;
 }
 
+void bcInputTextDialog(const char *text)
+{
+}
+
+bool bcIsKeyboardConnected()
+{
+    return true;
+}
+
 static EM_BOOL s_key_callback_func(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData)
 {
     int code = convertWebKeyCode(keyEvent->code);
     switch (eventType)
     {
     case EMSCRIPTEN_EVENT_KEYPRESS:
-        bcSendEvent(BC_EVENT_KEY_CHAR, keyEvent->charCode, 0, 0);
+        bcSendEvent(BC_EVENT_KEY_CHAR, keyEvent->charCode, 0, 0, NULL);
         break;
     case EMSCRIPTEN_EVENT_KEYDOWN:
-        bcSendEvent(keyEvent->repeat ? BC_EVENT_KEY_REPEAT : BC_EVENT_KEY_PRESS, code, keyEvent->keyCode, 0);
+        bcSendEvent(keyEvent->repeat ? BC_EVENT_KEY_REPEAT : BC_EVENT_KEY_PRESS, code, keyEvent->keyCode, 0, NULL);
         break;
     case EMSCRIPTEN_EVENT_KEYUP:
-        bcSendEvent(BC_EVENT_KEY_RELEASE, code, keyEvent->keyCode, 0);
+        bcSendEvent(BC_EVENT_KEY_RELEASE, code, keyEvent->keyCode, 0, NULL);
         break;
     default:
         bcLogWarning("Unhandled event: %d", eventType);
@@ -209,13 +218,13 @@ static EM_BOOL s_mouse_callback_func(int eventType, const EmscriptenMouseEvent *
     switch (eventType)
     {
     case EMSCRIPTEN_EVENT_MOUSEDOWN:
-        bcSendEvent(BC_EVENT_MOUSE_PRESS, button, mouseEvent->targetX, mouseEvent->targetY);
+        bcSendEvent(BC_EVENT_MOUSE_PRESS, button, mouseEvent->targetX, mouseEvent->targetY, NULL);
         break;
     case EMSCRIPTEN_EVENT_MOUSEUP:
-        bcSendEvent(BC_EVENT_MOUSE_RELEASE, button, mouseEvent->targetX, mouseEvent->targetY);
+        bcSendEvent(BC_EVENT_MOUSE_RELEASE, button, mouseEvent->targetX, mouseEvent->targetY, NULL);
         break;
     case EMSCRIPTEN_EVENT_MOUSEMOVE:
-        bcSendEvent(BC_EVENT_MOUSE_MOVE, button, mouseEvent->targetX, mouseEvent->targetY);
+        bcSendEvent(BC_EVENT_MOUSE_MOVE, button, mouseEvent->targetX, mouseEvent->targetY, NULL);
         break;
     }
     return true;
@@ -223,7 +232,7 @@ static EM_BOOL s_mouse_callback_func(int eventType, const EmscriptenMouseEvent *
 
 static EM_BOOL s_wheel_callback_func(int eventType, const EmscriptenWheelEvent *wheelEvent, void *userData)
 {
-    bcSendEvent(BC_EVENT_MOUSE_WHEEL, 0, -signf(wheelEvent->deltaX), -signf(wheelEvent->deltaY));
+    bcSendEvent(BC_EVENT_MOUSE_WHEEL, 0, -signf(wheelEvent->deltaX), -signf(wheelEvent->deltaY), NULL);
     return true;
 }
 
@@ -244,7 +253,7 @@ static EM_BOOL s_webgl_context_callback_func(int eventType, const void *reserved
 EM_BOOL s_resize_callback_func(int eventType, const EmscriptenUiEvent *uiEvent, void *userData)
 {
     emscripten_set_canvas_element_size(s_CanvasTarget, uiEvent->windowInnerWidth, uiEvent->windowInnerHeight);
-    bcSendEvent(BC_EVENT_WINDOW_SIZE, 0, uiEvent->windowInnerWidth, uiEvent->windowInnerHeight);
+    bcSendEvent(BC_EVENT_WINDOW_SIZE, 0, uiEvent->windowInnerWidth, uiEvent->windowInnerHeight, NULL);
     bcLog("resize: %d %d", uiEvent->windowInnerWidth, uiEvent->windowInnerHeight);
     return true;
 }

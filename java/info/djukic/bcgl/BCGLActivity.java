@@ -1,21 +1,25 @@
 package info.djukic.bcgl;
 
 import android.app.Activity;
-import android.content.Context;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
-import android.view.inputmethod.InputMethodManager;
+import android.view.WindowManager;
+import android.widget.EditText;
 
 public class BCGLActivity extends Activity {
 
     private static final String TAG = "BCGLActivity";
 
     private static BCGLActivity mActivity;
-    private BCGLView mView;
+    private BCGLView mGLView;
+    private AlertDialog mDialog;
+    private EditText mEditText;
 
     public static BCGLActivity getInstance() {
         return mActivity;
@@ -36,8 +40,30 @@ public class BCGLActivity extends Activity {
             getFilesDir().getAbsolutePath(),
             android.os.Environment.getExternalStorageDirectory().getAbsolutePath());
 
-        mView = new BCGLView(this);
-        setContentView(mView);
+        mGLView = new BCGLView(this);
+        setContentView(mGLView);
+
+        mEditText = new EditText(this);
+        mEditText.setLines(1);
+
+        mDialog = new AlertDialog.Builder(this)
+                .setMessage("Enter text")
+                .setView(mEditText)
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        BCGLLib.nativeTextEvent(BCGLLib.EVENT_TEXT_INPUT, mEditText.getText().toString());
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .setOnDismissListener(new DialogInterface.OnDismissListener() {
+                    @Override
+                    public void onDismiss(DialogInterface dialogInterface) {
+                        BCGLLib.nativeTextEvent(BCGLLib.EVENT_TEXT_CANCEL, null);
+                    }
+                })
+                .create();
+        mDialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
 
         mActivity = this;
         BCGLLib.nativeAppChangeState(BCGLLib.EVENT_APP_CREATE);
@@ -133,13 +159,22 @@ public class BCGLActivity extends Activity {
         return ActivityInfo.SCREEN_ORIENTATION_SENSOR;
     }
 
-    public void showKeyboard(boolean show) {
-        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        mView.requestFocus();
-        imm.showSoftInput(mView, 0);
+    public void showKeyboard(final boolean show) {
+        Log.d(TAG, "SHOW KEYBOARD: " + show);
     }
 
     public void changeOrientation(int orientation) {
         setRequestedOrientation(convertOrientation(orientation));
+    }
+
+    public void inputTextDialog(final String text) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mEditText.setText(text);
+                mEditText.setSelection(text.length());
+                mDialog.show();
+            }
+        });
     }
 }

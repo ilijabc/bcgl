@@ -19,6 +19,8 @@ enum BCEventType
     BC_EVENT_TOUCH_DOWN,
     BC_EVENT_TOUCH_UP,
     BC_EVENT_TOUCH_MOVE,
+    BC_EVENT_TEXT_INPUT,
+    BC_EVENT_TEXT_CANCEL,
 };
 
 // Key Codes
@@ -162,6 +164,7 @@ typedef struct
     int id;
     int x;
     int y;
+    void *data;
 } BCEvent;
 
 typedef struct
@@ -202,6 +205,8 @@ float bcGetDisplayAspectRatio();
 float bcGetDisplayDensity();
 int bcGetCommandLineArgs();
 const char * bcGetCommandLineArg(int index);
+void bcInputTextDialog(const char *text);
+bool bcIsKeyboardConnected();
 
 // Input state
 bool bcIsKeyDown(int key);

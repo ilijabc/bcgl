@@ -22,10 +22,17 @@
 #define EVENT_KEY_DOWN      1
 #define EVENT_KEY_UP        2
 
-#define MSG_FINISH_ACTIVITY 1
-#define MSG_SHOW_KEYBOARD   2
+#define EVENT_TEXT_INPUT    1
+#define EVENT_TEXT_CANCEL   2
 
-#define GET_NUMBER_DENSITY  1
+#define MSG_FINISH_ACTIVITY     1
+#define MSG_SHOW_KEYBOARD       2
+#define MSG_SET_ORIENTATION     3
+#define MSG_INPUT_TEXT_DIALOG   4
+
+#define GET_NUMBER_DENSITY      1
+
+#define GET_INTEGER_KEYBOARD    1
 
 static struct
 {
@@ -36,7 +43,7 @@ static struct
     { AKEYCODE_SOFT_LEFT, BC_KEY_UNKNOWN },
     { AKEYCODE_SOFT_RIGHT, BC_KEY_UNKNOWN },
     { AKEYCODE_HOME, BC_KEY_UNKNOWN },
-    { AKEYCODE_BACK, BC_KEY_ESCAPE },
+//    { AKEYCODE_BACK, BC_KEY_ESCAPE },
     { AKEYCODE_CALL, BC_KEY_UNKNOWN },
     { AKEYCODE_ENDCALL, BC_KEY_UNKNOWN },
     { AKEYCODE_0, BC_KEY_0 },
@@ -296,8 +303,9 @@ static struct
 
 static pthread_t s_ThreadId;
 static bool s_ThreadRunning;
-static void (*s_MsgCallback)(int type, int x, int y) = NULL;
+static void (*s_MsgCallback)(int type, int x, int y, const char *text) = NULL;
 static float (*s_NumCallback)(int key) = NULL;
+static int (*s_IntCallback)(int key) = NULL;
 
 static int convertAndroidKeyCode(int keyCode)
 {
@@ -311,24 +319,31 @@ static int convertAndroidKeyCode(int keyCode)
     return BC_KEY_UNKNOWN;
 }
 
-void bcAndroidSendMessage(int type, int x, int y)
+static void bcAndroidSendMessage(int type, int x, int y, const char *text)
 {
     if (s_MsgCallback)
-        s_MsgCallback(type, x, y);
+        s_MsgCallback(type, x, y, text);
 }
 
-float bcAndroidGetNumber(int key)
+static float bcAndroidGetNumber(int key)
 {
     if (s_NumCallback)
         return s_NumCallback(key);
     return 0.0f;
 }
 
+static int bcAndroidGetInteger(int key)
+{
+    if (s_IntCallback)
+        return s_IntCallback(key);
+    return 0;
+}
+
 // Window
 
 void bcCloseWindow(BCWindow *window)
 {
-    bcAndroidSendMessage(MSG_FINISH_ACTIVITY, 0, 0);
+    bcAndroidSendMessage(MSG_FINISH_ACTIVITY, 0, 0, NULL);
 }
 
 bool bcIsWindowOpened(BCWindow *window)
@@ -344,7 +359,7 @@ void bcPullWindowEvents(BCWindow *window)
 
 void bcShowKeyboard(bool show)
 {
-    bcAndroidSendMessage(MSG_SHOW_KEYBOARD, show, 0);
+    bcAndroidSendMessage(MSG_SHOW_KEYBOARD, show, 0, NULL);
 }
 
 float bcGetDisplayDensity()
@@ -360,6 +375,16 @@ int bcGetCommandLineArgs()
 const char * bcGetCommandLineArg(int index)
 {
     return NULL;
+}
+
+void bcInputTextDialog(const char *text)
+{
+    bcAndroidSendMessage(MSG_INPUT_TEXT_DIALOG, 0, 0, text);
+}
+
+bool bcIsKeyboardConnected()
+{
+    return bcAndroidGetInteger(GET_INTEGER_KEYBOARD) == 2; // KEYBOARD_QWERTY
 }
 
 //
@@ -410,7 +435,7 @@ void bcAndroidSurfaceDestroyed()
 
 void bcAndroidSurfaceChanged(int format, int width, int height)
 {
-    bcSendEvent(BC_EVENT_WINDOW_SIZE, format, width, height);
+    bcSendEvent(BC_EVENT_WINDOW_SIZE, format, width, height, NULL);
 }
 
 void bcAndroidAppChengeState(int state)
@@ -424,10 +449,10 @@ void bcAndroidAppChengeState(int state)
         bcAppDestroy();
         break;
     case EVENT_APP_PAUSE:
-        bcSendEvent(BC_EVENT_WINDOW_FOCUS, 0, 0, 0);
+        bcSendEvent(BC_EVENT_WINDOW_FOCUS, 0, 0, 0, NULL);
         break;
     case EVENT_APP_RESUME:
-        bcSendEvent(BC_EVENT_WINDOW_FOCUS, 1, 0, 0);
+        bcSendEvent(BC_EVENT_WINDOW_FOCUS, 1, 0, 0, NULL);
         break;
     }
 }
@@ -437,13 +462,13 @@ void bcAndroidTouchEvent(int event, int id, float x, float y)
     switch (event)
     {
     case EVENT_TOUCH_DOWN:
-        bcSendEvent(BC_EVENT_TOUCH_DOWN, id, x, y);
+        bcSendEvent(BC_EVENT_TOUCH_DOWN, id, x, y, NULL);
         break;
     case EVENT_TOUCH_UP:
-        bcSendEvent(BC_EVENT_TOUCH_UP, id, x, y);
+        bcSendEvent(BC_EVENT_TOUCH_UP, id, x, y, NULL);
         break;
     case EVENT_TOUCH_MOVE:
-        bcSendEvent(BC_EVENT_TOUCH_MOVE, id, x, y);
+        bcSendEvent(BC_EVENT_TOUCH_MOVE, id, x, y, NULL);
         break;
     default:
         bcLogWarning("Unhandled event: %d", event);
@@ -456,21 +481,37 @@ void bcAndroidKeyEvent(int event, int key, int code)
     switch (event)
     {
     case EVENT_KEY_DOWN:
-        bcSendEvent(BC_EVENT_KEY_PRESS, appKey, key, code);
+        bcSendEvent(BC_EVENT_KEY_PRESS, appKey, key, code, NULL);
         break;
     case EVENT_KEY_UP:
-        bcSendEvent(BC_EVENT_KEY_RELEASE, appKey, key, code);
+        bcSendEvent(BC_EVENT_KEY_RELEASE, appKey, key, code, NULL);
         break;
     default:
         bcLogWarning("Unhandled event: %d", event);
     }
 }
 
+void bcAndroidTextEvent(int event, const char *text)
+{
+    static char data[1000];
+    if (event == EVENT_TEXT_INPUT)
+    {
+        int n = strlen(text);
+        strncpy(data, text, 1000);
+        data[n > 1000 ? 1000 : n] = '\0';
+        bcSendEvent(BC_EVENT_TEXT_INPUT, event, 0, 0, (void *) data);
+    }
+    else if (event == EVENT_TEXT_CANCEL)
+    {
+        bcSendEvent(BC_EVENT_TEXT_CANCEL, event, 0, 0, NULL);
+    }
+}
 
-void bcAndroidSetCallbacks(void (*msg_callback)(int type, int x, int y), float (*num_callback)(int key))
+void bcAndroidSetCallbacks(void (*msg_callback)(int type, int x, int y, const char *text), float (*num_callback)(int key), int (*int_callback)(int key))
 {
     s_MsgCallback = msg_callback;
     s_NumCallback = num_callback;
+    s_IntCallback = int_callback;
 }
 
 //
@@ -487,13 +528,15 @@ static JNIEnv *g_Env = 0;
 static jclass g_Class = 0;
 static jmethodID g_Method_onNativeMessage = 0;
 static jmethodID g_Method_onNativeGetNumber = 0;
+static jmethodID g_Method_onNativeGetInteger = 0;
 static ANativeWindow *g_NativeWindow = NULL;
 
-void BC_MsgCallback(int type, int x, int y)
+void BC_MsgCallback(int type, int x, int y, const char *text)
 {
     if (g_Env && g_Class && g_Method_onNativeMessage) {
         if ((*g_JVM)->AttachCurrentThread(g_JVM, &g_Env, 0) == JNI_OK) {
-            (*g_Env)->CallStaticVoidMethod(g_Env, g_Class, g_Method_onNativeMessage, type, x, y);
+            jstring j_text = (*g_Env)->NewStringUTF(g_Env, text);
+            (*g_Env)->CallStaticVoidMethod(g_Env, g_Class, g_Method_onNativeMessage, type, x, y, j_text);
         }
     }
 }
@@ -508,6 +551,16 @@ float BC_NumCallback(int key)
     return 0.0f;
 }
 
+int BC_IntCallback(int key)
+{
+    if (g_Env && g_Class && g_Method_onNativeGetInteger) {
+        if ((*g_JVM)->AttachCurrentThread(g_JVM, &g_Env, 0) == JNI_OK) {
+            return (*g_Env)->CallStaticIntMethod(g_Env, g_Class, g_Method_onNativeGetInteger, key);
+        }
+    }
+    return 0;
+}
+
 jint JNI_OnLoad(JavaVM* vm, void* reserved)
 {
     g_JVM = vm;
@@ -516,11 +569,12 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved)
     jclass localClass = (*g_Env)->FindClass(g_Env, "info/djukic/bcgl/BCGLLib");
     if (localClass) {
         g_Class = (*g_Env)->NewGlobalRef(g_Env, localClass);
-        g_Method_onNativeMessage = (*g_Env)->GetStaticMethodID(g_Env, g_Class, "onNativeMessage", "(III)V");
+        g_Method_onNativeMessage = (*g_Env)->GetStaticMethodID(g_Env, g_Class, "onNativeMessage", "(IIILjava/lang/String;)V");
         g_Method_onNativeGetNumber = (*g_Env)->GetStaticMethodID(g_Env, g_Class, "onNativeGetNumber", "(I)F");
+        g_Method_onNativeGetInteger = (*g_Env)->GetStaticMethodID(g_Env, g_Class, "onNativeGetInteger", "(I)I");
     }
 
-    bcAndroidSetCallbacks(BC_MsgCallback, BC_NumCallback);
+    bcAndroidSetCallbacks(BC_MsgCallback, BC_NumCallback, BC_IntCallback);
 
     return JNI_VERSION_1_6;
 }
@@ -573,4 +627,13 @@ JNIEXPORT void JNICALL
 Java_info_djukic_bcgl_BCGLLib_nativeKeyEvent(JNIEnv *env, jclass type, jint event, jint key, jint code)
 {
     bcAndroidKeyEvent(event, key, code);
+}
+
+JNIEXPORT void JNICALL
+Java_info_djukic_bcgl_BCGLLib_nativeTextEvent(JNIEnv *env, jclass type, jint event, jstring text)
+{
+    const char *c_text = text ? (*env)->GetStringUTFChars(env, text, NULL) : NULL;
+    bcAndroidTextEvent(event, c_text);
+    if (c_text)
+        (*env)->ReleaseStringUTFChars(env, text, c_text);
 }

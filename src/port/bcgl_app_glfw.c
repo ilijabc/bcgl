@@ -166,57 +166,57 @@ static void glfw_KeyCallback(GLFWwindow *nativeWindow, int keyCode, int scanCode
         return;
     }
     if (action == GLFW_PRESS)
-        bcSendEvent(BC_EVENT_KEY_PRESS, appCode, 0, 0);
+        bcSendEvent(BC_EVENT_KEY_PRESS, appCode, 0, 0, NULL);
     else if (action == GLFW_RELEASE)
-        bcSendEvent(BC_EVENT_KEY_RELEASE, appCode, 0, 0);
+        bcSendEvent(BC_EVENT_KEY_RELEASE, appCode, 0, 0, NULL);
     else if (action == GLFW_REPEAT)
-        bcSendEvent(BC_EVENT_KEY_REPEAT, appCode, 0, 0);
+        bcSendEvent(BC_EVENT_KEY_REPEAT, appCode, 0, 0, NULL);
     // missing key chars
     if (action == GLFW_PRESS || action == GLFW_REPEAT)
     {
         if (keyCode == GLFW_KEY_BACKSPACE)
-            bcSendEvent(BC_EVENT_KEY_CHAR, 8, 0, 0);
+            bcSendEvent(BC_EVENT_KEY_CHAR, 8, 0, 0, NULL);
         else if (keyCode == GLFW_KEY_ENTER)
-            bcSendEvent(BC_EVENT_KEY_CHAR, 13, 0, 0);
+            bcSendEvent(BC_EVENT_KEY_CHAR, 13, 0, 0, NULL);
     }
 }
 
 static void glfw_KeyCharCallback(GLFWwindow *nativeWindow, unsigned int code)
 {
-    bcSendEvent(BC_EVENT_KEY_CHAR, code, 0, 0);
+    bcSendEvent(BC_EVENT_KEY_CHAR, code, 0, 0, NULL);
 }
 
 static void glfw_CursorPosCallback(GLFWwindow *nativeWindow, double x, double y)
 {
     s_LastCursorPos.x = x;
     s_LastCursorPos.y = y;
-    bcSendEvent(BC_EVENT_MOUSE_MOVE, 0, x, y);
+    bcSendEvent(BC_EVENT_MOUSE_MOVE, 0, x, y, NULL);
 }
 
 static void glfw_MouseButtonCallback(GLFWwindow *nativeWindow, int button, int action, int mods)
 {
-    bcSendEvent((action == GLFW_PRESS) ? BC_EVENT_MOUSE_PRESS : BC_EVENT_MOUSE_RELEASE, button, s_LastCursorPos.x, s_LastCursorPos.y);
+    bcSendEvent((action == GLFW_PRESS) ? BC_EVENT_MOUSE_PRESS : BC_EVENT_MOUSE_RELEASE, button, s_LastCursorPos.x, s_LastCursorPos.y, NULL);
 }
 
 static void glfw_ScrollCallback(GLFWwindow *nativeWindow, double dx, double dy)
 {
-    bcSendEvent(BC_EVENT_MOUSE_WHEEL, 0, dx, dy);
+    bcSendEvent(BC_EVENT_MOUSE_WHEEL, 0, dx, dy, NULL);
 }
 
 static void glfw_WindowSizeCallback(GLFWwindow *nativeWindow, int width, int height)
 {
     bcFlushEvents();
-    bcSendEvent(BC_EVENT_WINDOW_SIZE, 0, width, height);
+    bcSendEvent(BC_EVENT_WINDOW_SIZE, 0, width, height, NULL);
 }
 
 static void glfw_WindowFocusCallback(GLFWwindow *nativeWindow, int focused)
 {
-    bcSendEvent(BC_EVENT_WINDOW_FOCUS, focused, 0, 0);
+    bcSendEvent(BC_EVENT_WINDOW_FOCUS, focused, 0, 0, NULL);
 }
 
 static void glfw_WindowIconifyCallback(GLFWwindow *nativeWindow, int iconified)
 {
-    bcSendEvent(BC_EVENT_WINDOW_ICONIFY, iconified, 0, 0);
+    bcSendEvent(BC_EVENT_WINDOW_ICONIFY, iconified, 0, 0, NULL);
 }
 
 static void glfw_WindowRefreshCallback(GLFWwindow* window)
@@ -252,6 +252,15 @@ const char * bcGetCommandLineArg(int index)
     if (index < 0 || index >= s_CommandLine.argc)
         return NULL;
     return s_CommandLine.argv[index];
+}
+
+void bcInputTextDialog(const char *text)
+{
+}
+
+bool bcIsKeyboardConnected()
+{
+    return true;
 }
 
 //
