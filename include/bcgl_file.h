@@ -36,6 +36,8 @@ size_t bcGetFilePosition(BCFile *file);
 const char * bcReadFileLine(BCFile *file);
 bool bcFileExists(const char *filename);
 
+#define bcPrintFile(file, format, ...) { fprintf((FILE*)(file->handle), format, ##__VA_ARGS__); }
+
 // Dir
 BCFile * bcOpenDir(const char *filename);
 void bcCloseDir(BCFile *file);
