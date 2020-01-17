@@ -29,6 +29,7 @@
 #define MSG_SHOW_KEYBOARD       2
 #define MSG_SET_ORIENTATION     3
 #define MSG_INPUT_TEXT_DIALOG   4
+#define MSG_SET_WINDOW_TYPE     5
 
 #define GET_NUMBER_DENSITY      1
 
@@ -43,7 +44,7 @@ static struct
     { AKEYCODE_SOFT_LEFT, BC_KEY_UNKNOWN },
     { AKEYCODE_SOFT_RIGHT, BC_KEY_UNKNOWN },
     { AKEYCODE_HOME, BC_KEY_UNKNOWN },
-//    { AKEYCODE_BACK, BC_KEY_ESCAPE },
+    { AKEYCODE_BACK, BK_KEY_BACK },
     { AKEYCODE_CALL, BC_KEY_UNKNOWN },
     { AKEYCODE_ENDCALL, BC_KEY_UNKNOWN },
     { AKEYCODE_0, BC_KEY_0 },
@@ -401,6 +402,8 @@ static void * rendererThread(void *arg)
     {
         return NULL;
     }
+
+    bcAndroidSendMessage(MSG_SET_WINDOW_TYPE, config->mode, 0, NULL);
 
     bcAppMainLoop();
 

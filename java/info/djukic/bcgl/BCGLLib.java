@@ -2,6 +2,7 @@ package info.djukic.bcgl;
 
 import android.content.res.AssetManager;
 import android.view.Surface;
+import android.view.View;
 
 public class BCGLLib {
 
@@ -31,6 +32,7 @@ public class BCGLLib {
     public static final int MSG_SHOW_KEYBOARD = 2;
     public static final int MSG_SET_ORIENTATION = 3;
     public static final int MSG_INPUT_TEXT_DIALOG = 4;
+    public static final int MSG_SET_WINDOW_TYPE = 5;
 
     public static final int GET_NUMBER_DENSITY = 1;
 
@@ -61,6 +63,9 @@ public class BCGLLib {
             case MSG_INPUT_TEXT_DIALOG:
                 BCGLActivity.getInstance().inputTextDialog(text);
                 break;
+            case MSG_SET_WINDOW_TYPE:
+                BCGLActivity.getInstance().setWindowType(x);
+                break;
         }
     }
 
@@ -79,7 +84,6 @@ public class BCGLLib {
             return 0;
         switch (key) {
             case GET_INTEGER_KEYBOARD:
-                android.util.Log.d("zzz", "a kb=" + BCGLActivity.getInstance().getResources().getConfiguration().keyboard);
                 return BCGLActivity.getInstance().getResources().getConfiguration().keyboard;
         }
         return 0;

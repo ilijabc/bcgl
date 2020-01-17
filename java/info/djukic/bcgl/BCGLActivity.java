@@ -6,11 +6,15 @@ import android.content.DialogInterface;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.text.InputType;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
+import android.widget.TextView;
 
 public class BCGLActivity extends Activity {
 
@@ -20,6 +24,8 @@ public class BCGLActivity extends Activity {
     private BCGLView mGLView;
     private AlertDialog mDialog;
     private EditText mEditText;
+
+    private int mWindowType;
 
     public static BCGLActivity getInstance() {
         return mActivity;
@@ -44,7 +50,19 @@ public class BCGLActivity extends Activity {
         setContentView(mGLView);
 
         mEditText = new EditText(this);
-        mEditText.setLines(1);
+        mEditText.setImeOptions(EditorInfo.IME_ACTION_DONE);
+        mEditText.setInputType(InputType.TYPE_CLASS_TEXT);
+        mEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int actionId, KeyEvent event) {
+                if ((event != null && (event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) || (actionId == EditorInfo.IME_ACTION_DONE)) {
+                    BCGLLib.nativeTextEvent(BCGLLib.EVENT_TEXT_INPUT, mEditText.getText().toString());
+                    mDialog.dismiss();
+                    return true;
+                }
+                return false;
+            }
+        });
 
         mDialog = new AlertDialog.Builder(this)
                 .setMessage("Enter text")
@@ -60,6 +78,7 @@ public class BCGLActivity extends Activity {
                     @Override
                     public void onDismiss(DialogInterface dialogInterface) {
                         BCGLLib.nativeTextEvent(BCGLLib.EVENT_TEXT_CANCEL, null);
+                        setWindowType(mWindowType);
                     }
                 })
                 .create();
@@ -174,6 +193,32 @@ public class BCGLActivity extends Activity {
                 mEditText.setText(text);
                 mEditText.setSelection(text.length());
                 mDialog.show();
+            }
+        });
+    }
+
+    public void setWindowType(final int type) {
+        mWindowType = type;
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (type == 1) { // BC_DISPLAY_FULLSCREEN
+                    getWindow().getDecorView().setSystemUiVisibility(
+                            View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
+                                    View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
+                                    View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+                                    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+                                    View.SYSTEM_UI_FLAG_FULLSCREEN |
+                                    View.SYSTEM_UI_FLAG_LOW_PROFILE |
+                                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    );
+                } else {
+                    getWindow().getDecorView().setSystemUiVisibility(
+                            View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
+                                    View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
+                                    View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    );
+                }
             }
         });
     }
