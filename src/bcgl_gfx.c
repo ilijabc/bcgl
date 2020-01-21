@@ -20,6 +20,11 @@
 
 #define DEBUG_SHADER 0
 
+// RM
+#define RM_TYPE_SHADER      0
+#define RM_TYPE_TEXTURE     1
+#define RM_TYPE_MESH        2
+
 //
 // Context
 //
@@ -48,6 +53,7 @@ typedef struct
     BCMesh *ReusableSolidMesh;
     BCMesh *ReusableCubeMesh;
     BCMesh *ReusableWireCubeMesh;
+    clist_t *RM_list;
 } BCContext;
 
 static BCContext *g_Context = NULL;
@@ -187,51 +193,10 @@ static struct
 void bcCreateGfx()
 {
     g_Context = NEW_OBJECT(BCContext);
+    g_Context->RM_list = NEW_OBJECT(clist_t);
 }
 
 void bcDestroyGfx()
-{
-    free(g_Context);
-    g_Context = NULL;
-}
-
-void bcStartGfx()
-{
-    bcLog("OpenGL: %s", glGetString(GL_VERSION));
-    bcLog("Device: %s", glGetString(GL_RENDERER));
-    bcLog("GLSL: %s", glGetString(GL_SHADING_LANGUAGE_VERSION));
-    // init context
-    g_Context->Started = true;
-    g_Context->ColorArray[BC_COLOR_TYPE_PRIMARY] = SET_COLOR(1, 1, 1, 1);
-    g_Context->ColorArray[BC_COLOR_TYPE_SECONDARY] = SET_COLOR(1, 1, 1, 1);
-    g_Context->ColorArray[BC_COLOR_TYPE_DIFFUSE] = SET_COLOR(0.8f, 0.8f, 0.8f, 1);
-    g_Context->ColorArray[BC_COLOR_TYPE_AMBIENT] = SET_COLOR(0.2f, 0.2f, 0.2f, 1);
-    g_Context->ColorArray[BC_COLOR_TYPE_SPECULAR] = SET_COLOR(0, 0, 0, 1);
-    g_Context->ColorArray[BC_COLOR_TYPE_EMISSION] = SET_COLOR(0, 0, 0, 1);
-    g_Context->ColorNeedUpdate = true;
-    g_Context->VertexCounter = -1;
-    g_Context->IndexCounter = -1;
-#ifdef SUPPORT_GLSL
-    g_Context->DefaultShader = bcCreateShader(s_DefaultShaderVertexCode, s_DefaultShaderFragmentCode);
-    bcBindShader(NULL);
-#else
-    glAlphaFunc(GL_GREATER, 0.1f);
-    glDisable(GL_LIGHTING);
-    glEnable(GL_NORMALIZE);
-    glEnable(GL_COLOR_MATERIAL);
-    glShadeModel(GL_SMOOTH);
-#endif
-    // glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
-    // gl default
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_DEPTH_TEST);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glDepthFunc(GL_LEQUAL);
-    glFrontFace(GL_CCW);
-}
-
-void bcStopGfx()
 {
     if (g_Context->ReusableSolidMesh)
     {
@@ -252,6 +217,86 @@ void bcStopGfx()
     bcDestroyShader(g_Context->DefaultShader);
     g_Context->DefaultShader = NULL;
 #endif
+    free(g_Context->RM_list);
+    free(g_Context);
+    g_Context = NULL;
+}
+
+void bcStartGfx()
+{
+    bcLog("OpenGL: %s", glGetString(GL_VERSION));
+    bcLog("Device: %s", glGetString(GL_RENDERER));
+    bcLog("GLSL: %s", glGetString(GL_SHADING_LANGUAGE_VERSION));
+    // init context
+    g_Context->ColorArray[BC_COLOR_TYPE_PRIMARY] = SET_COLOR(1, 1, 1, 1);
+    g_Context->ColorArray[BC_COLOR_TYPE_SECONDARY] = SET_COLOR(1, 1, 1, 1);
+    g_Context->ColorArray[BC_COLOR_TYPE_DIFFUSE] = SET_COLOR(0.8f, 0.8f, 0.8f, 1);
+    g_Context->ColorArray[BC_COLOR_TYPE_AMBIENT] = SET_COLOR(0.2f, 0.2f, 0.2f, 1);
+    g_Context->ColorArray[BC_COLOR_TYPE_SPECULAR] = SET_COLOR(0, 0, 0, 1);
+    g_Context->ColorArray[BC_COLOR_TYPE_EMISSION] = SET_COLOR(0, 0, 0, 1);
+    g_Context->ColorNeedUpdate = true;
+    g_Context->VertexCounter = -1;
+    g_Context->IndexCounter = -1;
+#ifdef SUPPORT_GLSL
+    if (!g_Context->DefaultShader)
+    {
+        g_Context->DefaultShader = bcCreateShader(s_DefaultShaderVertexCode, s_DefaultShaderFragmentCode);
+    }
+#else
+    glAlphaFunc(GL_GREATER, 0.1f);
+    glDisable(GL_LIGHTING);
+    glEnable(GL_NORMALIZE);
+    glEnable(GL_COLOR_MATERIAL);
+    glShadeModel(GL_SMOOTH);
+#endif
+    // glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
+    // gl default
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDepthFunc(GL_LEQUAL);
+    glFrontFace(GL_CCW);
+    // RM
+    for (clist_node_t *node = g_Context->RM_list->head; node; node = node->next)
+    {
+        uint8_t *p_type = (uint8_t*) node->data;
+        bcLog("RM update: %d", *p_type);
+        switch (*p_type)
+        {
+        case RM_TYPE_SHADER:
+            bcUpdateShader((BCShader*) node->data);
+            break;
+        case RM_TYPE_TEXTURE:
+            bcUpdateTexture((BCTexture*) node->data);
+            break;
+        case RM_TYPE_MESH:
+            bcUpdateMesh((BCMesh*) node->data);
+            break;
+        }
+    }
+    g_Context->Started = true;
+    bcBindShader(NULL);
+}
+
+void bcStopGfx()
+{
+    for (clist_node_t *node = g_Context->RM_list->head; node; node = node->next)
+    {
+        uint8_t *p_type = (uint8_t*) node->data;
+        switch (*p_type)
+        {
+        case RM_TYPE_SHADER:
+            bcReleaseShader((BCShader*) node->data);
+            break;
+        case RM_TYPE_TEXTURE:
+            bcReleaseTexture((BCTexture*) node->data);
+            break;
+        case RM_TYPE_MESH:
+            bcReleaseMesh((BCMesh*) node->data);
+            break;
+        }
+    }
     g_Context->Started = false;
 }
 
@@ -293,6 +338,7 @@ BCShader * bcCreateShaderFromFile(const char *vsFilename, const char *fsFilename
 BCShader * bcCreateShader(const char *vs_code, const char *fs_code)
 {
     BCShader *shader = NEW_OBJECT(BCShader);
+    shader->RM_type = RM_TYPE_SHADER;
     shader->vs_code = __strdup(vs_code);
     shader->fs_code = __strdup(fs_code);
     if (g_Context->Started && !bcUpdateShader(shader))
@@ -301,6 +347,7 @@ BCShader * bcCreateShader(const char *vs_code, const char *fs_code)
         free(shader);
         shader = NULL;
     }
+    clist_add_node(g_Context->RM_list, shader);
     return shader;
 }
 
@@ -372,6 +419,7 @@ void bcDestroyShader(BCShader *shader)
     free(shader->vs_code);
     free(shader->fs_code);
     free(shader);
+    clist_delete_node(g_Context->RM_list, shader);
 }
 
 void bcBindShader(BCShader *shader)
@@ -568,6 +616,7 @@ BCTexture * bcCreateTextureFromFile(const char *filename, BCTextureFlags flags)
 BCTexture * bcCreateTextureFromImage(BCImage *image, BCTextureFlags flags)
 {
     BCTexture *texture = NEW_OBJECT(BCTexture);
+    texture->RM_type = RM_TYPE_TEXTURE;
     texture->width = image->width;
     texture->height = image->height;
     texture->image = image;
@@ -581,6 +630,7 @@ BCTexture * bcCreateTextureFromImage(BCImage *image, BCTextureFlags flags)
         bcDestroyImage(image);
         texture->image = NULL;
     }
+    clist_add_node(g_Context->RM_list, texture);
     return texture;
 }
 
@@ -677,6 +727,7 @@ void bcDestroyTexture(BCTexture *texture)
         bcDestroyImage(texture->image);
     bcReleaseTexture(texture);
     free(texture);
+    clist_delete_node(g_Context->RM_list, texture);
 }
 
 void bcBindTexture(BCTexture *texture)
@@ -848,6 +899,7 @@ BCMesh * bcCreateMesh(int format, const float *vert_data, int vert_num, const ui
         return NULL;
     }
     BCMesh *mesh = NEW_OBJECT(BCMesh);
+    mesh->RM_type = RM_TYPE_MESH;
     mesh->num_vertices = vert_num;
     mesh->num_indices = indx_num;
     mesh->format = format;
@@ -915,6 +967,7 @@ BCMesh * bcCreateMesh(int format, const float *vert_data, int vert_num, const ui
     // draw params
     mesh->draw_mode = GL_TRIANGLES;
     mesh->draw_count = (mesh->num_indices > 0) ? mesh->num_indices : mesh->num_vertices;
+    clist_add_node(g_Context->RM_list, mesh);
     return mesh;
 }
 
@@ -1036,6 +1089,7 @@ void bcDestroyMesh(BCMesh *mesh)
     free(mesh->vertices);
     free(mesh->indices);
     free(mesh);
+    clist_delete_node(g_Context->RM_list, mesh);
 }
 
 void bcDrawMesh(BCMesh *mesh)

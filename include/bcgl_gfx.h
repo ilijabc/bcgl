@@ -110,6 +110,7 @@ typedef struct
 
 typedef struct
 {
+    uint8_t RM_type;
     unsigned int id;
     int width;
     int height;
@@ -120,6 +121,7 @@ typedef struct
 
 typedef struct
 {
+    uint8_t RM_type;
     unsigned int programId;
     unsigned int vs_id;
     unsigned int fs_id;
@@ -137,6 +139,7 @@ typedef struct
 
 typedef struct
 {
+    uint8_t RM_type;
     int num_vertices;
     int num_indices;
     int format;

@@ -65,3 +65,20 @@ void bcStopGfx();
 //
 
 char * __strdup(const char *str);
+
+typedef struct clist_node
+{
+    void *data;
+    struct clist_node *next;
+} clist_node_t;
+
+typedef struct clist
+{
+    clist_node_t *head;
+    clist_node_t *tail;
+} clist_t;
+
+clist_node_t * clist_new_node(clist_t *list);
+clist_node_t * clist_add_node(clist_t *list, void *data);
+void clist_delete_node(clist_t *list, void *data);
+void clist_clear(clist_t *list);
