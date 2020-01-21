@@ -327,7 +327,6 @@ BCWindow * bcCreateWindow(BCConfig *config)
         return NULL;
     }
 #endif
-    bcInitGfx();
 
     // Enable v-sync
     glfwSwapInterval(config->vsync ? 1 : 0);
@@ -351,7 +350,6 @@ BCWindow * bcCreateWindow(BCConfig *config)
 
 void bcDestroyWindow(BCWindow *window)
 {
-    bcTermGfx();
     glfwDestroyWindow(window->nativeWindow);
     free(window);
 }

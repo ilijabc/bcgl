@@ -120,8 +120,6 @@ BCWindow * bcCreateWindow(BCConfig *inconfig)
     window->height = inconfig->height;
     window->nativeWindow = nativeWindow;
 
-    bcInitGfx();
-
     // Enable v-sync
     eglSwapInterval(nativeWindow->_display, inconfig->vsync ? 1 : 0);
 

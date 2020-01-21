@@ -28,15 +28,6 @@ static off_t __fsize(const char *filename) {
     return -1; 
 }
 
-static char * __strdup(const char *str)
-{
-    int len = strlen(str);
-    char *result = malloc(len + 1);
-    memcpy(result, str, len);
-    result[len] = 0;
-    return result;
-}
-
 static void path_convert(const char *path_in, char *path_out, bool *p_asset)
 {
     bool isAsset = (strstr(path_in, ASSETS_DIR) == path_in);

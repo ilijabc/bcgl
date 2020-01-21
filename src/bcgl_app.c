@@ -18,12 +18,14 @@ static void processEvent(BCEvent *event);
 
 void bcAppCreate()
 {
+    bcCreateGfx();
     BC_onCreate();
 }
 
 void bcAppDestroy()
 {
     BC_onDestroy();
+    bcDestroyGfx();
 }
 
 void bcAppConfig(BCConfig *config)
@@ -40,17 +42,16 @@ bool bcAppStart(BCConfig *config)
         return false;
     }
     bcSetWindow(window);
-
+    bcStartGfx();
     BC_onStart();
-
     s_StartTime = bcGetTime();
-
     return true;
 }
 
 void bcAppStop()
 {
     BC_onStop();
+    bcStopGfx();
     bcDestroyWindow(s_Window);
 }
 

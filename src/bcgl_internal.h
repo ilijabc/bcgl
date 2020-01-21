@@ -55,5 +55,13 @@ void bcTermFiles();
 // bcgl_gfx module
 //
 
-void bcInitGfx();
-void bcTermGfx();
+void bcCreateGfx();
+void bcDestroyGfx();
+void bcStartGfx();
+void bcStopGfx();
+
+//
+// bcutils
+//
+
+char * __strdup(const char *str);

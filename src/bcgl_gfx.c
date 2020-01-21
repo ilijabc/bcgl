@@ -20,8 +20,13 @@
 
 #define DEBUG_SHADER 0
 
+//
+// Context
+//
+
 typedef struct
 {
+    bool Started;
     mat4_t ProjectionMatrix;
     mat4_t ModelViewMatrix;
     BCColor ColorArray[BC_COLOR_TYPE_MAX];
@@ -179,14 +184,24 @@ static struct
 // Init
 //
 
-void bcInitGfx()
+void bcCreateGfx()
 {
-    // info
+    g_Context = NEW_OBJECT(BCContext);
+}
+
+void bcDestroyGfx()
+{
+    free(g_Context);
+    g_Context = NULL;
+}
+
+void bcStartGfx()
+{
     bcLog("OpenGL: %s", glGetString(GL_VERSION));
     bcLog("Device: %s", glGetString(GL_RENDERER));
     bcLog("GLSL: %s", glGetString(GL_SHADING_LANGUAGE_VERSION));
-    // context
-    g_Context = NEW_OBJECT(BCContext);
+    // init context
+    g_Context->Started = true;
     g_Context->ColorArray[BC_COLOR_TYPE_PRIMARY] = SET_COLOR(1, 1, 1, 1);
     g_Context->ColorArray[BC_COLOR_TYPE_SECONDARY] = SET_COLOR(1, 1, 1, 1);
     g_Context->ColorArray[BC_COLOR_TYPE_DIFFUSE] = SET_COLOR(0.8f, 0.8f, 0.8f, 1);
@@ -197,7 +212,7 @@ void bcInitGfx()
     g_Context->VertexCounter = -1;
     g_Context->IndexCounter = -1;
 #ifdef SUPPORT_GLSL
-    g_Context->DefaultShader = bcCreateShader(s_DefaultShaderVertexCode, s_DefaultShaderFragmentCode, NULL, NULL, NULL);
+    g_Context->DefaultShader = bcCreateShader(s_DefaultShaderVertexCode, s_DefaultShaderFragmentCode);
     bcBindShader(NULL);
 #else
     glAlphaFunc(GL_GREATER, 0.1f);
@@ -216,19 +231,28 @@ void bcInitGfx()
     glFrontFace(GL_CCW);
 }
 
-void bcTermGfx()
+void bcStopGfx()
 {
     if (g_Context->ReusableSolidMesh)
+    {
         bcDestroyMesh(g_Context->ReusableSolidMesh);
+        g_Context->ReusableSolidMesh = NULL;
+    }
     if (g_Context->ReusableCubeMesh)
+    {
         bcDestroyMesh(g_Context->ReusableCubeMesh);
+        g_Context->ReusableCubeMesh = NULL;
+    }
     if (g_Context->ReusableWireCubeMesh)
+    {
         bcDestroyMesh(g_Context->ReusableWireCubeMesh);
+        g_Context->ReusableWireCubeMesh = NULL;
+    }
 #ifdef SUPPORT_GLSL
     bcDestroyShader(g_Context->DefaultShader);
+    g_Context->DefaultShader = NULL;
 #endif
-    free(g_Context);
-    g_Context = NULL;
+    g_Context->Started = false;
 }
 
 //
@@ -242,7 +266,7 @@ BCShader * bcCreateShaderFromSingleFile(const char *filename)
     char *code = bcLoadTextFile(filename, NULL);
     if (code == NULL)
         return NULL;
-    BCShader *shader = bcCreateShader(code, code, NULL, NULL, NULL);
+    BCShader *shader = bcCreateShader(code, code);
     free(code);
     return shader;
 }
@@ -260,80 +284,93 @@ BCShader * bcCreateShaderFromFile(const char *vsFilename, const char *fsFilename
         free(vsCode);
         return NULL;
     }
-    BCShader *shader = bcCreateShader(vsCode, fsCode, NULL, NULL, NULL);
+    BCShader *shader = bcCreateShader(vsCode, fsCode);
     free(vsCode);
     free(fsCode);
     return shader;
 }
 
-BCShader * bcCreateShader(const char *vs_code, const char *fs_code, BCShaderVar *attributes, BCShaderVar *uniforms, BCShaderVar *vars)
+BCShader * bcCreateShader(const char *vs_code, const char *fs_code)
 {
-    if (!attributes) attributes = s_DefaultShaderAttributes;
-    if (!uniforms) uniforms = s_DefaultShaderUniforms;
-    if (!vars) vars = s_DefaultShaderVars;
-    // vertex shaders
-    GLuint vertexShader = bcLoadShader(vs_code, GL_VERTEX_SHADER, attributes, uniforms, vars);
-    if (vertexShader == 0)
+    BCShader *shader = NEW_OBJECT(BCShader);
+    shader->vs_code = __strdup(vs_code);
+    shader->fs_code = __strdup(fs_code);
+    if (g_Context->Started && !bcUpdateShader(shader))
     {
-        return NULL;
+        bcDestroyShader(shader);
+        free(shader);
+        shader = NULL;
+    }
+    return shader;
+}
+
+bool bcUpdateShader(BCShader *shader)
+{
+    // vertex shaders
+    shader->vs_id = bcLoadShader(shader->vs_code, GL_VERTEX_SHADER);
+    if (shader->vs_id == 0)
+    {
+        return false;
     }
     // fragment shader
-    GLuint fragmentShader = bcLoadShader(fs_code, GL_FRAGMENT_SHADER, attributes, uniforms, vars);
-    if (fragmentShader == 0)
+    shader->fs_id = bcLoadShader(shader->fs_code, GL_FRAGMENT_SHADER);
+    if (shader->fs_id == 0)
     {
-        glDeleteShader(vertexShader);
-        return NULL;
+        return false;
     }
-    // create shader
-    BCShader *shader = NEW_OBJECT(BCShader);
     // create program
     shader->programId = glCreateProgram();
     if (shader->programId == 0)
     {
         bcLogError("Error creating shader program!");
-        free(shader);
-        return NULL;
+        return false;
     }
-    glAttachShader(shader->programId, vertexShader);
-    glAttachShader(shader->programId, fragmentShader);
+    glAttachShader(shader->programId, shader->vs_id);
+    glAttachShader(shader->programId, shader->fs_id);
     // bind attributes
-    if (attributes)
+    for (int i = 0; i < BC_VERTEX_ATTR_MAX; i++)
     {
-        for (int i = 0; i < BC_VERTEX_ATTR_MAX; i++)
-        {
-            glBindAttribLocation(shader->programId, i, attributes[i].name);
-        }
+        glBindAttribLocation(shader->programId, i, s_DefaultShaderAttributes[i].name);
     }
     if (!bcLinkShaderProgram(shader->programId))
     {
-        glDeleteShader(vertexShader);
-        glDeleteShader(fragmentShader);
-        bcDestroyShader(shader);
-        return NULL;
+        return false;
     }
     // get uniforms
-    if (uniforms)
+    for (int i = 0; i < BC_SHADER_UNIFORM_MAX; i++)
     {
-        for (int i = 0; i < BC_SHADER_UNIFORM_MAX; i++)
-        {
-            shader->loc_uniforms[i] = glGetUniformLocation(shader->programId, uniforms[i].name);
-            if (shader->loc_uniforms[i] == -1)
-                bcLogWarning("Shader uniform '%s' not found!", uniforms[i].name);
-        }
+        shader->loc_uniforms[i] = glGetUniformLocation(shader->programId, s_DefaultShaderUniforms[i].name);
+        if (shader->loc_uniforms[i] == -1)
+            bcLogWarning("Shader uniform '%s' not found!", s_DefaultShaderUniforms[i].name);
     }
-    // detach shaders
-    glDetachShader(shader->programId, vertexShader);
-    glDetachShader(shader->programId, fragmentShader);
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
     return shader;
+}
+
+
+void bcReleaseShader(BCShader *shader)
+{
+    if (!shader)
+    {
+        bcLogError("Invalid shader!");
+        return;
+    }
+    if (shader->vs_id)
+        glDeleteShader(shader->vs_id);
+    if (shader->fs_id)
+        glDeleteShader(shader->fs_id);
+    glDeleteProgram(shader->programId);
 }
 
 void bcDestroyShader(BCShader *shader)
 {
-    if (shader == NULL)
+    if (!shader)
+    {
+        bcLogError("Invalid shader!");
         return;
-    glDeleteProgram(shader->programId);
+    }
+    bcReleaseShader(shader);
+    free(shader->vs_code);
+    free(shader->fs_code);
     free(shader);
 }
 
@@ -347,7 +384,7 @@ void bcBindShader(BCShader *shader)
     // applyCurrentMatrix();
 }
 
-unsigned int bcLoadShader(const char *code, unsigned int shaderType, BCShaderVar *attributes, BCShaderVar *uniforms, BCShaderVar *vars)
+unsigned int bcLoadShader(const char *code, unsigned int shaderType)
 {
     const char *type_str = (shaderType == GL_VERTEX_SHADER) ? "VERTEX" : "FRAGMENT";
     // generated code
@@ -359,31 +396,25 @@ unsigned int bcLoadShader(const char *code, unsigned int shaderType, BCShaderVar
         sprintf(generated_code, "%s#define %s %d\n", generated_code, s_DefaultShaderConstInts[i].name, s_DefaultShaderConstInts[i].value);
     }
     // attributes
-    if (attributes && shaderType == GL_VERTEX_SHADER)
+    if (shaderType == GL_VERTEX_SHADER)
     {
-        for (int i = 0; attributes[i].name; i++)
+        for (int i = 0; s_DefaultShaderAttributes[i].name; i++)
         {
-            sprintf(generated_code, "%sattribute %s %s;\n", generated_code, attributes[i].type, attributes[i].name);
+            sprintf(generated_code, "%sattribute %s %s;\n", generated_code, s_DefaultShaderAttributes[i].type, s_DefaultShaderAttributes[i].name);
         }
     }
     // uniforms
-    if (uniforms)
+    for (int i = 0; s_DefaultShaderUniforms[i].name; i++)
     {
-        for (int i = 0; uniforms[i].name; i++)
-        {
-            if (uniforms[i].size > 1)
-                sprintf(generated_code, "%suniform %s %s[%d];\n", generated_code, uniforms[i].type, uniforms[i].name, uniforms[i].size);
-            else
-                sprintf(generated_code, "%suniform %s %s;\n", generated_code, uniforms[i].type, uniforms[i].name);
-        }
+        if (s_DefaultShaderUniforms[i].size > 1)
+            sprintf(generated_code, "%suniform %s %s[%d];\n", generated_code, s_DefaultShaderUniforms[i].type, s_DefaultShaderUniforms[i].name, s_DefaultShaderUniforms[i].size);
+        else
+            sprintf(generated_code, "%suniform %s %s;\n", generated_code, s_DefaultShaderUniforms[i].type, s_DefaultShaderUniforms[i].name);
     }
     // varyings
-    if (vars)
+    for (int i = 0; s_DefaultShaderVars[i].name; i++)
     {
-        for (int i = 0; vars[i].name; i++)
-        {
-            sprintf(generated_code, "%svarying %s %s;\n", generated_code, vars[i].type, vars[i].name);
-        }
+        sprintf(generated_code, "%svarying %s %s;\n", generated_code, s_DefaultShaderVars[i].type, s_DefaultShaderVars[i].name);
     }
     // init shader source
     const char *strings[3] = { GLSL_VERSION,  generated_code, code };
@@ -456,12 +487,14 @@ bool bcLinkShaderProgram(unsigned int programId)
 
 #else // SUPPORT_GLSL
 
-BCShader * bcCreateShader(const char *vs_code, const char *fs_code, BCShaderVar *attributes, BCShaderVar *uniforms, BCShaderVar *vars) { return NULL; }
+BCShader * bcCreateShader(const char *vs_code, const char *fs_code) { return NULL; }
 BCShader * bcCreateShaderFromSingleFile(const char *filename) { return NULL; }
 BCShader * bcCreateShaderFromFile(const char *vsFilename, const char *fsFilename) { return NULL; }
+void bcUpdateShader(BCShader *shader) { }
+void bcReleaseShader(BCShader *shader) { }
 void bcDestroyShader(BCShader *shader) { }
 void bcBindShader(BCShader *shader) { }
-unsigned int bcLoadShader(const char *code, unsigned int shaderType, BCShaderVar *attributes, BCShaderVar *uniforms, BCShaderVar *vars) { return 0; }
+unsigned int bcLoadShader(const char *code, unsigned int shaderType) { return 0; }
 bool bcLinkShaderProgram(unsigned int programId) { return false; }
 
 #endif // SUPPORT_GLSL
@@ -529,9 +562,7 @@ BCTexture * bcCreateTextureFromFile(const char *filename, BCTextureFlags flags)
     BCImage *image = bcCreateImageFromFile(filename);
     if (image == NULL)
         return NULL;
-    BCTexture *texture = bcCreateTextureFromImage(image, flags);
-    bcDestroyImage(image);
-    return texture;
+    return bcCreateTextureFromImage(image, flags);
 }
 
 BCTexture * bcCreateTextureFromImage(BCImage *image, BCTextureFlags flags)
@@ -539,8 +570,24 @@ BCTexture * bcCreateTextureFromImage(BCImage *image, BCTextureFlags flags)
     BCTexture *texture = NEW_OBJECT(BCTexture);
     texture->width = image->width;
     texture->height = image->height;
+    texture->image = image;
+    texture->flags = flags;
+    if (g_Context->Started)
+    {
+        bcUpdateTexture(texture);
+    }
+    if (flags & BC_TEXTURE_DETACHED)
+    {
+        bcDestroyImage(image);
+        texture->image = NULL;
+    }
+    return texture;
+}
+
+void bcUpdateTexture(BCTexture *texture)
+{
     int internalFormat;
-    switch (image->comps)
+    switch (texture->image->comps)
     {
     case 1:
         internalFormat = GL_ALPHA;
@@ -559,17 +606,17 @@ BCTexture * bcCreateTextureFromImage(BCImage *image, BCTextureFlags flags)
     glGenTextures(1, &(texture->id));
     glBindTexture(GL_TEXTURE_2D, (texture->id));
     // filter flags
-    if (flags & BC_TEXTURE_LINEAR)
+    if (texture->flags & BC_TEXTURE_LINEAR)
     {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     }
-    else if (flags & BC_TEXTURE_NEAREST)
+    else if (texture->flags & BC_TEXTURE_NEAREST)
     {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
-    else if (flags & BC_TEXTURE_MIPMAP)
+    else if (texture->flags & BC_TEXTURE_MIPMAP)
     {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_NEAREST);
@@ -582,12 +629,12 @@ BCTexture * bcCreateTextureFromImage(BCImage *image, BCTextureFlags flags)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     }
     // wrap flags
-    if (flags & BC_TEXTURE_REPEAT)
+    if (texture->flags & BC_TEXTURE_REPEAT)
     {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     }
-    else if (flags & BC_TEXTURE_CLAMP)
+    else if (texture->flags & BC_TEXTURE_CLAMP)
     {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -596,22 +643,39 @@ BCTexture * bcCreateTextureFromImage(BCImage *image, BCTextureFlags flags)
         GL_TEXTURE_2D,
         0,
         internalFormat,
-        texture->width,
-        texture->height,
+        texture->image->width,
+        texture->image->height,
         0,
         texture->format,
         GL_UNSIGNED_BYTE,
-        image->data);
+        texture->image->data);
     // if (mMipmaps) {
     //     glGenerateMipmap(GL_TEXTURE_2D);
     // }
     glBindTexture(GL_TEXTURE_2D, 0);
-    return texture;
+}
+
+void bcReleaseTexture(BCTexture *texture)
+{
+    if (!texture)
+    {
+        bcLogError("Invalid texture!");
+        return;
+    }
+    glDeleteTextures(1, &(texture->id));
+    texture->id = 0;
 }
 
 void bcDestroyTexture(BCTexture *texture)
 {
-    glDeleteTextures(1, &(texture->id));
+    if (!texture)
+    {
+        bcLogError("Invalid texture!");
+        return;
+    }
+    if (texture->image)
+        bcDestroyImage(texture->image);
+    bcReleaseTexture(texture);
     free(texture);
 }
 
@@ -843,7 +907,7 @@ BCMesh * bcCreateMesh(int format, const float *vert_data, int vert_num, const ui
                 memcpy(mesh->indices, indx_data, mesh->num_indices * sizeof(uint16_t));
         }
         // update VBOs
-        if (vert_data || indx_data)
+        if (g_Context->Started && (vert_data || indx_data))
         {
             bcUpdateMesh(mesh);
         }
@@ -942,7 +1006,7 @@ void bcUpdateMesh(BCMesh *mesh)
     }
 }
 
-void bcDestroyMesh(BCMesh *mesh)
+void bcReleaseMesh(BCMesh *mesh)
 {
     if (mesh == NULL)
     {
@@ -959,6 +1023,16 @@ void bcDestroyMesh(BCMesh *mesh)
         glDeleteBuffers(1, &(mesh->vbo_indices));
         mesh->vbo_indices = 0;
     }
+}
+
+void bcDestroyMesh(BCMesh *mesh)
+{
+    if (mesh == NULL)
+    {
+        bcLogError("Invalid mesh!");
+        return;
+    }
+    bcReleaseMesh(mesh);
     free(mesh->vertices);
     free(mesh->indices);
     free(mesh);
@@ -1693,7 +1767,6 @@ BCFont * bcCreateFontTTF(const char *filename, float height)
                          BAKE_CHAR_FIRST, BAKE_CHAR_COUNT, (stbtt_bakedchar *) font->cdata); // no guarantee this fits!
     font->texture = bcCreateTextureFromImage(image, 0);
     free(ttf_buffer);
-    bcDestroyImage(image);
     return font;
 }
 
@@ -1719,15 +1792,37 @@ BCFont * bcCreateFontBMP(const char *filename, int char_first, int char_count, i
     font->cdata = bm;
     font->texture = bcCreateTextureFromImage(image, 0);
     font->height = bm->char_height;
-    bcDestroyImage(image);
     return font;
+}
+
+void bcUpdateFont(BCFont *font)
+{
+    if (!font)
+    {
+        bcLogError("Invalid font!");
+        return;
+    }
+    bcUpdateTexture(font->texture);
+}
+
+void bcReleaseFont(BCFont *font)
+{
+    if (!font)
+    {
+        bcLogError("Invalid font!");
+        return;
+    }
+    bcReleaseTexture(font->texture);
 }
 
 void bcDestroyFont(BCFont *font)
 {
-    if (font == NULL)
+    if (!font)
+    {
+        bcLogError("Invalid font!");
         return;
-    bcDestroyTexture(font->texture);
+    }
+    bcReleaseFont(font);
     free(font->cdata);
     free(font);
 }

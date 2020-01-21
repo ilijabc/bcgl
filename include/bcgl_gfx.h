@@ -13,6 +13,7 @@ typedef enum
     BC_TEXTURE_MIPMAP   = 0x4,
     BC_TEXTURE_REPEAT   = 0x8,
     BC_TEXTURE_CLAMP    = 0x10,
+    BC_TEXTURE_DETACHED = 0x20,
 } BCTextureFlags;
 
 typedef enum
@@ -113,12 +114,18 @@ typedef struct
     int width;
     int height;
     int format;
+    int flags;
+    BCImage *image;
 } BCTexture;
 
 typedef struct
 {
     unsigned int programId;
+    unsigned int vs_id;
+    unsigned int fs_id;
     int loc_uniforms[BC_SHADER_UNIFORM_MAX];
+    char *vs_code;
+    char *fs_code;
 } BCShader;
 
 typedef struct
@@ -202,12 +209,14 @@ extern "C" {
 #endif
 
 // Shader
-BCShader * bcCreateShader(const char *vs_code, const char *fs_code, BCShaderVar *attributes, BCShaderVar *uniforms, BCShaderVar *vars);
+BCShader * bcCreateShader(const char *vs_code, const char *fs_code);
 BCShader * bcCreateShaderFromSingleFile(const char *filename);
 BCShader * bcCreateShaderFromFile(const char *vsFilename, const char *fsFilename);
+bool bcUpdateShader(BCShader *shader);
+void bcReleaseShader(BCShader *shader);
 void bcDestroyShader(BCShader *shader);
 void bcBindShader(BCShader *shader);
-unsigned int bcLoadShader(const char *code, unsigned int shaderType, BCShaderVar *attributes, BCShaderVar *uniforms, BCShaderVar *vars);
+unsigned int bcLoadShader(const char *code, unsigned int shaderType);
 bool bcLinkShaderProgram(unsigned int programId);
 
 // Image
@@ -219,6 +228,8 @@ void bcDestroyImage(BCImage *image);
 // Texture
 BCTexture * bcCreateTextureFromFile(const char *filename, BCTextureFlags flags);
 BCTexture * bcCreateTextureFromImage(BCImage *image, BCTextureFlags flags);
+void bcUpdateTexture(BCTexture *texture);
+void bcReleaseTexture(BCTexture *texture);
 void bcDestroyTexture(BCTexture *texture);
 void bcBindTexture(BCTexture *texture);
 
@@ -242,6 +253,7 @@ void bcSetColor(BCColor color, BCColorType type);
 BCMesh * bcCreateMesh(int format, const float *vert_data, int vert_num, const uint16_t *indx_data, int indx_num, BCMeshType type);
 BCMesh * bcCopyMesh(BCMesh *mesh);
 void bcUpdateMesh(BCMesh *mesh);
+void bcReleaseMesh(BCMesh *mesh);
 void bcDestroyMesh(BCMesh *mesh);
 void bcDrawMesh(BCMesh *mesh);
 void bcBindMesh(BCMesh *mesh);
@@ -296,6 +308,8 @@ void bcDrawPlane(int size_x, int size_y);
 BCFont * bcCreateFontTTF(const char *filename, float height);
 BCFont * bcCreateFontFNT(const char *filename);
 BCFont * bcCreateFontBMP(const char *filename, int char_first, int char_count, int cols);
+void bcUpdateFont(BCFont *font);
+void bcReleaseFont(BCFont *font);
 void bcDestroyFont(BCFont *font);
 void bcDrawText(BCFont *font, float x, float y, const char *text);
 void bcGetTextSize(BCFont *font, const char *text, float *px, float *py);
