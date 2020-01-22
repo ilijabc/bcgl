@@ -43,8 +43,8 @@ public class BCGLActivity extends Activity {
 
         BCGLLib.nativeInitFileSystem(
             getAssets(),
-            getFilesDir().getAbsolutePath(),
-            android.os.Environment.getExternalStorageDirectory().getAbsolutePath());
+            getFilesDir().getAbsolutePath() + "/",
+            android.os.Environment.getExternalStorageDirectory().getAbsolutePath() + "/");
 
         mGLView = new BCGLView(this);
         setContentView(mGLView);

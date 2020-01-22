@@ -48,7 +48,7 @@ void bcInputStateReset();
 // bcgl_file module
 //
 
-void bcInitFiles(void *ctx, const char *local_path, const char *external_path);
+void bcInitFiles(void *ctx);
 void bcTermFiles();
 
 //

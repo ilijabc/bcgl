@@ -18,8 +18,19 @@ static const char * s_ModeStr[] = { "r", "w", "a", "rb", "wb", "ab" };
 static AAssetManager *s_Manager = NULL;
 #endif
 
-static char s_LocalPath[PATH_MAX] = "";
-static char s_ExternalPath[PATH_MAX] = "";
+// Must be aligned with @BCPathType
+static struct
+{
+    char prefix[100];
+    int prefix_len;
+    char base_path[PATH_MAX];
+} s_PathTypeMap[BC_PATH_TYPE_OTHER + 1] = {
+    { ASSETS_DIR, strlen(ASSETS_DIR), "" },
+    { LOCAL_DIR, strlen(LOCAL_DIR), "" },
+    { EXTERNAL_DIR, strlen(EXTERNAL_DIR), "" },
+    { "", 0, "" },
+};
+
 
 static off_t __fsize(const char *filename) {
     struct stat st; 
@@ -28,20 +39,51 @@ static off_t __fsize(const char *filename) {
     return -1; 
 }
 
-static void path_convert(const char *path_in, char *path_out, bool *p_asset)
+//
+// Init
+//
+
+void bcInitFiles(void *ctx)
 {
-    bool isAsset = (strstr(path_in, ASSETS_DIR) == path_in);
-    if (p_asset)
+    bcLog("BCGL: %d.%d.%d (%d)", __BC_MAJOR, __BC_MINOR, __BC_PATCH, __BC_VERSION);
+#ifdef __ANDROID__
+    s_Manager = ctx;
+#else
+    bcSetPathForType(BC_PATH_TYPE_ASSETS, "assets/");
+    bcSetPathForType(BC_PATH_TYPE_LOCAL, "./");
+    bcSetPathForType(BC_PATH_TYPE_EXTERNAL, "./");
+#endif
+}
+
+void bcTermFiles()
+{
+}
+
+//
+// FS
+//
+
+void bcSetPathForType(BCPathType type, const char *path)
+{
+    strcpy(s_PathTypeMap[type].base_path, path);
+    bcLog("Set path of %s to: %s", s_PathTypeMap[type].prefix, s_PathTypeMap[type].base_path);
+}
+
+BCPathType bcGetTypeOfPath(const char *path)
+{
+    for (int i = 0; i < BC_PATH_TYPE_OTHER; i++)
     {
-        *p_asset = isAsset;
+        if (strstr(path, s_PathTypeMap[i].prefix) == path)
+            return i;
     }
-    strcpy(path_out, "");
-    if (path_in[0] != '/' && !isAsset)
-    {
-        strcat(path_out, s_LocalPath);
-        strcat(path_out, "/");
-    }
-    strcat(path_out, path_in);
+    return BC_PATH_TYPE_OTHER;
+}
+
+BCPathType bcConvertPath(const char *path_in, char *path_out)
+{
+    BCPathType type = bcGetTypeOfPath(path_in);
+    strcpy(path_out, s_PathTypeMap[type].base_path);
+    strcat(path_out, path_in + s_PathTypeMap[type].prefix_len);
     // convert backslashes to slashes
     int n = strlen(path_out);
     for (int i = 0; i < n; i++)
@@ -51,24 +93,58 @@ static void path_convert(const char *path_in, char *path_out, bool *p_asset)
             path_out[i] = '/';
         }
     }
+    return type;
 }
 
-//
-// Init
-//
-
-void bcInitFiles(void *ctx, const char *local_path, const char *external_path)
+bool bcFileExists(const char *filename)
 {
-#ifdef __ANDROID__
-    s_Manager = ctx;
+    char path[PATH_MAX];
+    BCPathType type = bcConvertPath(filename, path);
+    return (access(path, F_OK) != -1);
+}
+
+bool bcCreateDir(const char *filename)
+{
+    char path[PATH_MAX];
+    BCPathType type = bcConvertPath(filename, path);
+    if (type == BC_PATH_TYPE_ASSETS)
+    {
+        bcLogError("Can't create dir in assets!");
+        return false;
+    }
+    int status;
+#ifdef __MINGW32__
+    status = mkdir(path);
+#else
+    status = mkdir(path, 0777);
 #endif
-    strcpy(s_LocalPath, local_path);
-    strcpy(s_ExternalPath, external_path);
-    bcLog("BCGL: %d.%d.%d (%d)", __BC_MAJOR, __BC_MINOR, __BC_PATCH, __BC_VERSION);
+    return (status == 0);
 }
 
-void bcTermFiles()
+bool bcRemoveFile(const char *filename)
 {
+    char path[PATH_MAX];
+    BCPathType type = bcConvertPath(filename, path);
+    if (type == BC_PATH_TYPE_ASSETS)
+    {
+        bcLogError("Can't remove file from assets!");
+        return false;
+    }
+    int status = unlink(path);
+    return (status == 0);
+}
+
+bool bcRemoveDir(const char *filename)
+{
+    char path[PATH_MAX];
+    BCPathType type = bcConvertPath(filename, path);
+    if (type == BC_PATH_TYPE_ASSETS)
+    {
+        bcLogError("Can't remove dir from assets!");
+        return false;
+    }
+    int status = rmdir(path);
+    return (status == 0);
 }
 
 //
@@ -77,9 +153,9 @@ void bcTermFiles()
 
 BCFile * bcOpenFile(const char *filename, BCFileMode mode)
 {
-    bool isAsset;
     char path[PATH_MAX];
-    path_convert(filename, path, &isAsset);
+    BCPathType type = bcConvertPath(filename, path);
+    bool isAsset = (type == BC_PATH_TYPE_ASSETS);
     if (isAsset && mode != BC_FILE_READ_TEXT && mode != BC_FILE_READ_DATA)
     {
         bcLogError("Assets must be opened as read-only!");
@@ -88,7 +164,7 @@ BCFile * bcOpenFile(const char *filename, BCFileMode mode)
 #ifdef __ANDROID__
     if (isAsset)
     {
-        AAsset *aas = AAssetManager_open(s_Manager, path + strlen(ASSETS_DIR), 0);
+        AAsset *aas = AAssetManager_open(s_Manager, path, 0);
         if (aas == NULL)
         {
             return NULL;
@@ -206,25 +282,16 @@ const char * bcReadFileLine(BCFile *file)
     return line;
 }
 
-bool bcFileExists(const char *filename)
-{
-    bool isAsset;
-    char path[PATH_MAX];
-    path_convert(filename, path, &isAsset);
-    return (access(path, F_OK) != -1);
-}
-
 //
 // Dir
 //
 
 BCFile * bcOpenDir(const char *filename)
 {
-    bool isAsset;
     char path[PATH_MAX];
-    path_convert(filename, path, &isAsset);
+    BCPathType type = bcConvertPath(filename, path);
 #ifdef __ANDROID__
-    if (isAsset)
+    if (type == BC_PATH_TYPE_ASSETS)
     {
         char dir_name[PATH_MAX];
         int n = strlen(path) - strlen(ASSETS_DIR);

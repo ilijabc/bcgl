@@ -22,9 +22,26 @@ typedef struct
     void *aux;
 } BCFile;
 
+typedef enum
+{
+    BC_PATH_TYPE_ASSETS,
+    BC_PATH_TYPE_LOCAL,
+    BC_PATH_TYPE_EXTERNAL,
+    BC_PATH_TYPE_OTHER,
+} BCPathType;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+// FS
+void bcSetPathForType(BCPathType type, const char *path);
+BCPathType bcGetTypeOfPath(const char *path);
+BCPathType bcConvertPath(const char *path_in, char *path_out);
+bool bcFileExists(const char *filename);
+bool bcCreateDir(const char *filename);
+bool bcRemoveFile(const char *filename);
+bool bcRemoveDir(const char *filename);
 
 // File
 BCFile * bcOpenFile(const char *filename, BCFileMode mode);
@@ -34,7 +51,6 @@ size_t bcWriteFile(BCFile *file, void* buf, size_t count);
 size_t bcSeekFile(BCFile *file, size_t offset);
 size_t bcGetFilePosition(BCFile *file);
 const char * bcReadFileLine(BCFile *file);
-bool bcFileExists(const char *filename);
 
 #define bcPrintFile(file, format, ...) { fprintf((FILE*)(file->handle), format, ##__VA_ARGS__); }
 

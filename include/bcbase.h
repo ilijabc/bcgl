@@ -17,7 +17,9 @@
 #define __BC_VERSION                (__BC_MAJOR * 10000 + __BC_MINOR * 100 + __BC_PATCH)
 
 // Assets
-#define ASSETS_DIR                  "assets/"
+#define ASSETS_DIR                  "assets://"
+#define LOCAL_DIR                   "local://"
+#define EXTERNAL_DIR                "external://"
 
 // Memory utils
 #define NEW_OBJECT(T)               (T*)calloc(1, sizeof(T))

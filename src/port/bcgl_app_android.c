@@ -414,7 +414,9 @@ static void * rendererThread(void *arg)
 
 void bcAndroidInitFileSystem(AAssetManager *manager, const char *local_path, const char *external_path)
 {
-    bcInitFiles(manager, local_path, external_path);
+    bcInitFiles(manager);
+    bcSetPathForType(BC_PATH_TYPE_LOCAL, local_path);
+    bcSetPathForType(BC_PATH_TYPE_EXTERNAL, external_path);
 }
 
 void bcAndroidSurfaceCreated(ANativeWindow *window)
