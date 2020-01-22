@@ -354,8 +354,8 @@ BCShader * bcCreateShader(const char *vs_code, const char *fs_code)
 {
     BCShader *shader = NEW_OBJECT(BCShader);
     shader->RM_type = RM_TYPE_SHADER;
-    shader->vs_code = __strdup(vs_code);
-    shader->fs_code = __strdup(fs_code);
+    shader->vs_code = cstr_strdup(vs_code);
+    shader->fs_code = cstr_strdup(fs_code);
     if (g_Context->Started && !bcUpdateShader(shader))
     {
         bcDestroyShader(shader);

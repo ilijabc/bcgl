@@ -2,7 +2,7 @@
 
 // str
 
-char * __strdup(const char *str)
+char * cstr_strdup(const char *str)
 {
     int len = strlen(str);
     char *result = malloc(len + 1);

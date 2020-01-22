@@ -171,7 +171,7 @@ BCFile * bcOpenFile(const char *filename, BCFileMode mode)
         }
         BCFile *file = NEW_OBJECT(BCFile);
         file->handle = aas;
-        file->name = __strdup(path);
+        file->name = cstr_strdup(path);
         file->isDir = false;
         file->isAsset = true;
         file->length = AAsset_getLength(aas);
@@ -186,7 +186,7 @@ BCFile * bcOpenFile(const char *filename, BCFileMode mode)
     }
     BCFile *file = NEW_OBJECT(BCFile);
     file->handle = fp;
-    file->name = __strdup(path);
+    file->name = cstr_strdup(path);
     file->isDir = false;
     file->isAsset = isAsset;
     file->length = length;
@@ -308,7 +308,7 @@ BCFile * bcOpenDir(const char *filename)
         }
         BCFile *file = NEW_OBJECT(BCFile);
         file->handle = aas;
-        file->name = __strdup(path);
+        file->name = cstr_strdup(path);
         file->isDir = true;
         file->isAsset = true;
         file->length = 0;
@@ -322,7 +322,7 @@ BCFile * bcOpenDir(const char *filename)
     }
     BCFile *file = NEW_OBJECT(BCFile);
     file->handle = d;
-    file->name = __strdup(path);
+    file->name = cstr_strdup(path);
     file->isDir = true;
     file->isAsset = false;
     file->length = 0;

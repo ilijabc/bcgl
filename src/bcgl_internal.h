@@ -64,7 +64,7 @@ void bcStopGfx();
 // bcutils
 //
 
-char * __strdup(const char *str);
+char * cstr_strdup(const char *str);
 
 typedef struct clist_node
 {
