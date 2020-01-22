@@ -264,6 +264,8 @@ void bcDrawMeshPart(BCMeshPart part);
 void bcDrawMeshRange(BCMesh *mesh, int start, int count);
 BCMeshPart bcPartFromMesh(BCMesh *mesh);
 BCMeshPart bcAttachMesh(BCMesh *mesh, BCMesh *src, bool destroy_src);
+BCMesh * bcCreateMeshFromFile(const char *filename);
+bool bcSaveMeshToFile(BCMesh *mesh, const char *filename);
 
 // IM
 bool bcBegin(BCDrawMode mode);

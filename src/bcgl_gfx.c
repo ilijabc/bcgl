@@ -186,6 +186,22 @@ static struct
 
 #endif // SUPPORT_GLSL
 
+typedef struct
+{
+    uint8_t signature[4];
+    uint32_t version;
+    uint32_t size;
+    uint32_t reserved;
+    uint32_t format;
+    uint32_t type;
+    uint32_t total_comps;
+    uint32_t num_vertices;
+    uint32_t num_indices;
+} BCMeshFileHeader;
+
+static const char s_MeshFileSignature[4] = { 'B', 'C', 'M', 'D' };
+static const uint32_t s_MeshFileVersion = 1;
+
 //
 // Init
 //
@@ -261,7 +277,6 @@ void bcStartGfx()
     for (clist_node_t *node = g_Context->RM_list->head; node; node = node->next)
     {
         uint8_t *p_type = (uint8_t*) node->data;
-        bcLog("RM update: %d", *p_type);
         switch (*p_type)
         {
         case RM_TYPE_SHADER:
@@ -1270,6 +1285,66 @@ BCMeshPart bcAttachMesh(BCMesh *mesh, BCMesh *src, bool destroy_src)
         bcDestroyMesh(src);
     }
     return part;
+}
+
+BCMesh * bcCreateMeshFromFile(const char *filename)
+{
+    BCFile *file = bcOpenFile(filename, BC_FILE_READ_DATA);
+    if (!file)
+    {
+        bcLogError("Can't open file: %s", filename);
+        return NULL;
+    }
+    BCMeshFileHeader header;
+    bcReadFile(file, &header, sizeof(header));
+    if (header.signature[0] != s_MeshFileSignature[0] ||
+        header.signature[1] != s_MeshFileSignature[1] ||
+        header.signature[2] != s_MeshFileSignature[2] ||
+        header.signature[3] != s_MeshFileSignature[3] ||
+        header.version != s_MeshFileVersion ||
+        header.size != sizeof(header))
+    {
+        bcLogError("Invalid mesh file!");
+        bcCloseFile(file);
+        return NULL;
+    }
+    float *vert_data = NEW_ARRAY(header.num_vertices * header.total_comps, float);
+    bcReadFile(file, vert_data, header.num_vertices * header.total_comps * sizeof(float));
+    uint16_t *indx_data = NEW_ARRAY(header.num_indices, uint16_t);
+    bcReadFile(file, indx_data, header.num_indices * sizeof(uint16_t));
+    bcCloseFile(file);
+    BCMesh *mesh = bcCreateMesh(header.format, vert_data, header.num_vertices, indx_data, header.num_indices, (BCMeshType) header.type);
+    free(vert_data);
+    free(indx_data);
+    return mesh;
+}
+
+bool bcSaveMeshToFile(BCMesh *mesh, const char *filename)
+{
+    BCFile *file = bcOpenFile(filename, BC_FILE_WRITE_DATA);
+    if (!file)
+    {
+        bcLogError("Can't write to file: %s", filename);
+        return false;
+    }
+    BCMeshFileHeader header;
+    header.signature[0] = s_MeshFileSignature[0];
+    header.signature[1] = s_MeshFileSignature[1];
+    header.signature[2] = s_MeshFileSignature[2];
+    header.signature[3] = s_MeshFileSignature[3];
+    header.version = s_MeshFileVersion;
+    header.size = sizeof(header);
+    header.reserved = 0;
+    header.format = mesh->format;
+    header.type = mesh->type;
+    header.total_comps = mesh->total_comps;
+    header.num_vertices = mesh->num_vertices;
+    header.num_indices = mesh->num_indices;
+    bcWriteFile(file, &header, sizeof(header));
+    bcWriteFile(file, mesh->vertices, mesh->num_vertices * mesh->total_comps * sizeof(float));
+    bcWriteFile(file, mesh->indices, mesh->num_indices * sizeof(uint16_t));
+    bcCloseFile(file);
+    return true;
 }
 
 //
