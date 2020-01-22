@@ -294,12 +294,12 @@ BCFile * bcOpenDir(const char *filename)
     if (type == BC_PATH_TYPE_ASSETS)
     {
         char dir_name[PATH_MAX];
-        int n = strlen(path) - strlen(ASSETS_DIR);
+        int n = strlen(path);
         if (path[strlen(path) - 1] == '/')
         {
             n--;
         }
-        strncpy(dir_name, path + strlen(ASSETS_DIR), n);
+        strncpy(dir_name, path, n);
         dir_name[n] = 0;
         AAssetDir *aas = AAssetManager_openDir(s_Manager, dir_name);
         if (aas == NULL)
