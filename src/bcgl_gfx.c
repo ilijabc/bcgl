@@ -2302,3 +2302,28 @@ void bcDumpMesh(BCMesh *mesh, FILE *stream)
         }
     }
 }
+
+bool bcGetMeshAABB(BCMesh *mesh, float *minv, float *maxv)
+{
+    if (!mesh || !mesh->vertices)
+    {
+        bcLogWarning("Invalid mesh!");
+        return false;
+    }
+    minv[0] = mesh->vertices[0];
+    minv[1] = mesh->vertices[1];
+    minv[2] = mesh->vertices[2];
+    maxv[0] = mesh->vertices[0];
+    maxv[1] = mesh->vertices[1];
+    maxv[2] = mesh->vertices[2];
+    for (int i = 1; i < mesh->num_vertices; i++)
+    {
+        minv[0] = fminf(minv[0], mesh->vertices[i * mesh->total_comps + 0]);
+        minv[1] = fminf(minv[1], mesh->vertices[i * mesh->total_comps + 1]);
+        minv[2] = fminf(minv[2], mesh->vertices[i * mesh->total_comps + 2]);
+        maxv[0] = fmaxf(maxv[0], mesh->vertices[i * mesh->total_comps + 0]);
+        maxv[1] = fmaxf(maxv[1], mesh->vertices[i * mesh->total_comps + 1]);
+        maxv[2] = fmaxf(maxv[2], mesh->vertices[i * mesh->total_comps + 2]);
+    }
+    return true;
+}

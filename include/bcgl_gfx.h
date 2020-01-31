@@ -328,6 +328,7 @@ BCMesh * bcCreateMeshSphere(float radius, int slices, int stacks);
 BCMesh * bcCreateMeshWireBox(float x1, float y1, float z1, float x2, float y2, float z2);
 void bcTransformMesh(BCMesh *mesh, float *m);
 void bcDumpMesh(BCMesh *mesh, FILE *stream);
+bool bcGetMeshAABB(BCMesh *mesh, float *minv, float *maxv);
 
 #ifdef __cplusplus
 }
