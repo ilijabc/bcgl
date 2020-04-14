@@ -480,16 +480,16 @@ void bcAndroidTouchEvent(int event, int id, float x, float y)
     }
 }
 
-void bcAndroidKeyEvent(int event, int key, int code)
+void bcAndroidKeyEvent(int event, int key, int code, int deviceId)
 {
-    int appKey = convertAndroidKeyCode(key);
+    int appCode = convertAndroidKeyCode(key);
     switch (event)
     {
     case EVENT_KEY_DOWN:
-        bcSendEvent(BC_EVENT_KEY_PRESS, appKey, key, code, NULL);
+        bcSendEvent(BC_EVENT_KEY_PRESS, appCode, deviceId, 0, NULL);
         break;
     case EVENT_KEY_UP:
-        bcSendEvent(BC_EVENT_KEY_RELEASE, appKey, key, code, NULL);
+        bcSendEvent(BC_EVENT_KEY_RELEASE, appCode, deviceId, 0, NULL);
         break;
     default:
         bcLogWarning("Unhandled event: %d", event);
@@ -629,9 +629,9 @@ Java_info_djukic_bcgl_BCGLLib_nativeTouchEvent(JNIEnv *env, jclass type, jint ev
 }
 
 JNIEXPORT void JNICALL
-Java_info_djukic_bcgl_BCGLLib_nativeKeyEvent(JNIEnv *env, jclass type, jint event, jint key, jint code)
+Java_info_djukic_bcgl_BCGLLib_nativeKeyEvent(JNIEnv *env, jclass type, jint event, jint key, jint code, jint deviceId)
 {
-    bcAndroidKeyEvent(event, key, code);
+    bcAndroidKeyEvent(event, key, code, deviceId);
 }
 
 JNIEXPORT void JNICALL
