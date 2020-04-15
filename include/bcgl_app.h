@@ -147,7 +147,7 @@ enum BCKeyCode
     BC_KEY_RIGHT_ALT,
     BC_KEY_RIGHT_SUPER,
     BC_KEY_MENU,
-    BK_KEY_BACK,
+    BC_KEY_BACK,
     BC_KEY_COUNT,
 };
 
