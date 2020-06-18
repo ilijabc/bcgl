@@ -194,6 +194,7 @@ void BC_onDestroy();
 void BC_onStart();
 void BC_onStop();
 void BC_onUpdate(float dt);
+void BC_onDraw();
 void BC_onEvent(BCEvent event);
 
 // App

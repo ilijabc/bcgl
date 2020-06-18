@@ -73,6 +73,9 @@ void bcAppUpdate()
     // update
     BC_onUpdate(dt);
 
+    // draw
+    BC_onDraw();
+
     bcUpdateWindow(s_Window);
 }
 

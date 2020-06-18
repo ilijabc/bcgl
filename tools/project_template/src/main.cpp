@@ -58,7 +58,10 @@ extern "C" void BC_onUpdate(float dt)
     {
         camera.rot.z += dt * 50;
     }
+}
 
+extern "C" void BC_onDraw()
+{
     // scene 3D
     bcClear(BC_COLOR_GRAY);
     bcPrepareScene3D(60);
