@@ -578,6 +578,7 @@ BCImage * bcCreateImage(int width, int height, int comps)
 
 BCImage * bcCreateImageFromFile(const char *filename)
 {
+#if 0
     int x, y, comp;
     unsigned char *data = stbi_load(filename, &x, &y, &comp, 0);
     if (data == NULL)
@@ -591,6 +592,21 @@ BCImage * bcCreateImageFromFile(const char *filename)
     image->comps = comp;
     image->data = data;
     return image;
+#else
+    int size = 0;
+    unsigned char *data = bcLoadDataFile(filename, &size);
+    if (data == NULL)
+    {
+        bcLogWarning("Image file '%s' not found!", filename);
+        return NULL;
+    }
+    if (size <= 0)
+    {
+        bcLogWarning("Image file '%s' not valid!", filename);
+        return NULL;
+    }
+    return bcCreateImageFromMemory(data, size);
+#endif
 }
 
 BCImage * bcCreateImageFromMemory(void *buffer, int size)
@@ -801,6 +817,14 @@ void bcSetDepthTest(bool enabled)
         glEnable(GL_DEPTH_TEST);
     else
         glDisable(GL_DEPTH_TEST);
+}
+
+void bcSetCulling(bool enabled)
+{
+    if (enabled)
+        glEnable(GL_CULL_FACE);
+    else
+        glDisable(GL_CULL_FACE);
 }
 
 void bcSetWireframe(bool enabled)
@@ -1755,9 +1779,13 @@ void bcDrawGrid(int size_x, int size_y)
 void bcDrawPlane(int size_x, int size_y)
 {
     bcBegin(BC_QUADS);
+    bcTexCoord2f(0, 0);
     bcVertex2f(0, 0);
+    bcTexCoord2f(1, 0);
     bcVertex2f(size_x, 0);
+    bcTexCoord2f(1, 1);
     bcVertex2f(size_x, size_y);
+    bcTexCoord2f(0, 1);
     bcVertex2f(0, size_y);
     bcEnd();
 }

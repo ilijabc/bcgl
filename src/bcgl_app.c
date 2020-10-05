@@ -99,7 +99,7 @@ int bcGetDisplayHeight()
 
 float bcGetDisplayAspectRatio()
 {
-    return (float) bcGetWindow()->width / (float) bcGetWindow()->height;
+    return (float) bcGetWindow()->height / (float) bcGetWindow()->width;
 }
 
 BCEvent * bcDequeueEvent()

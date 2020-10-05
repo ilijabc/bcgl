@@ -241,6 +241,7 @@ void bcClear(BCColor color);
 void bcViewport(int x, int y, int width, int height);
 void bcSetBlend(bool enabled);
 void bcSetDepthTest(bool enabled);
+void bcSetCulling(bool enabled);
 void bcSetWireframe(bool enabled);
 void bcSetLighting(bool enabled);
 void bcLightPosition(float x, float y, float z);
