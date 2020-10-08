@@ -819,6 +819,18 @@ void bcSetDepthTest(bool enabled)
         glDisable(GL_DEPTH_TEST);
 }
 
+void bcSetAlphaTest(bool enabled)
+{
+#ifdef SUPPORT_GLSL
+    glUniform1i(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_ALPHATEST], enabled);
+#else
+    if (enabled)
+        glEnable(GL_ALPHA_TEST);
+    else
+        glDisable(GL_ALPHA_TEST);
+#endif
+}
+
 void bcSetCulling(bool enabled)
 {
     if (enabled)
@@ -1779,13 +1791,13 @@ void bcDrawGrid(int size_x, int size_y)
 void bcDrawPlane(int size_x, int size_y)
 {
     bcBegin(BC_QUADS);
-    bcTexCoord2f(0, 0);
-    bcVertex2f(0, 0);
-    bcTexCoord2f(1, 0);
-    bcVertex2f(size_x, 0);
-    bcTexCoord2f(1, 1);
-    bcVertex2f(size_x, size_y);
     bcTexCoord2f(0, 1);
+    bcVertex2f(0, 0);
+    bcTexCoord2f(1, 1);
+    bcVertex2f(size_x, 0);
+    bcTexCoord2f(1, 0);
+    bcVertex2f(size_x, size_y);
+    bcTexCoord2f(0, 0);
     bcVertex2f(0, size_y);
     bcEnd();
 }

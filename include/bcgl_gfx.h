@@ -241,6 +241,7 @@ void bcClear(BCColor color);
 void bcViewport(int x, int y, int width, int height);
 void bcSetBlend(bool enabled);
 void bcSetDepthTest(bool enabled);
+void bcSetAlphaTest(bool enabled);
 void bcSetCulling(bool enabled);
 void bcSetWireframe(bool enabled);
 void bcSetLighting(bool enabled);
@@ -330,6 +331,9 @@ BCMesh * bcCreateMeshWireBox(float x1, float y1, float z1, float x2, float y2, f
 void bcTransformMesh(BCMesh *mesh, float *m);
 void bcDumpMesh(BCMesh *mesh, FILE *stream);
 bool bcGetMeshAABB(BCMesh *mesh, float *minv, float *maxv);
+
+// Utils
+#define bcPrintText(font, x, y, format, ...) { char s[256] = ""; sprintf(s, format, ##__VA_ARGS__); bcDrawText(font, x, y, s); }
 
 #ifdef __cplusplus
 }

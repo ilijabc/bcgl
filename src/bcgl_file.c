@@ -234,15 +234,15 @@ size_t bcWriteFile(BCFile *file, void* buf, size_t count)
     return fwrite(buf, 1, count, file->handle);
 }
 
-size_t bcSeekFile(BCFile *file, size_t offset)
+off_t bcSeekFile(BCFile *file, off_t offset, int origin)
 {
     if (file == NULL)
         return 0;
 #ifdef __ANDROID__
     if (file->isAsset)
-        return AAsset_seek(file->handle, offset, SEEK_SET);
+        return AAsset_seek(file->handle, offset, origin);
 #endif
-    return fseek(file->handle, offset, SEEK_SET);
+    return fseek(file->handle, offset, origin);
 }
 
 size_t bcGetFilePosition(BCFile *file)
@@ -269,6 +269,18 @@ const char * bcReadFileLine(BCFile *file)
     {
         if (c == '\n' || c == '\r')
         {
+            // check DOS ending
+            if (c == '\r')
+            {
+                char c2;
+                if (bcReadFile(file, &c2, 1))
+                {
+                    if (c2 != '\n')
+                    {
+                        bcSeekFile(file, -1, SEEK_CUR);
+                    }
+                }
+            }
             break;
         }
         line[i++] = c;

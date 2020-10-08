@@ -48,7 +48,7 @@ BCFile * bcOpenFile(const char *filename, BCFileMode mode);
 void bcCloseFile(BCFile *file);
 size_t bcReadFile(BCFile *file, void* buf, size_t count);
 size_t bcWriteFile(BCFile *file, void* buf, size_t count);
-size_t bcSeekFile(BCFile *file, size_t offset);
+off_t bcSeekFile(BCFile *file, off_t offset, int origin);
 size_t bcGetFilePosition(BCFile *file);
 const char * bcReadFileLine(BCFile *file);
 
