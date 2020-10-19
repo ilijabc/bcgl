@@ -127,6 +127,7 @@ vec2_t vec2_subtract_f(vec2_t v0, float f);
 vec2_t vec2_multiply(vec2_t v0, vec2_t v1);
 vec2_t vec2_multiply_f(vec2_t v0, float f);
 // vec2_t vec2_multiply_mat2(vec2_t v0, vec2_t m0);
+vec2_t vec2_multiply_mat3(vec2_t v0, float z, mat3_t m0);
 // vec2_t vec2_divide(vec2_t v0, vec2_t v1);
 // vec2_t vec2_divide_f(vec2_t v0, float f);
 // vec2_t vec2_snap(vec2_t v0, vec2_t v1);
@@ -207,6 +208,21 @@ vec4_t vec4_from_vec3(vec3_t v, float w);
 vec4_t vec4_multiply_mat4(mat4_t m, vec4_t v);
 vec4_t vec4_divide(vec4_t v0, vec4_t v1);
 vec4_t vec4_divide_f(vec4_t v0, float f);
+
+// mat3
+mat3_t mat3(float m00, float m10, float m20,
+            float m01, float m11, float m21,
+            float m02, float m12, float m22);
+mat3_t mat3_from_array(float *v);
+mat3_t mat3_identity();
+mat3_t mat3_translation(float x, float y);
+mat3_t mat3_rotation(float rad);
+mat3_t mat3_scaling(float x, float y);
+mat3_t mat3_multiply(mat3_t m1, mat3_t m2);
+mat3_t mat3_translate(mat3_t m1, float x, float y);
+mat3_t mat3_rotate(mat3_t m1, float rad);
+mat3_t mat3_scale(mat3_t m1, float x, float y);
+mat3_t mat3_transpose(mat3_t m);
 
 // mat4
 mat4_t mat4(float m00, float m10, float m20, float m30,

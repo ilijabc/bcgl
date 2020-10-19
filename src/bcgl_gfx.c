@@ -34,6 +34,7 @@ typedef struct
     bool Started;
     mat4_t ProjectionMatrix;
     mat4_t ModelViewMatrix;
+    mat3_t TextureMatrix;
     BCColor ColorArray[BC_COLOR_TYPE_MAX];
     bool ColorNeedUpdate;
     BCMesh *CurrentMesh;
@@ -53,6 +54,7 @@ typedef struct
     BCMesh *ReusableSolidMesh;
     BCMesh *ReusableCubeMesh;
     BCMesh *ReusableWireCubeMesh;
+    BCMesh *ReusablePlaneMesh;
     clist_t *RM_list;
 } BCContext;
 
@@ -108,6 +110,7 @@ static BCShaderVar s_DefaultShaderUniforms[] =
 {
     { "mat4", "u_ProjectionMatrix", 1 },
     { "mat4", "u_ModelViewMatrix", 1 },
+    { "mat3", "u_TextureMatrix", 1 },
     { "sampler2D", "u_Texture", 1 },
     { "bool", "u_UseTexture", 1 },
     { "bool", "u_AlphaOnlyTexture", 1 },
@@ -137,7 +140,7 @@ void main()
 {
     v_position = (u_ModelViewMatrix * vec4(a_Position, 1)).xyz;
     v_normal = (u_ModelViewMatrix * vec4(a_Normal, 0)).xyz;
-    v_texCoord = a_TexCoord;
+    v_texCoord = (u_TextureMatrix * vec3(a_TexCoord, 1)).xy;
     v_color = a_Color;
     gl_Position = u_ProjectionMatrix * u_ModelViewMatrix * vec4(a_Position, 1);
 }
@@ -228,6 +231,11 @@ void bcDestroyGfx()
     {
         bcDestroyMesh(g_Context->ReusableWireCubeMesh);
         g_Context->ReusableWireCubeMesh = NULL;
+    }
+    if (g_Context->ReusablePlaneMesh)
+    {
+        bcDestroyMesh(g_Context->ReusablePlaneMesh);
+        g_Context->ReusablePlaneMesh = NULL;
     }
 #ifdef SUPPORT_GLSL
     bcDestroyShader(g_Context->DefaultShader);
@@ -636,7 +644,7 @@ void bcDestroyImage(BCImage *image)
 // Texture
 //
 
-BCTexture * bcCreateTextureFromFile(const char *filename, BCTextureFlags flags)
+BCTexture * bcCreateTextureFromFile(const char *filename, int flags)
 {
     BCImage *image = bcCreateImageFromFile(filename);
     if (image == NULL)
@@ -644,7 +652,7 @@ BCTexture * bcCreateTextureFromFile(const char *filename, BCTextureFlags flags)
     return bcCreateTextureFromImage(image, flags);
 }
 
-BCTexture * bcCreateTextureFromImage(BCImage *image, BCTextureFlags flags)
+BCTexture * bcCreateTextureFromImage(BCImage *image, int flags)
 {
     BCTexture *texture = NEW_OBJECT(BCTexture);
     texture->RM_type = RM_TYPE_TEXTURE;
@@ -890,7 +898,7 @@ void bcSetProjectionMatrix(float *m)
 {
     g_Context->ProjectionMatrix = mat4_from_array(m);
 #ifdef SUPPORT_GLSL
-    glUniformMatrix4fv(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_PROJECTION], 1, GL_FALSE, m);
+    glUniformMatrix4fv(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_PROJECTIONMATRIX], 1, GL_FALSE, m);
 #else
     glMatrixMode(GL_PROJECTION);
     glLoadMatrixf(m);
@@ -902,9 +910,19 @@ void bcSetModelViewMatrix(float *m)
 {
     g_Context->ModelViewMatrix = mat4_from_array(m);
 #ifdef SUPPORT_GLSL
-    glUniformMatrix4fv(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_MODELVIEW], 1, GL_FALSE, m);
+    glUniformMatrix4fv(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_MODELVIEWMATRIX], 1, GL_FALSE, m);
 #else
     glLoadMatrixf(m);
+#endif
+}
+
+void bcSetTextureMatrix(float *m)
+{
+    g_Context->TextureMatrix = mat3_from_array(m);
+#ifdef SUPPORT_GLSL
+    glUniformMatrix3fv(g_Context->CurrentShader->loc_uniforms[BC_SHADER_UNIFORM_TEXTUREMATRIX], 1, GL_FALSE, m);
+#else
+    // TODO: not implemented for OpenGL legacy mode!
 #endif
 }
 
@@ -916,6 +934,11 @@ float * bcGetProjectionMatrix()
 float * bcGetModelViewMatrix()
 {
     return g_Context->ModelViewMatrix.v;
+}
+
+float * bcGetTextureMatrix()
+{
+    return g_Context->TextureMatrix.v;
 }
 
 void bcSetScissor(bool enabled)
@@ -1449,9 +1472,15 @@ bool bcBeginMesh(BCMesh *mesh, BCDrawMode mode)
 
 void bcEndMesh(BCMesh *mesh)
 {
+    if (mesh == NULL)
+    {
+        bcLogError("Invalid mesh!");
+        return;
+    }
     if (mesh != g_Context->TempMesh)
     {
         bcLogError("Wrong mesh!");
+        return;
     }
     // generate indices
     if (g_Context->TempMesh->num_indices > 0 && g_Context->IndexCounter == 0)
@@ -1527,17 +1556,34 @@ void bcIndexi(int i)
 
 void bcTexCoord2f(float u, float v)
 {
+    if (g_Context->TempMesh == NULL)
+    {
+        bcLogWarning("Mesh not locked!");
+        return;
+    }
     g_Context->TempVertexData[BC_VERTEX_ATTR_TEXCOORDS] = vec4(u, v, 0, 0);
 }
 
 void bcNormal3f(float x, float y, float z)
 {
+    if (g_Context->TempMesh == NULL)
+    {
+        bcLogWarning("Mesh not locked!");
+        return;
+    }
     g_Context->TempVertexData[BC_VERTEX_ATTR_NORMALS] = vec4(x, y, z, 0);
 }
 
 void bcColor4f(float r, float g, float b, float a)
 {
-    g_Context->TempVertexData[BC_VERTEX_ATTR_COLORS] = vec4(r, g, b, a);
+    if (g_Context->TempMesh == NULL)
+    {
+        bcSetColor((BCColor){r, g, b, a}, BC_COLOR_TYPE_PRIMARY);
+    }
+    else
+    {
+        g_Context->TempVertexData[BC_VERTEX_ATTR_COLORS] = vec4(r, g, b, a);
+    }
 }
 
 void bcColor3f(float r, float g, float b)
@@ -1594,6 +1640,7 @@ void bcPopMatrix()
 void bcIdentity()
 {
     bcSetModelViewMatrix(mat4_identity().v);
+    bcSetTextureMatrix(mat3_identity().v);
 }
 
 void bcTranslatef(float x, float y, float z)
@@ -1788,18 +1835,34 @@ void bcDrawGrid(int size_x, int size_y)
     bcEnd();
 }
 
-void bcDrawPlane(int size_x, int size_y)
+void bcDrawPlane(float x, float y, float z, int size_x, int size_y)
 {
-    bcBegin(BC_QUADS);
-    bcTexCoord2f(0, 1);
-    bcVertex2f(0, 0);
-    bcTexCoord2f(1, 1);
-    bcVertex2f(size_x, 0);
-    bcTexCoord2f(1, 0);
-    bcVertex2f(size_x, size_y);
-    bcTexCoord2f(0, 0);
-    bcVertex2f(0, size_y);
-    bcEnd();
+    if (!g_Context->ReusablePlaneMesh)
+    {
+        BCMesh *mesh = bcCreateMesh(BC_MESH_POS3 | BC_MESH_NORM | BC_MESH_TEX2, NULL, 4, NULL, 6, BC_MESH_STATIC);
+        if (bcBeginMesh(mesh, BC_QUADS))
+        {
+            bcTexCoord2f(0, 1);
+            bcVertex2f(0, 0);
+            bcTexCoord2f(1, 1);
+            bcVertex2f(size_x, 0);
+            bcTexCoord2f(1, 0);
+            bcVertex2f(size_x, size_y);
+            bcTexCoord2f(0, 0);
+            bcVertex2f(0, size_y);
+            bcEndMesh(mesh);
+            g_Context->ReusablePlaneMesh = mesh;
+        }
+        else
+        {
+            bcDestroyMesh(mesh);
+            return;
+        }
+    }
+    bcPushMatrix();
+    bcTranslatef(x, y, z);
+    bcDrawMesh(g_Context->ReusablePlaneMesh);
+    bcPopMatrix();
 }
 
 
@@ -1915,7 +1978,21 @@ static bool getFontQuad(BCFont *font, char ch, float *px, float *py, stbtt_align
     return true;
 }
 
-BCFont * bcCreateFontTTF(const char *filename, float height)
+BCFont * bcCreateFont(const char *filename, BCFontParams params)
+{
+    switch (params.type)
+    {
+    case BC_FONT_TRUETYPE:
+        return bcCreateFont_TTF(filename, params.ttf.height);
+    case BC_FONT_ANGELCODE:
+        return bcCreateFont_FNT(filename);
+    case BC_FONT_BITMAP:
+        return bcCreateFont_BMP(filename, params.bmp.char_first, params.bmp.char_count, params.bmp.cols);
+    }
+    return NULL;
+}
+
+BCFont * bcCreateFont_TTF(const char *filename, float height)
 {
     int size = 0;
     unsigned char *ttf_buffer = bcLoadDataFile(filename, &size);
@@ -1939,12 +2016,12 @@ BCFont * bcCreateFontTTF(const char *filename, float height)
     return font;
 }
 
-BCFont * bcCreateFontFNT(const char *filename)
+BCFont * bcCreateFont_FNT(const char *filename)
 {
     return NULL;
 }
 
-BCFont * bcCreateFontBMP(const char *filename, int char_first, int char_count, int cols)
+BCFont * bcCreateFont_BMP(const char *filename, int char_first, int char_count, int cols)
 {
     BCImage *image = bcCreateImageFromFile(filename);
     if (image == NULL)

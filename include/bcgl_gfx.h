@@ -60,8 +60,9 @@ typedef enum
 
 typedef enum
 {
-    BC_SHADER_UNIFORM_PROJECTION,
-    BC_SHADER_UNIFORM_MODELVIEW,
+    BC_SHADER_UNIFORM_PROJECTIONMATRIX,
+    BC_SHADER_UNIFORM_MODELVIEWMATRIX,
+    BC_SHADER_UNIFORM_TEXTUREMATRIX,
     BC_SHADER_UNIFORM_TEXTURE,
     BC_SHADER_UNIFORM_USETEXTURE,
     BC_SHADER_UNIFORM_ALPHAONLYTEXTURE,
@@ -176,6 +177,16 @@ typedef struct
     int count;
 } BCMeshPart;
 
+typedef struct
+{
+    BCFontType type;
+    union
+    {
+        struct { float height; } ttf;
+        struct { int char_first, char_count, cols; } bmp;
+    };
+} BCFontParams;
+
 //
 // macros
 //
@@ -229,8 +240,8 @@ BCImage * bcCreateImageFromMemory(void *buffer, int size);
 void bcDestroyImage(BCImage *image);
 
 // Texture
-BCTexture * bcCreateTextureFromFile(const char *filename, BCTextureFlags flags);
-BCTexture * bcCreateTextureFromImage(BCImage *image, BCTextureFlags flags);
+BCTexture * bcCreateTextureFromFile(const char *filename, /*BCTextureFlags*/ int flags);
+BCTexture * bcCreateTextureFromImage(BCImage *image, /*BCTextureFlags*/ int flags);
 void bcUpdateTexture(BCTexture *texture);
 void bcReleaseTexture(BCTexture *texture);
 void bcDestroyTexture(BCTexture *texture);
@@ -248,14 +259,16 @@ void bcSetLighting(bool enabled);
 void bcLightPosition(float x, float y, float z);
 void bcSetProjectionMatrix(float *m);
 void bcSetModelViewMatrix(float *m);
+void bcSetTextureMatrix(float *m);
 float * bcGetProjectionMatrix();
 float * bcGetModelViewMatrix();
+float * bcGetTextureMatrix();
 void bcSetScissor(bool enabled);
 void bcScissorRect(int x, int y, int w, int h);
 void bcSetColor(BCColor color, BCColorType type);
 
 // Mesh
-BCMesh * bcCreateMesh(int format, const float *vert_data, int vert_num, const uint16_t *indx_data, int indx_num, BCMeshType type);
+BCMesh * bcCreateMesh(/*BCMeshFlags*/ int format, const float *vert_data, int vert_num, const uint16_t *indx_data, int indx_num, BCMeshType type);
 BCMesh * bcCopyMesh(BCMesh *mesh);
 void bcUpdateMesh(BCMesh *mesh);
 void bcReleaseMesh(BCMesh *mesh);
@@ -309,12 +322,13 @@ void bcDrawCircle2D(float x, float y, float r, int segments, bool fill);
 // Draw 3D
 void bcDrawCube(float x, float y, float z, float size_x, float size_y, float size_z, bool solid);
 void bcDrawGrid(int size_x, int size_y);
-void bcDrawPlane(int size_x, int size_y);
+void bcDrawPlane(float x, float y, float z, int size_x, int size_y);
 
 // Font
-BCFont * bcCreateFontTTF(const char *filename, float height);
-BCFont * bcCreateFontFNT(const char *filename);
-BCFont * bcCreateFontBMP(const char *filename, int char_first, int char_count, int cols);
+BCFont * bcCreateFont(const char *filename, BCFontParams params);
+BCFont * bcCreateFont_TTF(const char *filename, float height);
+BCFont * bcCreateFont_FNT(const char *filename);
+BCFont * bcCreateFont_BMP(const char *filename, int char_first, int char_count, int cols);
 void bcUpdateFont(BCFont *font);
 void bcReleaseFont(BCFont *font);
 void bcDestroyFont(BCFont *font);

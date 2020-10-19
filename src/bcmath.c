@@ -1,3 +1,8 @@
+// File: bcmath.c
+// Author: Ilija Djukic (ilijabc@yahoo.com)
+//
+// Inspired by: mathc (https://github.com/felselva/mathc)
+
 #include <bcmath.h>
 
 //
@@ -76,6 +81,15 @@ vec2_t vec2_multiply_f(vec2_t v0, float f)
 }
 
 // vec2_t vec2_multiply_mat2(vec2_t v0, vec2_t m0);
+
+vec2_t vec2_multiply_mat3(vec2_t v0, float z, mat3_t m0)
+{
+    vec2_t result = {
+        m0.v[0] * v0.x + m0.v[3] * v0.y + m0.v[6] * z,
+        m0.v[1] * v0.x + m0.v[4] * v0.y + m0.v[7] * z,
+    };
+    return result;
+}
 
 vec2_t vec2_divide(vec2_t v0, vec2_t v1)
 {
@@ -556,6 +570,117 @@ vec4_t vec4_divide_f(vec4_t v0, float f)
 }
 
 //
+// mat3
+//
+
+mat3_t mat3(float m00, float m10, float m20,
+            float m01, float m11, float m21,
+            float m02, float m12, float m22)
+{
+    mat3_t result = {
+        m00, m10, m20,
+        m01, m11, m21,
+        m02, m12, m22,
+    };
+    return result;
+}
+
+mat3_t mat3_from_array(float *v)
+{
+    mat3_t result;
+    for (int i = 0; i < 9; i++)
+        result.v[i] = v[i];
+    return result;
+}
+
+mat3_t mat3_identity()
+{
+    mat3_t result = {
+        1, 0, 0,
+        0, 1, 0,
+        0, 0, 1,
+    };
+    return result;
+}
+
+
+mat3_t mat3_translation(float x, float y)
+{
+    mat3_t result = {
+        1, 0, 0,
+        0, 1, 0,
+        x, y, 1,
+    };
+    return result;
+}
+
+mat3_t mat3_rotation(float rad)
+{
+    float c = cosf(rad);
+    float s = sinf(rad);
+    mat3_t result = {
+        c, s, 0,
+       -s, c, 0,
+        0, 0, 1,
+    };
+    return result;
+}
+
+mat3_t mat3_scaling(float x, float y)
+{
+    mat3_t result = {
+        x, 0, 0,
+        0, y, 0,
+        0, 0, 1,
+    };
+    return result;
+}
+
+mat3_t mat3_multiply(mat3_t m1, mat3_t m2)
+{
+    mat3_t result = {
+        m1.v[0] * m2.v[0] + m1.v[3] * m2.v[1] + m1.v[6] * m2.v[2],
+        m1.v[1] * m2.v[0] + m1.v[4] * m2.v[1] + m1.v[7] * m2.v[2],
+        m1.v[2] * m2.v[0] + m1.v[5] * m2.v[1] + m1.v[8] * m2.v[2],
+        m1.v[0] * m2.v[3] + m1.v[3] * m2.v[4] + m1.v[6] * m2.v[5],
+        m1.v[1] * m2.v[3] + m1.v[4] * m2.v[4] + m1.v[7] * m2.v[5],
+        m1.v[2] * m2.v[3] + m1.v[5] * m2.v[4] + m1.v[8] * m2.v[5],
+        m1.v[0] * m2.v[6] + m1.v[3] * m2.v[7] + m1.v[6] * m2.v[8],
+        m1.v[1] * m2.v[6] + m1.v[4] * m2.v[7] + m1.v[7] * m2.v[8],
+        m1.v[2] * m2.v[6] + m1.v[5] * m2.v[7] + m1.v[8] * m2.v[8],
+    };
+    return result;
+}
+
+mat3_t mat3_translate(mat3_t m1, float x, float y)
+{
+    mat3_t m2 = mat3_translation(x, y);
+    return mat3_multiply(m1, m2);
+}
+
+mat3_t mat3_rotate(mat3_t m1, float rad)
+{
+    mat3_t m2 = mat3_rotation(rad);
+    return mat3_multiply(m1, m2);
+}
+
+mat3_t mat3_scale(mat3_t m1, float x, float y)
+{
+    mat3_t m2 = mat3_scaling(x, y);
+    return mat3_multiply(m1, m2);
+}
+
+mat3_t mat3_transpose(mat3_t m)
+{
+    mat3_t result = {
+        m.v[0], m.v[3], m.v[6],
+        m.v[1], m.v[4], m.v[7],
+        m.v[2], m.v[5], m.v[8],
+    };
+    return result;
+}
+
+//
 // mat4
 //
 
@@ -568,10 +693,11 @@ mat4_t mat4(float m00, float m10, float m20, float m30,
         m00, m10, m20, m30,
         m01, m11, m21, m31,
         m02, m12, m22, m32,
-        m03, m13, m23, m33
+        m03, m13, m23, m33,
     };
     return result;
 }
+
 mat4_t mat4_from_array(float *v)
 {
     mat4_t result;
