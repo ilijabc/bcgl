@@ -44,7 +44,7 @@ public class BCGLLib {
     public static native void nativeSurfaceDestroyed(int id, Surface surface);
     public static native void nativeAppChangeState(int state);
     public static native void nativeTouchEvent(int event, int id, float x, float y);
-    public static native void nativeKeyEvent(int event, int key, int code, int deviceId);
+    public static native boolean nativeKeyEvent(int event, int key, int code, int deviceId);
     public static native void nativeTextEvent(int event, String text);
 
     public static void onNativeMessage(int type, int x, int y, String text) {

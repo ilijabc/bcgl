@@ -219,6 +219,8 @@ int bcGetCommandLineArgs();
 const char * bcGetCommandLineArg(int index);
 void bcInputTextDialog(const char *text);
 bool bcIsKeyboardConnected();
+int bcGetAppKeyCode(int hwKeyCode);
+bool bcSetAppKeyCode(int hwKeyCode, int appKeyCode);
 
 // Input state
 bool bcIsKeyDown(int key);

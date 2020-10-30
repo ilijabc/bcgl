@@ -25,9 +25,9 @@ static struct
     int prefix_len;
     char base_path[PATH_MAX];
 } s_PathTypeMap[BC_PATH_TYPE_OTHER + 1] = {
-    { ASSETS_DIR, strlen(ASSETS_DIR), "" },
-    { LOCAL_DIR, strlen(LOCAL_DIR), "" },
-    { EXTERNAL_DIR, strlen(EXTERNAL_DIR), "" },
+    { ASSETS_DIR, sizeof(ASSETS_DIR) - 1, "" },
+    { LOCAL_DIR, sizeof(LOCAL_DIR) - 1, "" },
+    { EXTERNAL_DIR, sizeof(EXTERNAL_DIR) - 1, "" },
     { "", 0, "" },
 };
 

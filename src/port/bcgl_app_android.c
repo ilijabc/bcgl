@@ -309,18 +309,6 @@ static void (*s_MsgCallback)(int type, int x, int y, const char *text) = NULL;
 static float (*s_NumCallback)(int key) = NULL;
 static int (*s_IntCallback)(int key) = NULL;
 
-static int convertAndroidKeyCode(int keyCode)
-{
-    for (int i = 0; s_KeyMap[i].android_code != -1; i++)
-    {
-        if (s_KeyMap[i].android_code == keyCode)
-        {
-            return s_KeyMap[i].app_code;
-        }
-    }
-    return BC_KEY_UNKNOWN;
-}
-
 static void bcAndroidSendMessage(int type, int x, int y, const char *text)
 {
     if (s_MsgCallback)
@@ -387,6 +375,31 @@ void bcInputTextDialog(const char *text)
 bool bcIsKeyboardConnected()
 {
     return bcAndroidGetInteger(GET_INTEGER_KEYBOARD) == 2; // KEYBOARD_QWERTY
+}
+
+int bcGetAppKeyCode(int hwKeyCode)
+{
+    for (int i = 0; s_KeyMap[i].android_code != -1; i++)
+    {
+        if (s_KeyMap[i].android_code == hwKeyCode)
+        {
+            return s_KeyMap[i].app_code;
+        }
+    }
+    return BC_KEY_UNKNOWN;
+}
+
+bool bcSetAppKeyCode(int hwKeyCode, int appKeyCode)
+{
+    for (int i = 0; s_KeyMap[i].android_code != -1; i++)
+    {
+        if (s_KeyMap[i].android_code == hwKeyCode)
+        {
+            s_KeyMap[i].app_code = appKeyCode;
+            return true;
+        }
+    }
+    return false;
 }
 
 //
@@ -481,20 +494,26 @@ void bcAndroidTouchEvent(int event, int id, float x, float y)
     }
 }
 
-void bcAndroidKeyEvent(int event, int key, int code, int deviceId)
+bool bcAndroidKeyEvent(int event, int key, int code, int deviceId)
 {
-    int appCode = convertAndroidKeyCode(key);
+    int appCode = bcGetAppKeyCode(key);
+    if (appCode == BC_KEY_UNKNOWN)
+    {
+        bcLogWarning("Unknown key code: %d !", key);
+        return false;
+    }
     switch (event)
     {
     case EVENT_KEY_DOWN:
-        bcSendEvent(BC_EVENT_KEY_PRESS, appCode, deviceId, 0, NULL);
-        break;
+        bcSendEvent(BC_EVENT_KEY_PRESS, appCode, key, deviceId, NULL);
+        return true;
     case EVENT_KEY_UP:
-        bcSendEvent(BC_EVENT_KEY_RELEASE, appCode, deviceId, 0, NULL);
-        break;
+        bcSendEvent(BC_EVENT_KEY_RELEASE, appCode, key, deviceId, NULL);
+        return true;
     default:
         bcLogWarning("Unhandled event: %d", event);
     }
+    return false;
 }
 
 void bcAndroidTextEvent(int event, const char *text)
@@ -629,10 +648,10 @@ Java_info_djukic_bcgl_BCGLLib_nativeTouchEvent(JNIEnv *env, jclass type, jint ev
     bcAndroidTouchEvent(event, id, x, y);
 }
 
-JNIEXPORT void JNICALL
+JNIEXPORT jboolean JNICALL
 Java_info_djukic_bcgl_BCGLLib_nativeKeyEvent(JNIEnv *env, jclass type, jint event, jint key, jint code, jint deviceId)
 {
-    bcAndroidKeyEvent(event, key, code, deviceId);
+    return bcAndroidKeyEvent(event, key, code, deviceId);
 }
 
 JNIEXPORT void JNICALL

@@ -152,14 +152,12 @@ public class BCGLActivity extends Activity {
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        BCGLLib.nativeKeyEvent(BCGLLib.EVENT_KEY_DOWN, keyCode, event.getScanCode(), event.getDeviceId());
-        return true;
+        return BCGLLib.nativeKeyEvent(BCGLLib.EVENT_KEY_DOWN, keyCode, event.getScanCode(), event.getDeviceId());
     }
 
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
-        BCGLLib.nativeKeyEvent(BCGLLib.EVENT_KEY_UP, keyCode, event.getScanCode(), event.getDeviceId());
-        return true;
+        return BCGLLib.nativeKeyEvent(BCGLLib.EVENT_KEY_UP, keyCode, event.getScanCode(), event.getDeviceId());
     }
 
     @Override

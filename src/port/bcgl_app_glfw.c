@@ -151,26 +151,18 @@ static void glfw_ErrorCallback(int error, const char *description)
 
 static void glfw_KeyCallback(GLFWwindow *nativeWindow, int keyCode, int scanCode, int action, int mods)
 {
-    int appCode = -1;
-    for (int i = 0; i < s_KeyMap[i].app_code != BC_KEY_COUNT; i++)
-    {
-        if (s_KeyMap[i].glfw_code == keyCode)
-        {
-            appCode = s_KeyMap[i].app_code;
-            break;
-        }
-    }
-    if (appCode == -1)
+    int appCode = bcGetAppKeyCode(keyCode);
+    if (appCode == BC_KEY_UNKNOWN)
     {
         bcLogWarning("Unknown key code: %d !", keyCode);
         return;
     }
     if (action == GLFW_PRESS)
-        bcSendEvent(BC_EVENT_KEY_PRESS, appCode, 0, 0, NULL);
+        bcSendEvent(BC_EVENT_KEY_PRESS, appCode, keyCode, 0, NULL);
     else if (action == GLFW_RELEASE)
-        bcSendEvent(BC_EVENT_KEY_RELEASE, appCode, 0, 0, NULL);
+        bcSendEvent(BC_EVENT_KEY_RELEASE, appCode, keyCode, 0, NULL);
     else if (action == GLFW_REPEAT)
-        bcSendEvent(BC_EVENT_KEY_REPEAT, appCode, 0, 0, NULL);
+        bcSendEvent(BC_EVENT_KEY_REPEAT, appCode, keyCode, 0, NULL);
     // missing key chars
     if (action == GLFW_PRESS || action == GLFW_REPEAT)
     {
@@ -261,6 +253,31 @@ void bcInputTextDialog(const char *text)
 bool bcIsKeyboardConnected()
 {
     return true;
+}
+
+int bcGetAppKeyCode(int hwKeyCode)
+{
+    for (int i = 0; i < s_KeyMap[i].app_code != BC_KEY_COUNT; i++)
+    {
+        if (s_KeyMap[i].glfw_code == hwKeyCode)
+        {
+            return s_KeyMap[i].app_code;
+        }
+    }
+    return BC_KEY_UNKNOWN;
+}
+
+bool bcSetAppKeyCode(int hwKeyCode, int appKeyCode)
+{
+    for (int i = 0; i < s_KeyMap[i].app_code != BC_KEY_COUNT; i++)
+    {
+        if (s_KeyMap[i].glfw_code == hwKeyCode)
+        {
+            s_KeyMap[i].app_code = appKeyCode;
+            return true;
+        }
+    }
+    return false;
 }
 
 //

@@ -191,6 +191,20 @@ bool bcIsKeyboardConnected()
     return true;
 }
 
+
+int bcGetAppKeyCode(int hwKeyCode)
+{
+    bcLogWarning("Custom keymap not supported for Web platform!");
+    return BC_KEY_UNKNOWN;
+}
+
+bool bcSetAppKeyCode(int hwKeyCode, int appKeyCode)
+{
+    bcLogWarning("Custom keymap not supported for Web platform!");
+    return false;
+}
+
+
 static EM_BOOL s_key_callback_func(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData)
 {
     int code = convertWebKeyCode(keyEvent->code);
