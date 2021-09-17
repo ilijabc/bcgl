@@ -62,7 +62,7 @@ extern "C" void BC_onStart()
 {
     bcLogDebug("BC_onStart");
 
-    font = bcCreateFontTTF(ASSETS_DIR"vera.ttf", 30);
+    font = bcCreateFont_TTF(ASSETS_DIR"vera.ttf", 30);
 
     objs.push_back(
     {
@@ -104,7 +104,7 @@ extern "C" void BC_onUpdate(float dt)
     }
 }
 
-extern "C" void BC_onDraw1()
+extern "C" void BC_onDraw()
 {
     // scene 3D
     bcClear(BC_COLOR_GRAY);

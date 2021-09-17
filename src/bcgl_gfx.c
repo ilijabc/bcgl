@@ -1537,7 +1537,7 @@ int bcVertex3f(float x, float y, float z)
     }
     g_Context->TempVertexData[BC_VERTEX_ATTR_POSITIONS] = vec4(x, y, z, 0);
     pushTempVertex();
-    return g_Context->VertexCounter;
+    return g_Context->VertexCounter - 1;
 }
 
 int bcVertex2f(float x, float y)
@@ -2257,13 +2257,13 @@ BCMesh * bcCreateMeshBox(float x1, float y1, float z1, float x2, float y2, float
 
 BCMesh * bcCreateCylinder(float radius, float height, int slices)
 {
-    BCMesh *mesh = bcCreateMesh(BC_MESH_POS3 | BC_MESH_NORM | BC_MESH_TEX2, NULL, 240, NULL, 360, BC_MESH_STATIC);
-    if (bcBeginMesh(mesh, BC_QUADS))
+    BCMesh *mesh = bcCreateMesh(BC_MESH_POS3 | BC_MESH_NORM | BC_MESH_TEX2, NULL, 4 * slices + 2, NULL, 12 * slices, BC_MESH_STATIC);
+    if (bcBeginMesh(mesh, BC_TRIANGLES))
     {
         bcNormal3f(0, 0, -1);
-        bcVertex3f(0, 0, 0);
+        /* 0 */ bcVertex3f(0, 0, 0);
         bcNormal3f(0, 0, 1);
-        bcVertex3f(0, 0, height);
+        /* 1 */ bcVertex3f(0, 0, height);
         int i1, i2, j1, j2;
         int k1, k2, k3, k4;
         i2 = (slices - 1) * 4 + 2;
@@ -2284,8 +2284,8 @@ BCMesh * bcCreateCylinder(float radius, float height, int slices)
             {
                 // bottom caps
                 bcIndexi(0);
-                bcIndexi(i1);
                 bcIndexi(i2);
+                bcIndexi(i1);
                 // top caps
                 bcIndexi(1);
                 bcIndexi(j1);
