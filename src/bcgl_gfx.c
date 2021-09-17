@@ -1509,6 +1509,20 @@ void bcEndMesh(BCMesh *mesh)
     }
 }
 
+static void pushTempVertex()
+{
+    float *vert_ptr = &(g_Context->TempMesh->vertices[g_Context->VertexCounter * g_Context->TempMesh->total_comps]);
+    for (int i = 0; i < BC_VERTEX_ATTR_MAX; i++)
+    {
+        if (g_Context->TempMesh->comps[i] > 0)
+        {
+            memcpy(vert_ptr, g_Context->TempVertexData[i].v, g_Context->TempMesh->comps[i] * sizeof(float));
+            vert_ptr += g_Context->TempMesh->comps[i];
+        }
+    }
+    g_Context->VertexCounter++;
+}
+
 int bcVertex3f(float x, float y, float z)
 {
     if (g_Context->TempMesh == NULL)
@@ -1522,16 +1536,8 @@ int bcVertex3f(float x, float y, float z)
         return -1;
     }
     g_Context->TempVertexData[BC_VERTEX_ATTR_POSITIONS] = vec4(x, y, z, 0);
-    float *vert_ptr = &(g_Context->TempMesh->vertices[g_Context->VertexCounter * g_Context->TempMesh->total_comps]);
-    for (int i = 0; i < BC_VERTEX_ATTR_MAX; i++)
-    {
-        if (g_Context->TempMesh->comps[i] > 0)
-        {
-            memcpy(vert_ptr, g_Context->TempVertexData[i].v, g_Context->TempMesh->comps[i] * sizeof(float));
-            vert_ptr += g_Context->TempMesh->comps[i];
-        }
-    }
-    return g_Context->VertexCounter++;
+    pushTempVertex();
+    return g_Context->VertexCounter;
 }
 
 int bcVertex2f(float x, float y)
@@ -1835,7 +1841,7 @@ void bcDrawGrid(int size_x, int size_y)
     bcEnd();
 }
 
-void bcDrawPlane(float x, float y, float z, int size_x, int size_y)
+void bcDrawPlane(float x, float y, float z, float size_x, float size_y)
 {
     if (!g_Context->ReusablePlaneMesh)
     {

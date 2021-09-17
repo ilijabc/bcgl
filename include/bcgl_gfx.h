@@ -322,7 +322,7 @@ void bcDrawCircle2D(float x, float y, float r, int segments, bool fill);
 // Draw 3D
 void bcDrawCube(float x, float y, float z, float size_x, float size_y, float size_z, bool solid);
 void bcDrawGrid(int size_x, int size_y);
-void bcDrawPlane(float x, float y, float z, int size_x, int size_y);
+void bcDrawPlane(float x, float y, float z, float size_x, float size_y);
 
 // Font
 BCFont * bcCreateFont(const char *filename, BCFontParams params);
