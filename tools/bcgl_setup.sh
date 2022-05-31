@@ -15,7 +15,7 @@ read -p "Company (default: com.bcgl):" company
 read -p "Do you want to initiate a new git project (y/n)? " git_init
 
 if [ -z $title ]; then title=$name; fi
-if [ -z $Company ]; then Company="com.bcgl"0; fi
+if [ -z $company ]; then company="com.bcgl"; fi
 
 echo "--- New project info ---"
 echo "Name = $name"

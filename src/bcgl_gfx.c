@@ -2121,20 +2121,35 @@ void bcGetTextSize(BCFont *font, const char *text, float *px, float *py)
         return;
     float x = 0;
     float y = 0;
-    float my = 0;
+    float max_w = 0;
+    float line_h = 0;
+    float sum_h = 0;
+    int lines = 1;
     while (*text)
     {
         stbtt_aligned_quad q;
         if (getFontQuad(font, *text, &x, &y, &q))
         {
             float qy = q.y1 - q.y0;
-            if (my < qy) my = qy;
+            if (qy > line_h)
+                line_h = qy;
         }
         ++text;
+        if (*text == 0 || *text == '\n')
+        {
+            if (x > max_w)
+                max_w = x;
+            x = 0;
+            sum_h += line_h;
+            if (*text == '\n')
+                ++text;
+        }
     }
-    y += my;
-    if (px) *px = x;
-    if (py) *py = y;
+    // y += my;
+    // if (px) *px = x;
+    // if (py) *py = y;
+    if (px) *px = max_w;
+    if (py) *py = sum_h;
 }
 
 //
