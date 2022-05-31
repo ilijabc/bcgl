@@ -161,6 +161,14 @@ enum BCKeyCode
     BC_KEY_COUNT,
 };
 
+// Mouse Buttons
+enum BCMouseButton
+{
+    BC_MOUSE_BUTTON_LEFT = 0,
+    BC_MOUSE_BUTTON_RIGHT,
+    BC_MOUSE_BUTTON_MIDDLE,
+};
+
 enum BCDisplayMode
 {
     BC_DISPLAY_NORMAL,
