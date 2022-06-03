@@ -691,7 +691,7 @@ void bcUpdateTexture(BCTexture *texture)
         texture->format = GL_RGBA;
         break;
     }
-    // glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glGenTextures(1, &(texture->id));
     glBindTexture(GL_TEXTURE_2D, (texture->id));
     // filter flags
