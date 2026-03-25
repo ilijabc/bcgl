@@ -1,0 +1,136 @@
+{
+    "build_systems":
+    [
+        {
+            "cmd": "cmake_run.bat",
+            "file_regex": "^(..[^:]*):([0-9]+):?([0-9]+)?:? (.*)$",
+            "name": "__bcgl_project_name__",
+            "variants":
+            [
+                {
+                    "windows":
+                    {
+                        "cmd": "$project_path/projects/desktop/run.bat"
+                    },
+                    "linux":
+                    {
+                        "cmd": "$project_path/projects/desktop/run.sh"
+                    },
+                    "name": "desktop-run"
+                },
+                {
+                    "windows":
+                    {
+                        "cmd": "$project_path/projects/desktop/build.bat"
+                    },
+                    "linux":
+                    {
+                        "cmd": "$project_path/projects/desktop/build.sh"
+                    },
+                    "name": "desktop-build"
+                },
+                {
+                    "windows":
+                    {
+                        "cmd": "$project_path/projects/desktop/clean.bat"
+                    },
+                    "linux":
+                    {
+                        "cmd": "$project_path/projects/desktop/clean.sh"
+                    },
+                    "name": "desktop-clean"
+                },
+                {
+                    "windows":
+                    {
+                        "cmd": "$project_path/projects/android/run.bat"
+                    },
+                    "linux":
+                    {
+                        "cmd": "$project_path/projects/android/run.sh"
+                    },
+                    "name": "android-run"
+                },
+                {
+                    "windows":
+                    {
+                        "cmd": "$project_path/projects/android/build.bat"
+                    },
+                    "linux":
+                    {
+                        "cmd": "$project_path/projects/android/build.sh"
+                    },
+                    "name": "android-build"
+                },
+                {
+                    "windows":
+                    {
+                        "cmd": "$project_path/projects/android/clean.bat"
+                    },
+                    "linux":
+                    {
+                        "cmd": "$project_path/projects/android/clean.sh"
+                    },
+                    "name": "android-clean"
+                },
+                {
+                    "windows":
+                    {
+                        "cmd": "$project_path/projects/web/build.bat"
+                    },
+                    "linux":
+                    {
+                        "cmd": "$project_path/projects/web/build.sh"
+                    },
+                    "name": "web-build"
+                },
+                {
+                    "windows":
+                    {
+                        "cmd": "$project_path/projects/web/clean.bat"
+                    },
+                    "linux":
+                    {
+                        "cmd": "$project_path/projects/web/clean.sh"
+                    },
+                    "name": "web-clean"
+                },
+                {
+                    "windows":
+                    {
+                        "cmd": "$project_path/projects/clean_all.bat"
+                    },
+                    "linux":
+                    {
+                        "cmd": "$project_path/projects/clean_all.sh"
+                    },
+                    "name": "clean_all"
+                },
+                {
+                    "windows":
+                    {
+                        "cmd": "$project_path/bcgl/demo/projects/desktop/run.bat"
+                    },
+                    "linux":
+                    {
+                        "cmd": "$project_path/bcgl/demo/projects/desktop/run.sh"
+                    },
+                    "name": "bcgl-demo",
+                    "working_dir": "$project_path/bcgl/demo"
+                }
+            ],
+            "working_dir": "$project_path"
+        }
+    ],
+    "folders":
+    [
+        {
+            "path": "."
+        }
+    ],
+    "settings":
+    {
+        "sublimegdb_commandline": "C:\\mingw-w64\\mingw32\\bin\\gdb.exe --interpreter=mi projects\\desktop\\__bcgl_project_name__.exe",
+        "sublimegdb_workingdir": "${folder:${project_path:./}}"
+    }
+}

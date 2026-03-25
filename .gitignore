@@ -1,9 +1,1 @@
-_output/
-
 *.sublime-workspace
-*.sublime-project
-*.cproject
-*.project
-*.classpath
-*.settings/
-.vscode/
