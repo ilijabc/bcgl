@@ -2,7 +2,7 @@
     "build_systems":
     [
         {
-            "cmd": "cmake_run.bat",
+            "cmd": "./build.sh",
             "file_regex": "^(..[^:]*):([0-9]+):?([0-9]+)?:? (.*)$",
             "name": "__bcgl_project_name__",
             "variants":
@@ -10,113 +10,90 @@
                 {
                     "windows":
                     {
-                        "cmd": "$project_path/projects/desktop/run.bat"
+                        "cmd": [ "./build.bat", "desktop", "run" ]
                     },
                     "linux":
                     {
-                        "cmd": "$project_path/projects/desktop/run.sh"
+                        "cmd": [ "./build.sh", "desktop", "run" ]
                     },
                     "name": "desktop-run"
                 },
                 {
                     "windows":
                     {
-                        "cmd": "$project_path/projects/desktop/build.bat"
+                        "cmd": [ "./build.bat", "desktop", "build" ]
                     },
                     "linux":
                     {
-                        "cmd": "$project_path/projects/desktop/build.sh"
+                        "cmd": [ "./build.sh", "desktop", "build" ]
                     },
                     "name": "desktop-build"
                 },
                 {
                     "windows":
                     {
-                        "cmd": "$project_path/projects/desktop/clean.bat"
+                        "cmd": [ "./build.bat", "desktop", "clean" ]
                     },
                     "linux":
                     {
-                        "cmd": "$project_path/projects/desktop/clean.sh"
+                        "cmd": [ "./build.sh", "desktop", "clean" ]
                     },
                     "name": "desktop-clean"
                 },
                 {
                     "windows":
                     {
-                        "cmd": "$project_path/projects/android/run.bat"
+                        "cmd": [ "./build.bat", "android", "run" ]
                     },
                     "linux":
                     {
-                        "cmd": "$project_path/projects/android/run.sh"
+                        "cmd": [ "./build.sh", "android", "run" ]
                     },
                     "name": "android-run"
                 },
                 {
                     "windows":
                     {
-                        "cmd": "$project_path/projects/android/build.bat"
+                        "cmd": [ "./build.bat", "android", "build" ]
                     },
                     "linux":
                     {
-                        "cmd": "$project_path/projects/android/build.sh"
+                        "cmd": [ "./build.sh", "android", "build" ]
                     },
                     "name": "android-build"
                 },
                 {
                     "windows":
                     {
-                        "cmd": "$project_path/projects/android/clean.bat"
+                        "cmd": [ "./build.bat", "android", "clean" ]
                     },
                     "linux":
                     {
-                        "cmd": "$project_path/projects/android/clean.sh"
+                        "cmd": [ "./build.sh", "android", "clean" ]
                     },
                     "name": "android-clean"
                 },
                 {
                     "windows":
                     {
-                        "cmd": "$project_path/projects/web/build.bat"
+                        "cmd": [ "./build.bat", "web", "build" ]
                     },
                     "linux":
                     {
-                        "cmd": "$project_path/projects/web/build.sh"
+                        "cmd": [ "./build.sh", "web", "build" ]
                     },
                     "name": "web-build"
                 },
                 {
                     "windows":
                     {
-                        "cmd": "$project_path/projects/web/clean.bat"
+                        "cmd": [ "./build.bat", "web", "clean" ]
                     },
                     "linux":
                     {
-                        "cmd": "$project_path/projects/web/clean.sh"
+                        "cmd": [ "./build.sh", "web", "clean" ]
                     },
                     "name": "web-clean"
-                },
-                {
-                    "windows":
-                    {
-                        "cmd": "$project_path/projects/clean_all.bat"
-                    },
-                    "linux":
-                    {
-                        "cmd": "$project_path/projects/clean_all.sh"
-                    },
-                    "name": "clean_all"
-                },
-                {
-                    "windows":
-                    {
-                        "cmd": "$project_path/bcgl/demo/projects/desktop/run.bat"
-                    },
-                    "linux":
-                    {
-                        "cmd": "$project_path/bcgl/demo/projects/desktop/run.sh"
-                    },
-                    "name": "bcgl-demo",
-                    "working_dir": "$project_path/bcgl/demo"
                 }
             ],
             "working_dir": "$project_path"
@@ -130,7 +107,7 @@
     ],
     "settings":
     {
-        "sublimegdb_commandline": "C:\\mingw-w64\\mingw32\\bin\\gdb.exe --interpreter=mi projects\\desktop\\__bcgl_project_name__.exe",
+        "sublimegdb_commandline": "C:\\mingw-w64\\mingw32\\bin\\gdb.exe --interpreter=mi platforms\\desktop\\__bcgl_project_name__.exe",
         "sublimegdb_workingdir": "${folder:${project_path:./}}"
     }
 }

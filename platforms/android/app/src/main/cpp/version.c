@@ -12,6 +12,7 @@ void Java_info_djukic_bcgl_BCGLLib_nativeSurfaceDestroyed(JNIEnv *env, jclass ty
 void Java_info_djukic_bcgl_BCGLLib_nativeAppChangeState(JNIEnv *env, jclass type, jint state);
 void Java_info_djukic_bcgl_BCGLLib_nativeTouchEvent(JNIEnv *env, jclass type, jint event, jint id, jfloat x, jfloat y);
 void Java_info_djukic_bcgl_BCGLLib_nativeKeyEvent(JNIEnv *env, jclass type, jint event, jint key, jint code);
+void Java_info_djukic_bcgl_BCGLLib_nativeTextEvent(JNIEnv *env, jclass type, jint event, jstring text);
 void __keep_symbols_from_stripping()
 {
     Java_info_djukic_bcgl_BCGLLib_nativeInitFileSystem(0, 0, 0, 0, 0);
@@ -21,4 +22,5 @@ void __keep_symbols_from_stripping()
     Java_info_djukic_bcgl_BCGLLib_nativeAppChangeState(0, 0, 0);
     Java_info_djukic_bcgl_BCGLLib_nativeTouchEvent(0, 0, 0, 0, 0, 0);
     Java_info_djukic_bcgl_BCGLLib_nativeKeyEvent(0, 0, 0, 0, 0);
+    Java_info_djukic_bcgl_BCGLLib_nativeTextEvent(0, 0, 0, 0);
 }

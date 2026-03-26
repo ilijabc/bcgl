@@ -1,2 +1,4 @@
 #!/bin/bash
-platforms/$1/build.sh
+TARGET=${1:-desktop}
+COMMAND=${2:-build}
+platforms/$TARGET/$COMMAND.sh
