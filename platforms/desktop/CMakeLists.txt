@@ -13,4 +13,4 @@ if(WIN32 AND EXISTS "res/resource.rc")
 endif()
 
 add_executable(__bcgl_project_name__ "version.c" ${RES})
-target_link_libraries(__bcgl_project_name__ bcgl_lib src_lib)
+target_link_libraries(__bcgl_project_name__ ${BCGL_TARGET_LIBS})

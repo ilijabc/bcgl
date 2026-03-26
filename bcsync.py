@@ -15,6 +15,7 @@ MANIFEST_NAME = "manifest.json"
 
 try:
     manifest = json.load(open(MANIFEST_NAME))
+    manifest["init"] = ""
 except FileNotFoundError as e:
     answer = input(f"'{MANIFEST_NAME}' not found, do you want to create it? (y/n): ").strip().lower()
     if answer == "y":
@@ -36,6 +37,10 @@ print("Script name:", sys.argv[0])
 print("Arguments:", sys.argv[1:])
 print("Manifest:", manifest)
 
+FORCE_INIT = False
+if "--init" in sys.argv[1:]:
+    FORCE_INIT = True
+
 skip_dirs = { ".git", "__pycache__", "build", "node_modules" }
 skip_files = { "bcsync.py", "bcsync" }
 for root, dirs, files in os.walk(SRC_DIR):
@@ -51,6 +56,9 @@ for root, dirs, files in os.walk(SRC_DIR):
         # replace filename
         for old, new in manifest.items():
             dst_path = dst_path.replace(f"__bcgl_project_{old}__", new)
+
+        if not FORCE_INIT and name.startswith("__bcgl_project_init__") and os.path.isfile(dst_path):
+            continue
 
         # ensure destination directory exists
         os.makedirs(os.path.dirname(dst_path), exist_ok=True)
