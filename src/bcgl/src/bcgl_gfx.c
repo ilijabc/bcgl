@@ -460,32 +460,37 @@ unsigned int bcLoadShader(const char *code, unsigned int shaderType)
     const char *type_str = (shaderType == GL_VERTEX_SHADER) ? "VERTEX" : "FRAGMENT";
     // generated code
     char generated_code[2000];
+    char sline[200];
     // defines
     sprintf(generated_code, "#define %s\n", type_str);
     for (int i = 0; s_DefaultShaderConstInts[i].name; i++)
     {
-        sprintf(generated_code, "%s#define %s %d\n", generated_code, s_DefaultShaderConstInts[i].name, s_DefaultShaderConstInts[i].value);
+        sprintf(sline, "#define %s %d\n", s_DefaultShaderConstInts[i].name, s_DefaultShaderConstInts[i].value);
+        strcat(generated_code, sline);
     }
     // attributes
     if (shaderType == GL_VERTEX_SHADER)
     {
         for (int i = 0; s_DefaultShaderAttributes[i].name; i++)
         {
-            sprintf(generated_code, "%sattribute %s %s;\n", generated_code, s_DefaultShaderAttributes[i].type, s_DefaultShaderAttributes[i].name);
+            sprintf(sline, "attribute %s %s;\n", s_DefaultShaderAttributes[i].type, s_DefaultShaderAttributes[i].name);
+            strcat(generated_code, sline);
         }
     }
     // uniforms
     for (int i = 0; s_DefaultShaderUniforms[i].name; i++)
     {
         if (s_DefaultShaderUniforms[i].size > 1)
-            sprintf(generated_code, "%suniform %s %s[%d];\n", generated_code, s_DefaultShaderUniforms[i].type, s_DefaultShaderUniforms[i].name, s_DefaultShaderUniforms[i].size);
+            sprintf(sline, "uniform %s %s[%d];\n", s_DefaultShaderUniforms[i].type, s_DefaultShaderUniforms[i].name, s_DefaultShaderUniforms[i].size);
         else
-            sprintf(generated_code, "%suniform %s %s;\n", generated_code, s_DefaultShaderUniforms[i].type, s_DefaultShaderUniforms[i].name);
+            sprintf(sline, "uniform %s %s;\n", s_DefaultShaderUniforms[i].type, s_DefaultShaderUniforms[i].name);
+        strcat(generated_code, sline);
     }
     // varyings
     for (int i = 0; s_DefaultShaderVars[i].name; i++)
     {
-        sprintf(generated_code, "%svarying %s %s;\n", generated_code, s_DefaultShaderVars[i].type, s_DefaultShaderVars[i].name);
+        sprintf(sline, "varying %s %s;\n", s_DefaultShaderVars[i].type, s_DefaultShaderVars[i].name);
+        strcat(generated_code, sline);
     }
     // init shader source
     const char *strings[3] = { GLSL_VERSION,  generated_code, code };

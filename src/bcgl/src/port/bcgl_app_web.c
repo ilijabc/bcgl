@@ -306,9 +306,9 @@ int main(int argc, char **argv)
 
     // setup emscripten
     emscripten_set_canvas_element_size(s_CanvasTarget, config.width, config.height);
-    emscripten_set_keypress_callback(NULL, NULL, true, s_key_callback_func);
-    emscripten_set_keydown_callback(NULL, NULL, true, s_key_callback_func);
-    emscripten_set_keyup_callback(NULL, NULL, true, s_key_callback_func);
+    emscripten_set_keypress_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, true, s_key_callback_func);
+    emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, true, s_key_callback_func);
+    emscripten_set_keyup_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, true, s_key_callback_func);
     emscripten_set_mousedown_callback(s_CanvasTarget, NULL, true, s_mouse_callback_func);
     emscripten_set_mouseup_callback(s_CanvasTarget, NULL, true, s_mouse_callback_func);
     emscripten_set_mousemove_callback(s_CanvasTarget, NULL, true, s_mouse_callback_func);
@@ -317,7 +317,7 @@ int main(int argc, char **argv)
     emscripten_set_webglcontextrestored_callback(s_CanvasTarget, NULL, true, s_webgl_context_callback_func);
     if (config.mode == BC_DISPLAY_RESIZABLE)
     {
-        emscripten_set_resize_callback(NULL, NULL, true, s_resize_callback_func);
+        emscripten_set_resize_callback(s_CanvasTarget, NULL, true, s_resize_callback_func);
     }
 
     if (!bcAppStart(&config))

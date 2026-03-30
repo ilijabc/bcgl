@@ -5,13 +5,13 @@ static struct
 {
     vec3_t pos;
     vec3_t rot;
-    bool auto_rotate;
 } camera =
 {
     { 0, 0, -6 },
     { -60, 0, 0},
-    false
 };
+
+BCColor cubeColor = BC_COLOR_BLUE;
 
 //
 // BCGL interface
@@ -58,10 +58,6 @@ extern "C" void BC_onUpdate(float dt)
         camera.rot.z += dt * 10;
     }
     camera.pos.z += bcGetMouseWheel() * 0.1f;
-    if (camera.auto_rotate)
-    {
-        camera.rot.z += dt * 50;
-    }
 }
 
 extern "C" void BC_onDraw()
@@ -85,13 +81,14 @@ extern "C" void BC_onDraw()
     bcPopMatrix();
 
     // scene
-    bcSetColor(BC_COLOR_BLUE, BC_COLOR_TYPE_PRIMARY);
+    bcSetColor(cubeColor, BC_COLOR_TYPE_PRIMARY);
     bcDrawCube(-1, -1, 0, 2, 2, 2, true);
 }
 
 extern "C" void BC_onEvent(BCEvent event)
 {
-    static bool wire = false;
+    static bool wireframe = false;
+    static bool lighting = true;
     if (event.type == BC_EVENT_KEY_RELEASE)
     {
         switch (event.id)
@@ -100,11 +97,14 @@ extern "C" void BC_onEvent(BCEvent event)
             bcQuit(0);
             break;
         case BC_KEY_W:
-            wire = !wire;
-            bcSetWireframe(wire);
+            wireframe = !wireframe;
+            bcSetWireframe(wireframe);
             break;
-        case BC_KEY_R:
-            camera.auto_rotate = !camera.auto_rotate;
+        case BC_KEY_ENTER:
+        case BC_KEY_SPACE:
+            cubeColor.r = randomf();
+            cubeColor.g = randomf();
+            cubeColor.b = randomf();
             break;
         }
     }
