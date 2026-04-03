@@ -7,6 +7,7 @@ BCGL_VERSION = "1.0.1"
 
 FORCE_INIT = "-f" in sys.argv[1:]
 VERBOSE = "-v" in sys.argv[1:]
+QUIET = "-q" in sys.argv[1:]
 
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -111,18 +112,20 @@ for root, dirs, files in os.walk(SRC_DIR):
                     print("IGNORE:", dst_path)
                 continue
 
-            # ensure destination directory exists
-            os.makedirs(os.path.dirname(dst_path), exist_ok=True)
 
-            print(src_path, "-->", dst_path, "(Binary)" if is_binary else "")
 
-            # write
-            if is_binary:
-                with open(dst_path, "wb") as b:
-                    b.write(content)
+            if QUIET:
+                print("IGNORE:", src_path, "-->", dst_path, "(Binary)" if is_binary else "")
             else:
-                with open(dst_path, "w", encoding="utf-8") as f:
-                    f.write(content)
-
-            # copy file mode
-            os.chmod(dst_path, os.stat(src_path).st_mode)
+                print(src_path, "-->", dst_path, "(Binary)" if is_binary else "")
+                # ensure destination directory exists
+                os.makedirs(os.path.dirname(dst_path), exist_ok=True)
+                # write
+                if is_binary:
+                    with open(dst_path, "wb") as b:
+                        b.write(content)
+                else:
+                    with open(dst_path, "w", encoding="utf-8") as f:
+                        f.write(content)
+                # copy file mode
+                os.chmod(dst_path, os.stat(src_path).st_mode)
