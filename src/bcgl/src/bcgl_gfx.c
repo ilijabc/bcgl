@@ -2371,31 +2371,30 @@ void bcDumpMesh(BCMesh *mesh, FILE *stream)
         return;
     }
     fprintf(stream, "o Dump\n");
-    char line[100];
     int vp_size = mesh->comps[BC_VERTEX_ATTR_POSITIONS];
     int vt_size = mesh->comps[BC_VERTEX_ATTR_TEXCOORDS];
     int vn_size = mesh->comps[BC_VERTEX_ATTR_NORMALS];
     // vertices
     for (int i = 0; i < mesh->num_vertices; i++)
     {
-        strcpy(line, "v");
+        fprintf(stream, "v");
         for (int j = 0; j < vp_size; j++)
         {
-            sprintf(line, "%s %f", line, mesh->vertices[i * mesh->total_comps + j]);
+            fprintf(stream, " %f", mesh->vertices[i * mesh->total_comps + j]);
         }
-        fprintf(stream, "%s\n", line);
+        fprintf(stream, "\n");
     }
     // texture coordinates
     if (vt_size > 0)
     {
         for (int i = 0; i < mesh->num_vertices; i++)
         {
-            strcpy(line, "vt");
+            fprintf(stream, "vt");
             for (int j = 0; j < vt_size; j++)
             {
-                sprintf(line, "%s %f", line, mesh->vertices[i * mesh->total_comps + vp_size + vn_size + j]);
+                fprintf(stream, " %f", mesh->vertices[i * mesh->total_comps + vp_size + vn_size + j]);
             }
-            fprintf(stream, "%s\n", line);
+            fprintf(stream, "\n");
         }
     }
     // normals
@@ -2403,12 +2402,12 @@ void bcDumpMesh(BCMesh *mesh, FILE *stream)
     {
         for (int i = 0; i < mesh->num_vertices; i++)
         {
-            strcpy(line, "vn");
+            fprintf(stream, "vn");
             for (int j = 0; j < vn_size; j++)
             {
-                sprintf(line, "%s %f", line, mesh->vertices[i * mesh->total_comps + vp_size + j]);
+                fprintf(stream, " %f", mesh->vertices[i * mesh->total_comps + vp_size + j]);
             }
-            fprintf(stream, "%s\n", line);
+            fprintf(stream, "\n");
         }
     }
     // faces
@@ -2422,25 +2421,25 @@ void bcDumpMesh(BCMesh *mesh, FILE *stream)
         {
             for (int i = 0; i < mesh->num_indices; i += 3)
             {
-                strcpy(line, "f");
+                fprintf(stream, "f");
                 for (int j = 0; j < 3; j++)
                 {
                     int ind = mesh->indices[i + j] + 1;
-                    sprintf(line, "%s %d", line, ind);
+                    fprintf(stream, " %d", ind);
                     if (vt_size > 0)
                     {
-                        sprintf(line, "%s/%d", line, ind);
+                        fprintf(stream, "/%d", ind);
                     }
                     if (vn_size > 0)
                     {
                         if (vt_size == 0)
                         {
-                            sprintf(line, "%s/", line);
+                            fprintf(stream, "/");
                         }
-                        sprintf(line, "%s/%d", line, ind);
+                        fprintf(stream, "/%d", ind);
                     }
                 }
-                fprintf(stream, "%s\n", line);
+                fprintf(stream, "\n");
             }
         }
     }
