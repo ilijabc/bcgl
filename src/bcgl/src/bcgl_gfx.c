@@ -2334,13 +2334,13 @@ BCMesh * bcCreateCylinder(float radius, float height, int slices)
 BCMesh * bcCreateMeshSphere(float radius, int slices, int stacks)
 {
     par_shapes_mesh *shape = par_shapes_create_parametric_sphere(slices, stacks);
-    par_shapes_scale(shape, radius/2, radius/2, radius/2);
+    par_shapes_scale(shape, radius, radius, radius);
     BCMesh *mesh = bcCreateMeshFromShape(shape);
     par_shapes_free_mesh(shape);
     return mesh;
 }
 
-void bcTransformMesh(BCMesh *mesh, float *m)
+BCMesh * bcTransformMesh(BCMesh *mesh, float *m)
 {
     mat4_t tm = mat4_from_array(m);
     float *vert_ptr = mesh->vertices;
@@ -2361,6 +2361,7 @@ void bcTransformMesh(BCMesh *mesh, float *m)
         }
         vert_ptr += mesh->total_comps;
     }
+    return mesh;
 }
 
 void bcDumpMesh(BCMesh *mesh, FILE *stream)

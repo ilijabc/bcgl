@@ -112,8 +112,6 @@ for root, dirs, files in os.walk(SRC_DIR):
                     print("IGNORE:", dst_path)
                 continue
 
-
-
             if QUIET:
                 print("IGNORE:", src_path, "-->", dst_path, "(Binary)" if is_binary else "")
             else:

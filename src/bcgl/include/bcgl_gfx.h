@@ -342,12 +342,12 @@ BCMesh * bcCreateMeshBox(float x1, float y1, float z1, float x2, float y2, float
 BCMesh * bcCreateCylinder(float radius, float height, int slices);
 BCMesh * bcCreateMeshSphere(float radius, int slices, int stacks);
 BCMesh * bcCreateMeshWireBox(float x1, float y1, float z1, float x2, float y2, float z2);
-void bcTransformMesh(BCMesh *mesh, float *m);
+BCMesh * bcTransformMesh(BCMesh *mesh, float *m);
 void bcDumpMesh(BCMesh *mesh, FILE *stream);
 bool bcGetMeshAABB(BCMesh *mesh, float *minv, float *maxv);
 
 // Utils
-#define bcPrintText(font, x, y, format, ...) { char s[256] = ""; sprintf(s, format, ##__VA_ARGS__); bcDrawText(font, x, y, s); }
+#define bcDrawTextf(font, x, y, format, ...) { char s[256] = ""; sprintf(s, format, ##__VA_ARGS__); bcDrawText(font, x, y, s); }
 
 #ifdef __cplusplus
 }
